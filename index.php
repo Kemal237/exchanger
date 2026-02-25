@@ -77,7 +77,7 @@ $max = $limits[$give]['max'] ?? 100000;
 
         <div class="md:col-span-2 text-center mt-6">
           <button type="submit" class="bg-green-600 hover:bg-green-700 text-white text-xl font-bold py-5 px-12 rounded-xl shadow-lg transition">
-            Обменять → 
+            Обменять →
           </button>
           <p class="mt-4 text-sm text-gray-600">
             Минимум: <?= number_format($min, 2) ?> • Максимум: <?= number_format($max, 2) ?>
@@ -85,11 +85,11 @@ $max = $limits[$give]['max'] ?? 100000;
         </div>
 
       </form>
-      <!-- Передаём все курсы из PHP в JavaScript -->
-    <script>
-      const rates = <?php echo json_encode($rates); ?>;
-      const reserves = <?php echo json_encode($reserves); ?>;
-    </script>
+
+      <script>
+        const rates = <?php echo json_encode($rates); ?>;
+        const reserves = <?php echo json_encode($reserves); ?>;
+      </script>
     </div>
 
     <!-- Таблица резервов и курсов -->
@@ -129,46 +129,34 @@ $max = $limits[$give]['max'] ?? 100000;
       <p class="mt-2 text-sm">Политика AML/KYC | Правила обмена | Контакты: <?= ADMIN_EMAIL ?></p>
     </div>
   </footer>
+
   <script>
-    // Элементы формы
     const amountGiveInput = document.querySelector('input[name="amount_give"]');
     const giveSelect      = document.querySelector('select[name="give_currency"]');
     const getSelect       = document.querySelector('select[name="get_currency"]');
-    const resultField     = document.querySelector('.text-2xl.font-bold.text-green-600'); // поле "Вы получаете"
+    const resultField     = document.querySelector('.text-2xl.font-bold.text-green-600');
 
-    // Функция пересчёта
     function recalculate() {
       const giveCur = giveSelect.value;
       const getCur  = getSelect.value;
       const amount  = parseFloat(amountGiveInput.value) || 0;
 
-      // Берём курс из переданного массива rates
       let rate = rates[giveCur]?.[getCur] || 0;
-
-      // Если обратное направление (например RUB → USDT), курс будет 1 / прямой курс
       if (rate === 0 && rates[getCur]?.[giveCur]) {
         rate = 1 / rates[getCur][giveCur];
       }
 
       const received = amount * rate;
-
-      // Форматируем красиво (с пробелами и двумя знаками после точки)
       resultField.textContent = received.toLocaleString('ru-RU', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
       });
-
-      // Можно обновить резерв, если хочешь
-      // const reserveElement = document.querySelector('.reserve-display'); // если добавишь класс
-      // if (reserveElement) reserveElement.textContent = reserves[getCur] || reserves[giveCur] || '—';
     }
 
-    // Слушаем изменения
     amountGiveInput.addEventListener('input', recalculate);
     giveSelect.addEventListener('change', recalculate);
     getSelect.addEventListener('change', recalculate);
 
-    // Первый расчёт при загрузке страницы
     recalculate();
   </script>
 </body>
