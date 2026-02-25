@@ -4,15 +4,15 @@ define('SITE_NAME', 'BekirovSwap');
 define('SITE_URL', 'https://cr873507.tw1.ru');
 define('ADMIN_EMAIL', 'admin@your-domain.com');
 
-// === Реальный курс USDT/RUB с CoinGecko + наценка 2.5% ===
+// === Реальные курсы с CoinGecko + наценка 2.5% ===
 
-function getRealUsdtRub() {
-    $url = 'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=rub';
+function getRealRates() {
+    $url = 'https://api.coingecko.com/api/v3/simple/price?ids=tether,bitcoin&vs_currencies=rub,usd,eur';
     
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);  // временно — если работает, верни true
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);  // временно — верни true, если работает
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
     curl_setopt($ch, CURLOPT_USERAGENT, 'BekirovSwap/1.0 (compatible; +https://cr873507.tw1.ru)');
     
@@ -23,30 +23,46 @@ function getRealUsdtRub() {
     
     if ($curl_error || $json === false || $http_code !== 200) {
         error_log("cURL CoinGecko error: $curl_error | HTTP $http_code");
-        return 76.70;  // запасной курс
+        return [
+            'tether'   => ['rub' => 76.70, 'usd' => 1.00, 'eur' => 0.848],
+            'bitcoin'  => ['usd' => 67200, 'eur' => 57056],
+        ];
     }
     
     $data = json_decode($json, true);
-    return $data['tether']['rub'] ?? 76.70;
+    
+    // Запасные значения на случай пропуска данных
+    $result = [
+        'tether'  => $data['tether']  ?? ['rub' => 76.70, 'usd' => 1.00, 'eur' => 0.848],
+        'bitcoin' => $data['bitcoin'] ?? ['usd' => 67200, 'eur' => 57056],
+    ];
+    
+    // Дополняем USD/RUB и EUR/RUB через USDT (если нужно)
+    $result['usd'] = ['rub' => $result['tether']['rub']]; // USD ≈ USDT в RUB
+    $result['eur'] = ['rub' => $result['usd']['rub'] / $result['tether']['eur']];
+    
+    return $result;
 }
 
-// Получаем реальный курс USDT → RUB
-$market_usdt_rub = getRealUsdtRub();
+// Получаем все реальные курсы одним запросом
+$real_rates = getRealRates();
 
-// === Остальные фиксированные курсы (без изменений) ===
-$market_usdt_usd = 1.00;
-$market_usdt_eur = 0.848;      // USDT → EUR
-$market_btc_usd  = 67200;      // BTC → USD
-$market_usd_rub  = 76.65;      // USD → RUB
-$market_eur_rub  = 90.26;      // EUR → RUB
-$market_usd_eur  = 0.8486;     // USD → EUR
-$market_eur_usd  = 1.1784;     // EUR → USD
+// Извлекаем нужные значения
+$market_usdt_rub = $real_rates['tether']['rub'];
+$market_usdt_usd = $real_rates['tether']['usd'];
+$market_usdt_eur = $real_rates['tether']['eur'];
+$market_btc_usd  = $real_rates['bitcoin']['usd'];
+$market_btc_eur  = $real_rates['bitcoin']['eur'];
+$market_usd_rub  = $real_rates['usd']['rub'];
+$market_eur_rub  = $real_rates['eur']['rub'];
+$market_usd_eur  = $market_usdt_eur;      // USD ≈ USDT
+$market_eur_usd  = 1 / $market_usdt_eur;
 
 // Наценка 2.5%
 $markup_sell = 1.025;
 $markup_buy  = 0.975;
 
-// Массив курсов
+// Массив курсов (все пары теперь используют реальные данные)
 $rates = [
     // USDT_TRC20 как отдаваемая
     'USDT_TRC20' => [
@@ -69,7 +85,7 @@ $rates = [
         'USDT_TRC20' => round($market_btc_usd * $markup_sell, 0),
         'USD'        => round($market_btc_usd * $markup_sell, 0),
         'RUB'        => round($market_btc_usd * $market_usd_rub * $markup_sell, 0),
-        'EUR'        => round($market_btc_usd * $market_usd_eur * $markup_sell, 0),
+        'EUR'        => round($market_btc_eur * $markup_sell, 0),
     ],
 
     // USD как отдаваемая
@@ -89,7 +105,7 @@ $rates = [
     ],
 ];
 
-// Остальные части файла (limits, reserves) остаются как есть
+// limits и reserves остаются как есть
 $limits = [
     'USDT_TRC20' => ['min' => 50, 'max' => 50000],
     'RUB'        => ['min' => 5000, 'max' => 2000000],
