@@ -6,6 +6,9 @@ $get  = $_GET['get']  ?? 'RUB';
 
 $amount_give = floatval($_GET['amount'] ?? 100);
 $rate = $rates[$give][$get] ?? 0;
+if ($rate === 0 && isset($rates[$get][$give])) {
+    $rate = 1 / $rates[$get][$give];
+}
 $amount_get = $amount_give * $rate;
 
 $min = $limits[$give]['min'] ?? 10;
@@ -42,12 +45,12 @@ $max = $limits[$give]['max'] ?? 100000;
 
       <form action="create-order.php" method="POST" class="grid md:grid-cols-2 gap-8">
 
-        <!-- Отдаёте -->
+        <!-- Вы отдаёте -->
         <div>
           <label class="block text-lg font-medium mb-2">Вы отдаёте</label>
           <div class="flex border border-gray-300 rounded-lg overflow-hidden">
             <select name="give_currency" class="w-1/2 p-4 bg-gray-50 text-xl focus:outline-none">
-              <?php foreach ($rates as $cur => $v): ?>
+              <?php foreach (array_keys($rates) as $cur): ?>
                 <option value="<?= $cur ?>" <?= $cur === $give ? 'selected' : '' ?>>
                   <?= str_replace('_', ' ', $cur) ?>
                 </option>
@@ -58,19 +61,27 @@ $max = $limits[$give]['max'] ?? 100000;
           <p class="text-sm text-gray-500 mt-1">Резерв: <strong><?= number_format($reserves[$give] ?? 0, 2) ?></strong></p>
         </div>
 
-        <!-- Получаете -->
+        <!-- Вы получаете -->
         <div>
           <label class="block text-lg font-medium mb-2">Вы получаете</label>
           <div class="flex border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
             <select name="get_currency" class="w-1/2 p-4 bg-gray-50 text-xl focus:outline-none">
-              <?php foreach ($rates[$give] ?? [] as $cur => $r): ?>
+              <?php
+              $all_currencies = array_unique(array_merge(
+                  array_keys($rates),
+                  ...array_values(array_map('array_keys', $rates))
+              ));
+              foreach ($all_currencies as $cur): ?>
                 <option value="<?= $cur ?>" <?= $cur === $get ? 'selected' : '' ?>>
                   <?= str_replace('_', ' ', $cur) ?>
                 </option>
               <?php endforeach; ?>
             </select>
             <div class="w-1/2 p-4 text-2xl font-bold text-green-600">
-              <?= number_format($amount_get, 2) ?>
+              <?php
+              $format_digits = ($get === 'BTC') ? 8 : 2;
+              echo number_format($amount_get, $format_digits, '.', ' ');
+              ?>
             </div>
           </div>
         </div>
@@ -86,6 +97,7 @@ $max = $limits[$give]['max'] ?? 100000;
 
       </form>
 
+      <!-- Передача данных в JS -->
       <script>
         const rates = <?php echo json_encode($rates); ?>;
         const reserves = <?php echo json_encode($reserves); ?>;
@@ -111,7 +123,7 @@ $max = $limits[$give]['max'] ?? 100000;
                 <tr class="border-t hover:bg-gray-50">
                   <td class="p-4 font-medium"><?= str_replace('_', ' ', $from) ?></td>
                   <td class="p-4 font-medium"><?= str_replace('_', ' ', $to) ?></td>
-                  <td class="p-4"><?= number_format($rate, 4) ?></td>
+                  <td class="p-4"><?= number_format($rate, ($to === 'BTC' ? 8 : 4)) ?></td>
                   <td class="p-4 text-green-600"><?= number_format($reserves[$to] ?? $reserves[$from] ?? 0, 2) ?></td>
                 </tr>
               <?php endforeach; ?>
@@ -141,15 +153,18 @@ $max = $limits[$give]['max'] ?? 100000;
       const getCur  = getSelect.value;
       const amount  = parseFloat(amountGiveInput.value) || 0;
 
-      let rate = rates[giveCur]?.[getCur] || 0;
+      let rate = rates[giveCur]?.[getCur] ?? 0;
       if (rate === 0 && rates[getCur]?.[giveCur]) {
         rate = 1 / rates[getCur][giveCur];
       }
 
       const received = amount * rate;
+
+      // Для BTC — 8 знаков, иначе 2
+      const digits = (getCur === 'BTC') ? 8 : 2;
       resultField.textContent = received.toLocaleString('ru-RU', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
       });
     }
 
