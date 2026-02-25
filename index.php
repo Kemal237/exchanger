@@ -85,6 +85,11 @@ $max = $limits[$give]['max'] ?? 100000;
         </div>
 
       </form>
+      <!-- Передаём все курсы из PHP в JavaScript -->
+    <script>
+      const rates = <?php echo json_encode($rates); ?>;
+      const reserves = <?php echo json_encode($reserves); ?>;
+    </script>
     </div>
 
     <!-- Таблица резервов и курсов -->
@@ -124,15 +129,47 @@ $max = $limits[$give]['max'] ?? 100000;
       <p class="mt-2 text-sm">Политика AML/KYC | Правила обмена | Контакты: <?= ADMIN_EMAIL ?></p>
     </div>
   </footer>
-
   <script>
-    // Живой пересчёт при изменении суммы или направления
-    document.querySelectorAll('select, input[name="amount_give"]').forEach(el => {
-      el.addEventListener('input', () => {
-        document.querySelector('form').submit(); // или ajax-запрос в будущем
-      });
-    });
-  </script>
+    // Элементы формы
+    const amountGiveInput = document.querySelector('input[name="amount_give"]');
+    const giveSelect      = document.querySelector('select[name="give_currency"]');
+    const getSelect       = document.querySelector('select[name="get_currency"]');
+    const resultField     = document.querySelector('.text-2xl.font-bold.text-green-600'); // поле "Вы получаете"
 
+    // Функция пересчёта
+    function recalculate() {
+      const giveCur = giveSelect.value;
+      const getCur  = getSelect.value;
+      const amount  = parseFloat(amountGiveInput.value) || 0;
+
+      // Берём курс из переданного массива rates
+      let rate = rates[giveCur]?.[getCur] || 0;
+
+      // Если обратное направление (например RUB → USDT), курс будет 1 / прямой курс
+      if (rate === 0 && rates[getCur]?.[giveCur]) {
+        rate = 1 / rates[getCur][giveCur];
+      }
+
+      const received = amount * rate;
+
+      // Форматируем красиво (с пробелами и двумя знаками после точки)
+      resultField.textContent = received.toLocaleString('ru-RU', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+
+      // Можно обновить резерв, если хочешь
+      // const reserveElement = document.querySelector('.reserve-display'); // если добавишь класс
+      // if (reserveElement) reserveElement.textContent = reserves[getCur] || reserves[giveCur] || '—';
+    }
+
+    // Слушаем изменения
+    amountGiveInput.addEventListener('input', recalculate);
+    giveSelect.addEventListener('change', recalculate);
+    getSelect.addEventListener('change', recalculate);
+
+    // Первый расчёт при загрузке страницы
+    recalculate();
+  </script>
 </body>
 </html>

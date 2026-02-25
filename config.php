@@ -9,7 +9,7 @@ define('ADMIN_EMAIL', 'admin@your-domain.com');
 $rates = [
     'USDT_TRC20' => ['RUB' => 105.50, 'USD' => 1.00, 'EUR' => 0.94],
     'BTC'        => ['USDT_TRC20' => 98000, 'RUB' => 10320000],
-    'RUB'        => ['USDT_TRC20' => 0.00948, 'USD' => 0.0095],
+    'RUB'        => ['USDT_TRC20' => 0.00948, 'USD' => 0.0095, 'EUR' => 0.009],
     // добавляйте свои направления
 ];
 
