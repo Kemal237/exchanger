@@ -56,7 +56,18 @@ $max = $limits[$give]['max'] ?? 100000;
                 </option>
               <?php endforeach; ?>
             </select>
-            <input type="number" name="amount_give" step="0.01" value="<?= $amount_give ?>" class="w-1/2 p-4 text-2xl font-bold focus:outline-none" min="<?= $min ?>" required>
+
+            <input type="<?= ($give === 'BTC') ? 'text' : 'number' ?>"
+                   name="amount_give"
+                   step="<?= ($give === 'BTC') ? 'any' : '0.01' ?>"
+                   value="<?= $amount_give ?>"
+                   class="w-1/2 p-4 text-2xl font-bold focus:outline-none"
+                   min="<?= $min ?>"
+                   required
+                   inputmode="<?= ($give === 'BTC') ? 'decimal' : 'numeric' ?>"
+                   pattern="<?= ($give === 'BTC') ? '^(0|[1-9]\\d*)([.,]\\d*)?$' : '[0-9]+([.][0-9]{1,2})?' ?>"
+                   placeholder="<?= ($give === 'BTC') ? '0,00000000' : '100,00' ?>"
+                   title="<?= ($give === 'BTC') ? 'Введите число, начиная с 0 для дробной части (можно с запятой или точкой)' : 'Введите сумму' ?>">
           </div>
           <p class="text-sm text-gray-500 mt-1">Резерв: <strong><?= number_format($reserves[$give] ?? 0, 2) ?></strong></p>
         </div>
@@ -148,10 +159,47 @@ $max = $limits[$give]['max'] ?? 100000;
     const getSelect       = document.querySelector('select[name="get_currency"]');
     const resultField     = document.querySelector('.text-2xl.font-bold.text-green-600');
 
+    // Обработка ввода только для BTC
+    amountGiveInput.addEventListener('input', function(e) {
+      if (giveSelect.value === 'BTC') {
+        let val = this.value.trim();
+
+        // Заменяем запятую на точку
+        val = val.replace(',', '.');
+
+        // Запрещаем точку/запятую в начале без 0
+        if (val === '.' || val === ',') {
+          val = '0.';
+        } else if (val.startsWith('.') || val.startsWith(',')) {
+          val = '0' + val;
+        }
+
+        // Убираем несколько точек подряд
+        val = val.replace(/\.{2,}/g, '.');
+
+        // Ограничиваем до 8 знаков после точки
+        const parts = val.split('.');
+        if (parts.length > 1 && parts[1].length > 8) {
+          parts[1] = parts[1].slice(0, 8);
+          val = parts.join('.');
+        }
+
+        // Если после изменений значение отличается — обновляем поле
+        if (this.value !== val) {
+          this.value = val;
+        }
+      }
+
+      recalculate();
+    });
+
     function recalculate() {
       const giveCur = giveSelect.value;
       const getCur  = getSelect.value;
-      const amount  = parseFloat(amountGiveInput.value) || 0;
+
+      // Берём значение и преобразуем запятую
+      let amountStr = amountGiveInput.value.replace(',', '.');
+      const amount  = parseFloat(amountStr) || 0;
 
       let rate = rates[giveCur]?.[getCur] ?? 0;
       if (rate === 0 && rates[getCur]?.[giveCur]) {
