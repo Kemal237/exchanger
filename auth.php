@@ -1,27 +1,30 @@
 <?php
-// auth.php — функции авторизации
+// auth.php — ВАЖНО: session_start() только здесь!
 
-session_start();
-require_once 'db.php';
+session_start();  // ← вызывается один раз на всю сессию
+
+require_once 'db.php';  // ← подключаем PDO
 
 function isLoggedIn() {
     return isset($_SESSION['user_id']);
 }
 
-function isAdmin() {
-    return isLoggedIn() && $_SESSION['username'] === 'admin';
-}
-
 function login($username, $password) {
     global $pdo;
+
+    // Проверка, что $pdo существует
+    if (!$pdo) {
+        die("Ошибка: подключение к базе данных не удалось");
+    }
+
     $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
     $stmt->execute([$username]);
-    $user = $stmt->fetch();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user && password_verify($password, $user['password'])) {
-        $_SESSION['user_id']   = $user['id'];
-        $_SESSION['username']  = $user['username'];
-        $_SESSION['email']     = $user['email'];
+        $_SESSION['user_id']  = $user['id'];
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['email']    = $user['email'];
         return true;
     }
     return false;
@@ -29,6 +32,11 @@ function login($username, $password) {
 
 function register($username, $email, $password) {
     global $pdo;
+
+    if (!$pdo) {
+        die("Ошибка: подключение к базе данных не удалось");
+    }
+
     $hash = password_hash($password, PASSWORD_DEFAULT);
 
     try {
@@ -36,12 +44,16 @@ function register($username, $email, $password) {
         $stmt->execute([$username, $email, $hash]);
         return true;
     } catch (PDOException $e) {
-        return false; // уже занят логин или email
+        // Если логин или email уже занят — возвращаем false
+        return false;
     }
 }
 
+// Функция обновления профиля (если понадобится позже)
 function updateProfile($user_id, $new_name, $new_email, $new_password = null) {
     global $pdo;
+
+    if (!$pdo) return false;
 
     if ($new_password) {
         $hash = password_hash($new_password, PASSWORD_DEFAULT);

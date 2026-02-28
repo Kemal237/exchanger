@@ -1,5 +1,11 @@
 <?php
-require 'auth.php';
+// login.php
+
+require_once 'config.php';
+require_once 'db.php';
+require_once 'auth.php';
+
+// session_start() уже вызван в auth.php — НЕ дублируем!
 
 $error = '';
 
@@ -7,7 +13,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    if (login($username, $password)) {
+    if (empty($username) || empty($password)) {
+        $error = 'Заполните все поля';
+    } elseif (login($username, $password)) {
         header('Location: profile.php');
         exit;
     } else {
@@ -20,7 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Вход — <?= SITE_NAME ?></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Вход — <?= htmlspecialchars(SITE_NAME) ?></title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
@@ -29,13 +38,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h1 class="text-3xl font-bold text-center mb-8">Вход</h1>
 
     <?php if ($error): ?>
-      <p class="text-red-600 text-center mb-6"><?= $error ?></p>
+      <p class="text-red-600 text-center mb-6 bg-red-50 p-3 rounded"><?= htmlspecialchars($error) ?></p>
     <?php endif; ?>
 
     <form method="POST" class="space-y-6">
       <div>
         <label class="block text-gray-700 mb-2">Логин</label>
-        <input type="text" name="username" required class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input type="text" name="username" required autofocus class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
       </div>
 
       <div>
@@ -43,12 +52,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <input type="password" name="password" required class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
       </div>
 
-      <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition">
+      <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">
         Войти
       </button>
     </form>
 
-    <p class="text-center mt-6">
+    <p class="text-center mt-6 text-gray-600">
       Нет аккаунта? <a href="register.php" class="text-blue-600 hover:underline">Зарегистрироваться</a>
     </p>
   </div>

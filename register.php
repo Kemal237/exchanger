@@ -1,5 +1,11 @@
 <?php
-require 'auth.php';
+// register.php
+
+require_once 'config.php';
+require_once 'db.php';
+require_once 'auth.php';
+
+// session_start() уже в auth.php — не дублируем
 
 $error = $success = '';
 
@@ -9,12 +15,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     $confirm  = $_POST['confirm'] ?? '';
 
-    if (strlen($password) < 6) {
+    if (empty($username) || empty($email) || empty($password)) {
+        $error = 'Заполните все поля';
+    } elseif (strlen($password) < 6) {
         $error = 'Пароль должен быть минимум 6 символов';
     } elseif ($password !== $confirm) {
         $error = 'Пароли не совпадают';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Некорректный email';
     } elseif (register($username, $email, $password)) {
-        $success = 'Регистрация успешна! Теперь можете <a href="login.php" class="text-blue-600">войти</a>';
+        $success = 'Регистрация успешна! Теперь можете <a href="login.php" class="text-blue-600 underline">войти</a>';
     } else {
         $error = 'Логин или email уже занят';
     }
@@ -25,7 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Регистрация — <?= SITE_NAME ?></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Регистрация — <?= htmlspecialchars(SITE_NAME) ?></title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
@@ -34,21 +45,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h1 class="text-3xl font-bold text-center mb-8">Регистрация</h1>
 
     <?php if ($error): ?>
-      <p class="text-red-600 text-center mb-6"><?= $error ?></p>
+      <p class="text-red-600 text-center mb-6 bg-red-50 p-3 rounded"><?= htmlspecialchars($error) ?></p>
     <?php endif; ?>
+
     <?php if ($success): ?>
-      <p class="text-green-600 text-center mb-6"><?= $success ?></p>
+      <p class="text-green-600 text-center mb-6 bg-green-50 p-3 rounded"><?= $success ?></p>
     <?php endif; ?>
 
     <form method="POST" class="space-y-6">
       <div>
         <label class="block text-gray-700 mb-2">Логин</label>
-        <input type="text" name="username" required class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input type="text" name="username" value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" required class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
       </div>
 
       <div>
         <label class="block text-gray-700 mb-2">Email</label>
-        <input type="email" name="email" required class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input type="email" name="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
       </div>
 
       <div>
@@ -61,12 +73,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <input type="password" name="confirm" required class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
       </div>
 
-      <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition">
+      <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">
         Зарегистрироваться
       </button>
     </form>
 
-    <p class="text-center mt-6">
+    <p class="text-center mt-6 text-gray-600">
       Уже есть аккаунт? <a href="login.php" class="text-blue-600 hover:underline">Войти</a>
     </p>
   </div>

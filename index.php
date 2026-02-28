@@ -40,10 +40,16 @@ $current_max = $limits[$give]['max'] ?? 100000;
   <header class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white py-4 shadow-lg">
     <div class="container mx-auto px-4 flex justify-between items-center">
       <h1 class="text-2xl font-bold"><?= htmlspecialchars(SITE_NAME) ?></h1>
-      <nav>
-        <a href="#" class="mx-3 hover:underline">Отзывы</a>
-        <a href="#" class="mx-3 hover:underline">Контакты</a>
-        <a href="rates.xml.php" target="_blank" class="mx-3 text-yellow-300 hover:underline">Курсы для BestChange</a>
+      <nav class="flex items-center space-x-6">
+        <a href="index.php" class="hover:underline">Главная</a>
+        <?php if (isset($_SESSION['user_id'])): ?>
+          <a href="profile.php" class="hover:underline">Профиль</a>
+          <a href="logout.php" class="hover:underline">Выйти</a>
+        <?php else: ?>
+          <a href="login.php" class="hover:underline">Вход</a>
+          <a href="register.php" class="hover:underline">Регистрация</a>
+        <?php endif; ?>
+        <a href="rates.xml.php" target="_blank" class="text-yellow-300 hover:underline">Курсы для BestChange</a>
       </nav>
     </div>
   </header>
@@ -86,7 +92,7 @@ $current_max = $limits[$give]['max'] ?? 100000;
           </button>
         </div>
 
-        <!-- Вы получаете -->
+        <!-- Вы получаете (теперь можно вводить желаемую сумму) -->
         <div class="flex flex-col">
           <label class="block text-lg font-medium mb-2">Вы получаете</label>
           <div class="flex border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
@@ -183,42 +189,48 @@ $current_max = $limits[$give]['max'] ?? 100000;
           }
         }
 
-        function recalculate() {
+        function recalculate(source = 'give') {
           const giveCur = giveSelect.value;
           const getCur  = getSelect.value;
 
-          // Обновляем резерв
           const reserveValue = reserves[getCur] ?? 0;
           if (reserveEl) {
             const digits = (getCur === 'BTC') ? 8 : 2;
             reserveEl.textContent = reserveValue.toLocaleString('ru-RU', {minimumFractionDigits: digits, maximumFractionDigits: digits});
           }
 
-          const giveVal = parseFloat(amountGive.value.replace(/ /g, '').replace(',', '.')) || 0;
+          let giveVal = parseFloat(amountGive.value.replace(/ /g, '').replace(',', '.')) || 0;
+          let getVal  = parseFloat(amountGet.value.replace(/ /g, '').replace(',', '.')) || 0;
 
           let rate = rates[giveCur]?.[getCur] ?? 0;
           if (rate === 0 && rates[getCur]?.[giveCur]) rate = 1 / rates[getCur][giveCur];
 
-          const receiveVal = giveVal * rate;
-
-          amountGet.value = receiveVal.toFixed(8).replace(/\.?0+$/, '');
+          if (source === 'get') {
+            // Вводили желаемую сумму получения → считаем, сколько нужно отдать
+            giveVal = getVal / rate;
+            amountGive.value = giveVal.toFixed(8).replace(/\.?0+$/, '');
+          } else {
+            // Вводили сумму отдачи → считаем получение
+            getVal = giveVal * rate;
+            amountGet.value = getVal.toFixed(8).replace(/\.?0+$/, '');
+          }
 
           validateButton();
         }
 
         // Слушатели
-        amountGive.addEventListener('input', recalculate);
-        amountGet.addEventListener('input', recalculate);
+        amountGive.addEventListener('input', () => recalculate('give'));
+        amountGet.addEventListener('input', () => recalculate('get'));
         giveSelect.addEventListener('change', () => {
           updateLimitText();
-          recalculate();
+          recalculate('give');
         });
-        getSelect.addEventListener('change', recalculate);
+        getSelect.addEventListener('change', () => recalculate('give'));
 
         document.getElementById('swap-btn').addEventListener('click', () => {
           [giveSelect.value, getSelect.value] = [getSelect.value, giveSelect.value];
           updateLimitText();
-          recalculate();
+          recalculate('give');
         });
 
         // Старт
@@ -227,7 +239,7 @@ $current_max = $limits[$give]['max'] ?? 100000;
       </script>
     </div>
 
-    <!-- Таблица -->
+    <!-- Таблица резервов и курсов -->
     <div class="bg-white rounded-xl shadow p-6">
       <h3 class="text-2xl font-bold mb-6">Резервы и курсы</h3>
       <div class="overflow-x-auto">
