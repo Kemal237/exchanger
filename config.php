@@ -31,23 +31,19 @@ function getRealRates() {
     
     $data = json_decode($json, true);
     
-    // Запасные значения на случай пропуска данных
     $result = [
         'tether'  => $data['tether']  ?? ['rub' => 76.70, 'usd' => 1.00, 'eur' => 0.848],
         'bitcoin' => $data['bitcoin'] ?? ['usd' => 67200, 'eur' => 57056],
     ];
     
-    // Дополняем USD/RUB и EUR/RUB через USDT (если нужно)
-    $result['usd'] = ['rub' => $result['tether']['rub']]; // USD ≈ USDT в RUB
+    $result['usd'] = ['rub' => $result['tether']['rub']];
     $result['eur'] = ['rub' => $result['usd']['rub'] / $result['tether']['eur']];
     
     return $result;
 }
 
-// Получаем все реальные курсы одним запросом
 $real_rates = getRealRates();
 
-// Извлекаем нужные значения
 $market_usdt_rub = $real_rates['tether']['rub'];
 $market_usdt_usd = $real_rates['tether']['usd'];
 $market_usdt_eur = $real_rates['tether']['eur'];
@@ -55,48 +51,37 @@ $market_btc_usd  = $real_rates['bitcoin']['usd'];
 $market_btc_eur  = $real_rates['bitcoin']['eur'];
 $market_usd_rub  = $real_rates['usd']['rub'];
 $market_eur_rub  = $real_rates['eur']['rub'];
-$market_usd_eur  = $market_usdt_eur;      // USD ≈ USDT
+$market_usd_eur  = $market_usdt_eur;
 $market_eur_usd  = 1 / $market_usdt_eur;
 
-// Наценка 2.5%
 $markup_sell = 1.025;
 $markup_buy  = 0.975;
 
-// Массив курсов (все пары теперь используют реальные данные)
 $rates = [
-    // USDT_TRC20 как отдаваемая
     'USDT_TRC20' => [
         'RUB' => round($market_usdt_rub * $markup_sell, 2),
         'USD' => round($market_usdt_usd * $markup_sell, 4),
         'EUR' => round($market_usdt_eur * $markup_sell, 4),
         'BTC' => round(1 / $market_btc_usd * $markup_buy, 8),
     ],
-
-    // RUB как отдаваемая
     'RUB' => [
         'USDT_TRC20' => round(1 / ($market_usdt_rub * $markup_buy), 6),
         'USD'        => round(1 / ($market_usd_rub * $markup_buy), 6),
         'EUR'        => round(1 / ($market_eur_rub * $markup_buy), 6),
         'BTC'        => round(1 / ($market_btc_usd * $market_usd_rub * $markup_buy), 8),
     ],
-
-    // BTC как отдаваемая
     'BTC' => [
         'USDT_TRC20' => round($market_btc_usd * $markup_sell, 0),
         'USD'        => round($market_btc_usd * $markup_sell, 0),
         'RUB'        => round($market_btc_usd * $market_usd_rub * $markup_sell, 0),
         'EUR'        => round($market_btc_eur * $markup_sell, 0),
     ],
-
-    // USD как отдаваемая
     'USD' => [
         'USDT_TRC20' => round(1 / ($market_usdt_usd * $markup_buy), 4),
         'RUB'        => round($market_usd_rub * $markup_sell, 2),
         'EUR'        => round($market_usd_eur * $markup_sell, 4),
         'BTC'        => round(1 / ($market_btc_usd * $markup_buy), 8),
     ],
-
-    // EUR как отдаваемая
     'EUR' => [
         'USDT_TRC20' => round(1 / ($market_usdt_eur * $markup_buy), 4),
         'RUB'        => round($market_eur_rub * $markup_sell, 2),
@@ -105,12 +90,16 @@ $rates = [
     ],
 ];
 
-// limits и reserves остаются как есть
+// Лимиты теперь задаются здесь — для каждой валюты отдельно
 $limits = [
-    'USDT_TRC20' => ['min' => 50, 'max' => 50000],
-    'RUB'        => ['min' => 5000, 'max' => 2000000],
+    'USDT_TRC20' => ['min' => 50,    'max' => 55000],
+    'RUB'        => ['min' => 5000,  'max' => 2000000],
+    'BTC'        => ['min' => 0.001, 'max' => 10],
+    'USD'        => ['min' => 50,    'max' => 60000],
+    'EUR'        => ['min' => 50,    'max' => 70000],
 ];
 
+// Резервы
 $reserves = [
     'USDT_TRC20' => 1245678.45,
     'RUB'        => 45892000,
