@@ -1,6 +1,6 @@
 <?php
 
-define('SITE_NAME', 'BekirovSwap');
+define('SITE_NAME', 'Swap');
 define('SITE_URL', 'https://cr873507.tw1.ru');
 define('ADMIN_EMAIL', 'admin@your-domain.com');
 
@@ -14,7 +14,7 @@ function getRealRates() {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);  // временно — верни true, если работает
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'BekirovSwap/1.0 (compatible; +https://cr873507.tw1.ru)');
+    curl_setopt($ch, CURLOPT_USERAGENT, 'Swap/1.0 (compatible; +https://cr873507.tw1.ru)');
     
     $json = curl_exec($ch);
     $curl_error = curl_error($ch);
@@ -114,7 +114,7 @@ $limits = [
 $reserves = [
     'USDT_TRC20' => 1245678.45,
     'RUB'        => 45892000,
-    'BTC'        => 12.784,
+    'BTC'        => 12.78451637,
     'USD'        => 101233,
     'EUR'        => 300002,
 ];
