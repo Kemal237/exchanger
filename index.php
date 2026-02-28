@@ -78,6 +78,7 @@ $max = $limits[$give]['max'] ?? 100000;
 
             <input type="<?= ($give === 'BTC') ? 'text' : 'number' ?>"
                    name="amount_give"
+                   id="amount-give"
                    step="<?= ($give === 'BTC') ? 'any' : '0.01' ?>"
                    value="<?= htmlspecialchars($amount_give) ?>"
                    class="w-1/2 p-4 text-2xl font-bold focus:outline-none"
@@ -88,15 +89,9 @@ $max = $limits[$give]['max'] ?? 100000;
                    placeholder="<?= ($give === 'BTC') ? '0,00000000' : '100,00' ?>"
                    title="<?= ($give === 'BTC') ? 'Введите число, начиная с 0 для дробной части' : 'Введите сумму' ?>">
           </div>
-          <div class="relative">
-            <p class="text-sm text-gray-500 mt-1">Резерв: <strong id="reserve-give"><?= number_format($reserves[$give] ?? 0, ($give === 'BTC' ? 8 : 2)) ?></strong></p>
-            <p id="reserve-warning" class="absolute left-0 top-full mt-1 text-xs text-red-600 font-medium opacity-0">
-              Недостаточно в резерве!
-            </p>
-          </div>
         </div>
 
-        <!-- Кнопка поменять местами — ровно посередине -->
+        <!-- Кнопка поменять местами -->
         <div class="flex items-center justify-center">
           <button type="button" id="swap-currencies"
                   class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 flex items-center justify-center shadow-md transition transform hover:scale-110 focus:outline-none">
@@ -122,12 +117,25 @@ $max = $limits[$give]['max'] ?? 100000;
                 </option>
               <?php endforeach; ?>
             </select>
-            <div class="w-1/2 p-4 text-2xl font-bold text-green-600" id="receive-amount">
-              <?php
-              $format_digits = ($get === 'BTC') ? 8 : 2;
-              echo number_format($amount_get, $format_digits, '.', ' ');
-              ?>
-            </div>
+
+            <input type="<?= ($get === 'BTC') ? 'text' : 'number' ?>"
+                   name="amount_get"
+                   id="amount-get"
+                   step="<?= ($get === 'BTC') ? 'any' : '0.01' ?>"
+                   value="<?= htmlspecialchars($amount_get) ?>"
+                   class="w-1/2 p-4 text-2xl font-bold focus:outline-none border-l-0 text-green-600"
+                   min="<?= htmlspecialchars($min) ?>"
+                   required
+                   inputmode="<?= ($get === 'BTC') ? 'decimal' : 'numeric' ?>"
+                   pattern="<?= ($get === 'BTC') ? '^(0|[1-9]\\d*)([.,]\\d*)?$' : '[0-9]+([.][0-9]{1,2})?' ?>"
+                   placeholder="<?= ($get === 'BTC') ? '0,00000000' : '100,00' ?>"
+                   title="Введите желаемую сумму получения">
+          </div>
+          <div class="relative">
+            <p class="text-sm text-gray-500 mt-1">Резерв: <strong id="reserve-get"><?= number_format($reserves[$get] ?? 0, ($get === 'BTC' ? 8 : 2)) ?></strong></p>
+            <p id="reserve-warning" class="absolute left-0 top-full mt-1 text-xs text-red-600 font-medium opacity-0 transition-opacity duration-300">
+              Недостаточно в резерве!
+            </p>
           </div>
         </div>
 
@@ -194,28 +202,26 @@ $max = $limits[$give]['max'] ?? 100000;
   </footer>
 
   <script>
-    const amountGiveInput = document.querySelector('input[name="amount_give"]');
+    const amountGiveInput = document.getElementById('amount-give');
+    const amountGetInput  = document.getElementById('amount-get');
     const giveSelect      = document.querySelector('select[name="give_currency"]');
     const getSelect       = document.querySelector('select[name="get_currency"]');
-    const resultField     = document.querySelector('#receive-amount');
-    const reserveGive     = document.getElementById('reserve-give');
+    const reserveGet      = document.getElementById('reserve-get');
     const reserveWarning  = document.getElementById('reserve-warning');
 
-    // Обработка ввода + ограничение по резерву + анимация
-    amountGiveInput.addEventListener('input', function(e) {
-      let val = this.value.trim();
+    let isUpdating = false;
 
-      val = val.replace(',', '.');
+    // Обработка ввода в "Вы отдаёте"
+    amountGiveInput.addEventListener('input', function() {
+      if (isUpdating) return;
+      isUpdating = true;
+
+      let val = this.value.trim().replace(',', '.');
 
       if (giveSelect.value === 'BTC') {
-        if (val === '.' || val === ',') {
-          val = '0.';
-        } else if (val.startsWith('.') || val.startsWith(',')) {
-          val = '0' + val;
-        }
-
+        if (val === '.' || val === ',') val = '0.';
+        else if (val.startsWith('.') || val.startsWith(',')) val = '0' + val;
         val = val.replace(/\.{2,}/g, '.');
-
         const parts = val.split('.');
         if (parts.length > 1 && parts[1].length > 8) {
           parts[1] = parts[1].slice(0, 8);
@@ -223,75 +229,121 @@ $max = $limits[$give]['max'] ?? 100000;
         }
       }
 
-      // Ограничение суммы текущим резервом + анимация
-      const currentReserve = reserves[giveSelect.value] ?? Infinity;
-      const numericVal = parseFloat(val) || 0;
-      if (numericVal > currentReserve) {
-        val = currentReserve.toString();
+      const amount = parseFloat(val) || 0;
+
+      const getCur = getSelect.value;
+      const receiveReserve = reserves[getCur] ?? Infinity;
+      const rate = rates[giveSelect.value]?.[getCur] ?? 1;
+      const maxGive = receiveReserve / rate;
+
+      if (amount > maxGive) {
+        val = maxGive.toFixed(8).replace(/\.?0+$/, '');
         this.classList.add('border-red-500', 'shake-animation');
-        if (reserveWarning) {
-          reserveWarning.classList.add('show');
-        }
+        if (reserveWarning) reserveWarning.classList.add('show');
         setTimeout(() => {
           this.classList.remove('border-red-500', 'shake-animation');
-          if (reserveWarning) {
-            reserveWarning.classList.remove('show');
-          }
+          if (reserveWarning) reserveWarning.classList.remove('show');
         }, 800);
       }
 
-      if (this.value !== val) {
-        this.value = val;
+      if (this.value !== val) this.value = val;
+
+      recalculate('give');
+
+      isUpdating = false;
+    });
+
+    // Обработка ввода в "Вы получаете"
+    amountGetInput.addEventListener('input', function() {
+      if (isUpdating) return;
+      isUpdating = true;
+
+      let val = this.value.trim().replace(',', '.');
+
+      if (getSelect.value === 'BTC') {
+        if (val === '.' || val === ',') val = '0.';
+        else if (val.startsWith('.') || val.startsWith(',')) val = '0' + val;
+        val = val.replace(/\.{2,}/g, '.');
+        const parts = val.split('.');
+        if (parts.length > 1 && parts[1].length > 8) {
+          parts[1] = parts[1].slice(0, 8);
+          val = parts.join('.');
+        }
       }
 
-      recalculate();
+      const amount = parseFloat(val) || 0;
+
+      const getCur = getSelect.value;
+      const receiveReserve = reserves[getCur] ?? Infinity;
+
+      if (amount > receiveReserve) {
+        val = receiveReserve.toFixed(8).replace(/\.?0+$/, '');
+        this.classList.add('border-red-500', 'shake-animation');
+        if (reserveWarning) reserveWarning.classList.add('show');
+        setTimeout(() => {
+          this.classList.remove('border-red-500', 'shake-animation');
+          if (reserveWarning) reserveWarning.classList.remove('show');
+        }, 800);
+      }
+
+      if (this.value !== val) this.value = val;
+
+      recalculate('get');
+
+      isUpdating = false;
     });
 
     // Кнопка поменять местами
     document.getElementById('swap-currencies').addEventListener('click', function() {
-      const giveSelect = document.querySelector('select[name="give_currency"]');
-      const getSelect  = document.querySelector('select[name="get_currency"]');
-
       const temp = giveSelect.value;
       giveSelect.value = getSelect.value;
       getSelect.value = temp;
 
-      recalculate();
+      recalculate('give');
     });
 
-    function recalculate() {
+    function recalculate(source = 'give') {
       const giveCur = giveSelect.value;
       const getCur  = getSelect.value;
 
-      // Обновляем резерв под "Вы отдаёте"
-      const reserveValue = reserves[giveCur] ?? 0;
-      if (reserveGive) {
-        const reserveDigits = (giveCur === 'BTC') ? 8 : 2;
-        reserveGive.textContent = reserveValue.toLocaleString('ru-RU', {
+      // Обновляем резерв под "Вы получаете"
+      const reserveValue = reserves[getCur] ?? 0;
+      if (reserveGet) {
+        const reserveDigits = (getCur === 'BTC') ? 8 : 2;
+        reserveGet.textContent = reserveValue.toLocaleString('ru-RU', {
           minimumFractionDigits: reserveDigits,
           maximumFractionDigits: reserveDigits
         });
       }
 
-      // Расчёт суммы
-      let amountStr = amountGiveInput.value.replace(',', '.');
-      const amount  = parseFloat(amountStr) || 0;
+      let amount;
+      if (source === 'get') {
+        let amountStr = amountGetInput.value.replace(',', '.');
+        amount = parseFloat(amountStr) || 0;
 
-      let rate = rates[giveCur]?.[getCur] ?? 0;
-      if (rate === 0 && rates[getCur]?.[giveCur]) {
-        rate = 1 / rates[getCur][giveCur];
+        let rate = rates[giveCur]?.[getCur] ?? 0;
+        if (rate === 0 && rates[getCur]?.[giveCur]) {
+          rate = 1 / rates[getCur][giveCur];
+        }
+
+        const giveAmount = amount / rate;
+        amountGiveInput.value = giveAmount.toFixed(8).replace(/\.?0+$/, '');
+      } else {
+        let amountStr = amountGiveInput.value.replace(',', '.');
+        amount = parseFloat(amountStr) || 0;
+
+        let rate = rates[giveCur]?.[getCur] ?? 0;
+        if (rate === 0 && rates[getCur]?.[giveCur]) {
+          rate = 1 / rates[getCur][giveCur];
+        }
+
+        const receiveAmount = amount * rate;
+        amountGetInput.value = receiveAmount.toFixed(8).replace(/\.?0+$/, '');
       }
-
-      const received = amount * rate;
-
-      const digits = (getCur === 'BTC') ? 8 : 2;
-      resultField.textContent = received.toLocaleString('ru-RU', {
-        minimumFractionDigits: digits,
-        maximumFractionDigits: digits
-      });
     }
 
-    amountGiveInput.addEventListener('input', recalculate);
+    amountGiveInput.addEventListener('input', () => recalculate('give'));
+    amountGetInput.addEventListener('input', () => recalculate('get'));
     giveSelect.addEventListener('change', recalculate);
     getSelect.addEventListener('change', recalculate);
 
