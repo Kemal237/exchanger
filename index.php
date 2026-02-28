@@ -20,15 +20,34 @@ $max = $limits[$give]['max'] ?? 100000;
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title><?= SITE_NAME ?> — Обмен USDT, BTC, RUB, USD</title>
+  <title><?= htmlspecialchars(SITE_NAME) ?> — Обмен USDT, BTC, RUB, USD</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      50% { transform: translateX(4px); }
+      75% { transform: translateX(-4px); }
+      100% { transform: translateX(0); }
+    }
+    .shake-animation {
+      animation: shake 0.4s ease-in-out;
+    }
+    #reserve-warning {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    #reserve-warning.show {
+      opacity: 1;
+    }
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-900">
 
   <header class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white py-4 shadow-lg">
     <div class="container mx-auto px-4 flex justify-between items-center">
-      <h1 class="text-2xl font-bold"><?= SITE_NAME ?></h1>
+      <h1 class="text-2xl font-bold"><?= htmlspecialchars(SITE_NAME) ?></h1>
       <nav>
         <a href="#" class="mx-3 hover:underline">Отзывы</a>
         <a href="#" class="mx-3 hover:underline">Контакты</a>
@@ -51,8 +70,8 @@ $max = $limits[$give]['max'] ?? 100000;
           <div class="flex border border-gray-300 rounded-lg overflow-hidden">
             <select name="give_currency" class="w-1/2 p-4 bg-gray-50 text-xl focus:outline-none">
               <?php foreach (array_keys($rates) as $cur): ?>
-                <option value="<?= $cur ?>" <?= $cur === $give ? 'selected' : '' ?>>
-                  <?= str_replace('_', ' ', $cur) ?>
+                <option value="<?= htmlspecialchars($cur) ?>" <?= $cur === $give ? 'selected' : '' ?>>
+                  <?= htmlspecialchars(str_replace('_', ' ', $cur)) ?>
                 </option>
               <?php endforeach; ?>
             </select>
@@ -60,16 +79,21 @@ $max = $limits[$give]['max'] ?? 100000;
             <input type="<?= ($give === 'BTC') ? 'text' : 'number' ?>"
                    name="amount_give"
                    step="<?= ($give === 'BTC') ? 'any' : '0.01' ?>"
-                   value="<?= $amount_give ?>"
+                   value="<?= htmlspecialchars($amount_give) ?>"
                    class="w-1/2 p-4 text-2xl font-bold focus:outline-none"
-                   min="<?= $min ?>"
+                   min="<?= htmlspecialchars($min) ?>"
                    required
                    inputmode="<?= ($give === 'BTC') ? 'decimal' : 'numeric' ?>"
                    pattern="<?= ($give === 'BTC') ? '^(0|[1-9]\\d*)([.,]\\d*)?$' : '[0-9]+([.][0-9]{1,2})?' ?>"
                    placeholder="<?= ($give === 'BTC') ? '0,00000000' : '100,00' ?>"
                    title="<?= ($give === 'BTC') ? 'Введите число, начиная с 0 для дробной части' : 'Введите сумму' ?>">
           </div>
-          <p class="text-sm text-gray-500 mt-1">Резерв: <strong id="reserve-give"><?= number_format($reserves[$give] ?? 0, 8) ?></strong></p>
+          <div class="relative">
+            <p class="text-sm text-gray-500 mt-1">Резерв: <strong id="reserve-give"><?= number_format($reserves[$give] ?? 0, ($give === 'BTC' ? 8 : 2)) ?></strong></p>
+            <p id="reserve-warning" class="absolute left-0 top-full mt-1 text-xs text-red-600 font-medium opacity-0">
+              Недостаточно в резерве!
+            </p>
+          </div>
         </div>
 
         <!-- Кнопка поменять местами — ровно посередине -->
@@ -93,8 +117,8 @@ $max = $limits[$give]['max'] ?? 100000;
                   ...array_values(array_map('array_keys', $rates))
               ));
               foreach ($all_currencies as $cur): ?>
-                <option value="<?= $cur ?>" <?= $cur === $get ? 'selected' : '' ?>>
-                  <?= str_replace('_', ' ', $cur) ?>
+                <option value="<?= htmlspecialchars($cur) ?>" <?= $cur === $get ? 'selected' : '' ?>>
+                  <?= htmlspecialchars(str_replace('_', ' ', $cur)) ?>
                 </option>
               <?php endforeach; ?>
             </select>
@@ -120,8 +144,8 @@ $max = $limits[$give]['max'] ?? 100000;
 
       <!-- Передача данных в JS -->
       <script>
-        const rates = <?php echo json_encode($rates); ?>;
-        const reserves = <?php echo json_encode($reserves); ?>;
+        const rates = <?= json_encode($rates) ?>;
+        const reserves = <?= json_encode($reserves) ?>;
       </script>
     </div>
 
@@ -142,8 +166,8 @@ $max = $limits[$give]['max'] ?? 100000;
             <?php foreach ($rates as $from => $to_list): ?>
               <?php foreach ($to_list as $to => $rate): ?>
                 <tr class="border-t hover:bg-gray-50">
-                  <td class="p-4 font-medium"><?= str_replace('_', ' ', $from) ?></td>
-                  <td class="p-4 font-medium"><?= str_replace('_', ' ', $to) ?></td>
+                  <td class="p-4 font-medium"><?= htmlspecialchars(str_replace('_', ' ', $from)) ?></td>
+                  <td class="p-4 font-medium"><?= htmlspecialchars(str_replace('_', ' ', $to)) ?></td>
                   <td class="p-4"><?= number_format($rate, ($to === 'BTC' ? 8 : 4)) ?></td>
                   <td class="p-4 text-green-600">
                     <?php
@@ -164,8 +188,8 @@ $max = $limits[$give]['max'] ?? 100000;
 
   <footer class="bg-gray-800 text-white py-8 mt-16">
     <div class="container mx-auto px-4 text-center">
-      <p>© <?= date('Y') ?> <?= SITE_NAME ?>. Все права защищены.</p>
-      <p class="mt-2 text-sm">Политика AML/KYC | Правила обмена | Контакты: <?= ADMIN_EMAIL ?></p>
+      <p>© <?= date('Y') ?> <?= htmlspecialchars(SITE_NAME) ?>. Все права защищены.</p>
+      <p class="mt-2 text-sm">Политика AML/KYC | Правила обмена | Контакты: <?= htmlspecialchars(ADMIN_EMAIL) ?></p>
     </div>
   </footer>
 
@@ -175,14 +199,15 @@ $max = $limits[$give]['max'] ?? 100000;
     const getSelect       = document.querySelector('select[name="get_currency"]');
     const resultField     = document.querySelector('#receive-amount');
     const reserveGive     = document.getElementById('reserve-give');
+    const reserveWarning  = document.getElementById('reserve-warning');
 
-    // Обработка ввода только для BTC
+    // Обработка ввода + ограничение по резерву + анимация
     amountGiveInput.addEventListener('input', function(e) {
+      let val = this.value.trim();
+
+      val = val.replace(',', '.');
+
       if (giveSelect.value === 'BTC') {
-        let val = this.value.trim();
-
-        val = val.replace(',', '.');
-
         if (val === '.' || val === ',') {
           val = '0.';
         } else if (val.startsWith('.') || val.startsWith(',')) {
@@ -196,10 +221,27 @@ $max = $limits[$give]['max'] ?? 100000;
           parts[1] = parts[1].slice(0, 8);
           val = parts.join('.');
         }
+      }
 
-        if (this.value !== val) {
-          this.value = val;
+      // Ограничение суммы текущим резервом + анимация
+      const currentReserve = reserves[giveSelect.value] ?? Infinity;
+      const numericVal = parseFloat(val) || 0;
+      if (numericVal > currentReserve) {
+        val = currentReserve.toString();
+        this.classList.add('border-red-500', 'shake-animation');
+        if (reserveWarning) {
+          reserveWarning.classList.add('show');
         }
+        setTimeout(() => {
+          this.classList.remove('border-red-500', 'shake-animation');
+          if (reserveWarning) {
+            reserveWarning.classList.remove('show');
+          }
+        }, 800);
+      }
+
+      if (this.value !== val) {
+        this.value = val;
       }
 
       recalculate();
