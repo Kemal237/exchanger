@@ -43,70 +43,80 @@ $max = $limits[$give]['max'] ?? 100000;
     <div class="bg-white rounded-2xl shadow-xl p-8 mb-10">
       <h2 class="text-3xl font-bold text-center mb-8">Обменять криптовалюту быстро и выгодно</h2>
 
-      <form action="create-order.php" method="POST" class="grid md:grid-cols-2 gap-8">
+     <form action="create-order.php" method="POST" class="grid md:grid-cols-[1fr_auto_1fr] gap-4 md:gap-6 items-stretch">
 
-        <!-- Вы отдаёте -->
-        <div>
-          <label class="block text-lg font-medium mb-2">Вы отдаёте</label>
-          <div class="flex border border-gray-300 rounded-lg overflow-hidden">
-            <select name="give_currency" class="w-1/2 p-4 bg-gray-50 text-xl focus:outline-none">
-              <?php foreach (array_keys($rates) as $cur): ?>
-                <option value="<?= $cur ?>" <?= $cur === $give ? 'selected' : '' ?>>
-                  <?= str_replace('_', ' ', $cur) ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
+  <!-- Вы отдаёте -->
+  <div class="flex flex-col">
+    <label class="block text-lg font-medium mb-2">Вы отдаёте</label>
+    <div class="flex border border-gray-300 rounded-lg overflow-hidden">
+      <select name="give_currency" class="w-1/2 p-4 bg-gray-50 text-xl focus:outline-none">
+        <?php foreach (array_keys($rates) as $cur): ?>
+          <option value="<?= $cur ?>" <?= $cur === $give ? 'selected' : '' ?>>
+            <?= str_replace('_', ' ', $cur) ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
 
-            <input type="<?= ($give === 'BTC') ? 'text' : 'number' ?>"
-                   name="amount_give"
-                   step="<?= ($give === 'BTC') ? 'any' : '0.01' ?>"
-                   value="<?= $amount_give ?>"
-                   class="w-1/2 p-4 text-2xl font-bold focus:outline-none"
-                   min="<?= $min ?>"
-                   required
-                   inputmode="<?= ($give === 'BTC') ? 'decimal' : 'numeric' ?>"
-                   pattern="<?= ($give === 'BTC') ? '^(0|[1-9]\\d*)([.,]\\d*)?$' : '[0-9]+([.][0-9]{1,2})?' ?>"
-                   placeholder="<?= ($give === 'BTC') ? '0,00000000' : '100,00' ?>"
-                   title="<?= ($give === 'BTC') ? 'Введите число, начиная с 0 для дробной части (можно с запятой или точкой)' : 'Введите сумму' ?>">
-          </div>
-          <p class="text-sm text-gray-500 mt-1">Резерв: <strong><?= number_format($reserves[$give] ?? 0, 2) ?></strong></p>
-        </div>
+      <input type="<?= ($give === 'BTC') ? 'text' : 'number' ?>"
+             name="amount_give"
+             step="<?= ($give === 'BTC') ? 'any' : '0.01' ?>"
+             value="<?= $amount_give ?>"
+             class="w-1/2 p-4 text-2xl font-bold focus:outline-none"
+             min="<?= $min ?>"
+             required
+             inputmode="<?= ($give === 'BTC') ? 'decimal' : 'numeric' ?>"
+             pattern="<?= ($give === 'BTC') ? '^(0|[1-9]\\d*)([.,]\\d*)?$' : '[0-9]+([.][0-9]{1,2})?' ?>"
+             placeholder="<?= ($give === 'BTC') ? '0,00000000' : '100,00' ?>"
+             title="<?= ($give === 'BTC') ? 'Введите число, начиная с 0 для дробной части' : 'Введите сумму' ?>">
+    </div>
+    <p class="text-sm text-gray-500 mt-1">Резерв: <strong><?= number_format($reserves[$give] ?? 0, 2) ?></strong></p>
+  </div>
 
-        <!-- Вы получаете -->
-        <div>
-          <label class="block text-lg font-medium mb-2">Вы получаете</label>
-          <div class="flex border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
-            <select name="get_currency" class="w-1/2 p-4 bg-gray-50 text-xl focus:outline-none">
-              <?php
-              $all_currencies = array_unique(array_merge(
-                  array_keys($rates),
-                  ...array_values(array_map('array_keys', $rates))
-              ));
-              foreach ($all_currencies as $cur): ?>
-                <option value="<?= $cur ?>" <?= $cur === $get ? 'selected' : '' ?>>
-                  <?= str_replace('_', ' ', $cur) ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-            <div class="w-1/2 p-4 text-2xl font-bold text-green-600">
-              <?php
-              $format_digits = ($get === 'BTC') ? 8 : 2;
-              echo number_format($amount_get, $format_digits, '.', ' ');
-              ?>
-            </div>
-          </div>
-        </div>
+  <!-- Кнопка поменять местами — ровно по центру -->
+  <div class="flex items-center justify-center">
+    <button type="button" id="swap-currencies"
+            class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 flex items-center justify-center shadow-md transition transform hover:scale-110 focus:outline-none">
+      <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+      </svg>
+    </button>
+  </div>
 
-        <div class="md:col-span-2 text-center mt-6">
-          <button type="submit" class="bg-green-600 hover:bg-green-700 text-white text-xl font-bold py-5 px-12 rounded-xl shadow-lg transition">
-            Обменять →
-          </button>
-          <p class="mt-4 text-sm text-gray-600">
-            Минимум: <?= number_format($min, 2) ?> • Максимум: <?= number_format($max, 2) ?>
-          </p>
-        </div>
+  <!-- Вы получаете -->
+  <div class="flex flex-col">
+    <label class="block text-lg font-medium mb-2">Вы получаете</label>
+    <div class="flex border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
+      <select name="get_currency" class="w-1/2 p-4 bg-gray-50 text-xl focus:outline-none">
+        <?php
+        $all_currencies = array_unique(array_merge(
+            array_keys($rates),
+            ...array_values(array_map('array_keys', $rates))
+        ));
+        foreach ($all_currencies as $cur): ?>
+          <option value="<?= $cur ?>" <?= $cur === $get ? 'selected' : '' ?>>
+            <?= str_replace('_', ' ', $cur) ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
+      <div class="w-1/2 p-4 text-2xl font-bold text-green-600">
+        <?php
+        $format_digits = ($get === 'BTC') ? 8 : 2;
+        echo number_format($amount_get, $format_digits, '.', ' ');
+        ?>
+      </div>
+    </div>
+  </div>
 
-      </form>
+  <div class="md:col-span-3 text-center mt-6">
+    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white text-xl font-bold py-5 px-12 rounded-xl shadow-lg transition">
+      Обменять →
+    </button>
+    <p class="mt-4 text-sm text-gray-600">
+      Минимум: <?= number_format($min, 2) ?> • Максимум: <?= number_format($max, 2) ?>
+    </p>
+  </div>
+
+</form>
 
       <!-- Передача данных в JS -->
       <script>
@@ -152,7 +162,21 @@ $max = $limits[$give]['max'] ?? 100000;
       <p class="mt-2 text-sm">Политика AML/KYC | Правила обмена | Контакты: <?= ADMIN_EMAIL ?></p>
     </div>
   </footer>
+  <script>
+    // Кнопка поменять местами
+    document.getElementById('swap-currencies').addEventListener('click', function() {
+      const giveSelect = document.querySelector('select[name="give_currency"]');
+      const getSelect  = document.querySelector('select[name="get_currency"]');
 
+      // Меняем значения местами
+      const temp = giveSelect.value;
+      giveSelect.value = getSelect.value;
+      getSelect.value = temp;
+
+      // Запускаем пересчёт
+      recalculate();
+    });
+  </script>
   <script>
     const amountGiveInput = document.querySelector('input[name="amount_give"]');
     const giveSelect      = document.querySelector('select[name="give_currency"]');
