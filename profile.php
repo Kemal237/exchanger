@@ -66,21 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body class="bg-gray-100">
 
-  <!-- Шапка -->
-  <header class="bg-blue-800 text-white py-4">
-    <div class="container mx-auto px-4 flex justify-between items-center">
-      <h1 class="text-2xl font-bold"><?= htmlspecialchars(SITE_NAME ?? 'Swap') ?></h1>
-      <nav class="space-x-6 flex items-center">
-        <a href="index.php" class="hover:underline">Главная</a>
-        
-        <?php if (isAdmin()): ?>
-          <a href="/admin/login.php" class="text-yellow-300 font-bold hover:underline">Админ-панель</a>
-        <?php endif; ?>
-        
-        <a href="logout.php" class="hover:underline">Выйти</a>
-      </nav>
-    </div>
-  </header>
+  <?php require_once 'header.php'; ?>
 
   <main class="container mx-auto px-4 py-10 max-w-5xl">
 

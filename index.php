@@ -80,6 +80,9 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
           <a href="index.php" class="hover:underline">Главная</a>
         <?php endif; ?>
 
+        <!-- Новая ссылка "Резервы и курсы" перед Профилем/Входом -->
+        <a href="rates.php" class="hover:underline">Резервы и курсы</a>
+
         <?php if (isLoggedIn()): ?>
           <a href="profile.php" class="hover:underline font-medium">Профиль</a>
           <a href="logout.php" class="hover:underline text-red-300 hover:text-red-400">Выйти</a>

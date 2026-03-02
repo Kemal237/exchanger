@@ -1,9 +1,6 @@
 <?php
 require_once 'config.php';
 require_once 'auth.php'; // для сессии и isLoggedIn(), если нужно
-
-// Проверяем, находимся ли мы на главной странице (для навигации)
-$is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
 ?>
 
 <!DOCTYPE html>
@@ -30,24 +27,7 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
 </head>
 <body class="bg-gray-50 text-gray-900">
 
-  <header class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white py-4 shadow-lg">
-    <div class="container mx-auto px-4 flex justify-between items-center">
-      <h1 class="text-2xl font-bold"><?= htmlspecialchars(SITE_NAME) ?></h1>
-      <nav class="flex items-center space-x-6">
-        <a href="index.php" class="hover:underline">Главная</a>
-
-        <?php if (isLoggedIn()): ?>
-          <a href="profile.php" class="hover:underline font-medium">Профиль</a>
-          <a href="logout.php" class="hover:underline text-red-300 hover:text-red-400">Выйти</a>
-        <?php else: ?>
-          <a href="login.php" class="hover:underline">Вход</a>
-          <a href="register.php" class="hover:underline">Регистрация</a>
-        <?php endif; ?>
-
-        <a href="rates.xml.php" target="_blank" class="text-yellow-300 hover:underline">Курсы для BestChange</a>
-      </nav>
-    </div>
-  </header>
+  <?php require_once 'header.php'; ?>
 
   <main class="container mx-auto px-4 py-12 max-w-6xl">
 
