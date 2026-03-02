@@ -1,5 +1,9 @@
 <?php
-require 'config.php';
+if (file_exists(__DIR__ . '/config.php')) {
+    require __DIR__ . '/config.php';
+} else {
+    die('Ошибка: файл config.php не найден в папке ' . __DIR__);
+}
 session_start();
 
 $order = $_SESSION['order'] ?? null;

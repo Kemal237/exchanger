@@ -1,18 +1,31 @@
 <?php
-require 'config.php';
+require_once 'config.php';
+require_once 'auth.php';  // запускает session_start() и даёт isLoggedIn()
 
 $give = $_GET['give'] ?? 'USDT_TRC20';
 $get  = $_GET['get']  ?? 'RUB';
 
 $amount_give = floatval($_GET['amount'] ?? 100);
+
+// Получаем курс (с защитой от 0)
 $rate = $rates[$give][$get] ?? 0;
-if ($rate === 0 && isset($rates[$get][$give])) {
+if ($rate <= 0 && isset($rates[$get][$give]) && $rates[$get][$give] > 0) {
     $rate = 1 / $rates[$get][$give];
 }
 $amount_get = $amount_give * $rate;
 
+// Проверяем, реальный ли курс
+$rate_note = '';
+if ($rate <= 0 || $rate < 0.0001) {  // очень маленький курс тоже считаем ошибкой
+    $rate_note = '⚠️ Реальный курс временно недоступен (API CoinGecko не ответил). Показан примерный/старый курс. Обновите страницу позже.';
+    error_log("[" . date('Y-m-d H:i:s') . "] CoinGecko API не вернул реальный курс для $give → $get. Использован fallback или 0.");
+}
+
 $current_min = $limits[$give]['min'] ?? 10;
 $current_max = $limits[$give]['max'] ?? 100000;
+
+// Проверяем, находимся ли мы на главной странице
+$is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
 ?>
 
 <!DOCTYPE html>
@@ -41,14 +54,18 @@ $current_max = $limits[$give]['max'] ?? 100000;
     <div class="container mx-auto px-4 flex justify-between items-center">
       <h1 class="text-2xl font-bold"><?= htmlspecialchars(SITE_NAME) ?></h1>
       <nav class="flex items-center space-x-6">
-        <a href="index.php" class="hover:underline">Главная</a>
-        <?php if (isset($_SESSION['user_id'])): ?>
-          <a href="profile.php" class="hover:underline">Профиль</a>
-          <a href="logout.php" class="hover:underline">Выйти</a>
+        <?php if (!$is_home): ?>
+          <a href="index.php" class="hover:underline">Главная</a>
+        <?php endif; ?>
+
+        <?php if (isLoggedIn()): ?>
+          <a href="profile.php" class="hover:underline font-medium">Профиль</a>
+          <a href="logout.php" class="hover:underline text-red-300 hover:text-red-400">Выйти</a>
         <?php else: ?>
           <a href="login.php" class="hover:underline">Вход</a>
           <a href="register.php" class="hover:underline">Регистрация</a>
         <?php endif; ?>
+
         <a href="rates.xml.php" target="_blank" class="text-yellow-300 hover:underline">Курсы для BestChange</a>
       </nav>
     </div>
@@ -58,6 +75,12 @@ $current_max = $limits[$give]['max'] ?? 100000;
 
     <div class="bg-white rounded-2xl shadow-xl p-8 mb-10">
       <h2 class="text-3xl font-bold text-center mb-8">Обменять криптовалюту быстро и выгодно</h2>
+
+      <?php if (!empty($rate_note)): ?>
+        <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-r-lg">
+          <p class="font-medium"><?= $rate_note ?></p>
+        </div>
+      <?php endif; ?>
 
       <form action="create-order.php" method="POST" class="grid md:grid-cols-[1fr_auto_1fr] gap-4 md:gap-8 items-stretch" id="exchange-form">
 
@@ -92,7 +115,7 @@ $current_max = $limits[$give]['max'] ?? 100000;
           </button>
         </div>
 
-        <!-- Вы получаете (теперь можно вводить желаемую сумму) -->
+        <!-- Вы получаете -->
         <div class="flex flex-col">
           <label class="block text-lg font-medium mb-2">Вы получаете</label>
           <div class="flex border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
@@ -123,8 +146,9 @@ $current_max = $limits[$give]['max'] ?? 100000;
         </div>
 
         <div class="md:col-span-3 text-center mt-6">
-          <button type="submit" id="submit-btn" class="text-white text-xl font-bold py-5 px-12 rounded-xl shadow-lg transition w-full md:w-auto">
-            Обменять →
+          <button type="submit" id="submit-btn" class="inline-flex items-center justify-center bg-gradient-to-r from-green-500 to-teal-600 text-white font-bold text-xl py-5 px-14 rounded-2xl shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-300 transform disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 gap-3">
+            Обменять
+            <i class="fas fa-arrow-right"></i>
           </button>
 
           <div class="mt-4 flex flex-col gap-1">
@@ -137,136 +161,11 @@ $current_max = $limits[$give]['max'] ?? 100000;
 
       </form>
 
-      <script>
-        const rates = <?= json_encode($rates) ?>;
-        const reserves = <?= json_encode($reserves) ?>;
-        const limits = <?= json_encode($limits) ?>;
-
-        const amountGive = document.getElementById('amount-give');
-        const amountGet  = document.getElementById('amount-get');
-        const giveSelect = document.getElementById('give-select');
-        const getSelect  = document.getElementById('get-select');
-        const reserveEl  = document.getElementById('reserve-get');
-        const submitBtn  = document.getElementById('submit-btn');
-        const errorText  = document.getElementById('error-text');
-        const limitText  = document.getElementById('limit-text');
-
-        function updateLimitText() {
-          const cur = giveSelect.value;
-          const minVal = limits[cur]?.min ?? 10;
-          const maxVal = limits[cur]?.max ?? 100000;
-          const digits = (cur === 'BTC') ? 8 : 2;
-          limitText.textContent = `Минимум: ${minVal.toLocaleString('ru-RU', {minimumFractionDigits: digits, maximumFractionDigits: digits})} • Максимум: ${maxVal.toLocaleString('ru-RU', {minimumFractionDigits: digits, maximumFractionDigits: digits})}`;
-        }
-
-        function validateButton() {
-          const giveCur = giveSelect.value;
-          const getCur  = getSelect.value;
-
-          const giveVal = parseFloat(amountGive.value.replace(/ /g, '').replace(',', '.')) || 0;
-          const getVal  = parseFloat(amountGet.value.replace(/ /g, '').replace(',', '.')) || 0;
-
-          const min = limits[giveCur]?.min ?? 10;
-          const max = limits[giveCur]?.max ?? 100000;
-          const reserve = reserves[getCur] ?? Infinity;
-
-          let msg = '';
-
-          if (giveVal > 0 && giveVal < min) msg = `Сумма меньше минимума (${min})`;
-          else if (giveVal > max) msg = `Сумма больше максимума (${max})`;
-          else if (getVal > reserve) msg = 'Превышен резерв получаемой валюты';
-
-          if (msg) {
-            submitBtn.disabled = true;
-            submitBtn.classList.add('bg-gray-400', 'cursor-not-allowed', 'disabled-pulse');
-            submitBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
-            errorText.textContent = msg;
-          } else {
-            submitBtn.disabled = false;
-            submitBtn.classList.remove('bg-gray-400', 'cursor-not-allowed', 'disabled-pulse');
-            submitBtn.classList.add('bg-green-600', 'hover:bg-green-700');
-            errorText.textContent = '';
-          }
-        }
-
-        function recalculate(source = 'give') {
-          const giveCur = giveSelect.value;
-          const getCur  = getSelect.value;
-
-          const reserveValue = reserves[getCur] ?? 0;
-          if (reserveEl) {
-            const digits = (getCur === 'BTC') ? 8 : 2;
-            reserveEl.textContent = reserveValue.toLocaleString('ru-RU', {minimumFractionDigits: digits, maximumFractionDigits: digits});
-          }
-
-          let giveVal = parseFloat(amountGive.value.replace(/ /g, '').replace(',', '.')) || 0;
-          let getVal  = parseFloat(amountGet.value.replace(/ /g, '').replace(',', '.')) || 0;
-
-          let rate = rates[giveCur]?.[getCur] ?? 0;
-          if (rate === 0 && rates[getCur]?.[giveCur]) rate = 1 / rates[getCur][giveCur];
-
-          if (source === 'get') {
-            // Вводили желаемую сумму получения → считаем, сколько нужно отдать
-            giveVal = getVal / rate;
-            amountGive.value = giveVal.toFixed(8).replace(/\.?0+$/, '');
-          } else {
-            // Вводили сумму отдачи → считаем получение
-            getVal = giveVal * rate;
-            amountGet.value = getVal.toFixed(8).replace(/\.?0+$/, '');
-          }
-
-          validateButton();
-        }
-
-        // Слушатели
-        amountGive.addEventListener('input', () => recalculate('give'));
-        amountGet.addEventListener('input', () => recalculate('get'));
-        giveSelect.addEventListener('change', () => {
-          updateLimitText();
-          recalculate('give');
-        });
-        getSelect.addEventListener('change', () => recalculate('give'));
-
-        document.getElementById('swap-btn').addEventListener('click', () => {
-          [giveSelect.value, getSelect.value] = [getSelect.value, giveSelect.value];
-          updateLimitText();
-          recalculate('give');
-        });
-
-        // Старт
-        updateLimitText();
-        recalculate();
-      </script>
-    </div>
-
-    <!-- Таблица резервов и курсов -->
-    <div class="bg-white rounded-xl shadow p-6">
-      <h3 class="text-2xl font-bold mb-6">Резервы и курсы</h3>
-      <div class="overflow-x-auto">
-        <table class="w-full text-left">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="p-4">Отдаёте</th>
-              <th class="p-4">Получаете</th>
-              <th class="p-4">Курс</th>
-              <th class="p-4">Резерв</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($rates as $from => $to_list): ?>
-              <?php foreach ($to_list as $to => $rate): ?>
-                <tr class="border-t hover:bg-gray-50">
-                  <td class="p-4 font-medium"><?= htmlspecialchars(str_replace('_', ' ', $from)) ?></td>
-                  <td class="p-4 font-medium"><?= htmlspecialchars(str_replace('_', ' ', $to)) ?></td>
-                  <td class="p-4"><?= number_format($rate, ($to === 'BTC' ? 8 : 4)) ?></td>
-                  <td class="p-4 text-green-600">
-                    <?= number_format($reserves[$to] ?? $reserves[$from] ?? 0, ($to === 'BTC' ? 8 : 2), '.', ' ') ?>
-                  </td>
-                </tr>
-              <?php endforeach; ?>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+      <!-- Уменьшенная кнопка на страницу резервов и курсов -->
+      <div class="mt-10 text-center">
+        <a href="rates.php" class="inline-block bg-gradient-to-r from-green-500 to-teal-600 text-white font-semibold text-lg py-3 px-8 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 transform">
+          <i class="fas fa-chart-line mr-2"></i> Актуальные резервы и курсы
+        </a>
       </div>
     </div>
 
@@ -278,6 +177,130 @@ $current_max = $limits[$give]['max'] ?? 100000;
       <p class="mt-2 text-sm">Политика AML/KYC | Правила обмена | Контакты: <?= htmlspecialchars(ADMIN_EMAIL) ?></p>
     </div>
   </footer>
+
+  <!-- JavaScript для калькулятора -->
+  <script>
+    const rates = <?= json_encode($rates) ?>;
+    const reserves = <?= json_encode($reserves) ?>;
+    const limits = <?= json_encode($limits) ?>;
+
+    const amountGiveEl = document.getElementById('amount-give');
+    const amountGetEl  = document.getElementById('amount-get');
+    const giveSelect   = document.getElementById('give-select');
+    const getSelect    = document.getElementById('get-select');
+    const reserveEl    = document.getElementById('reserve-get');
+    const submitBtn    = document.getElementById('submit-btn');
+    const errorText    = document.getElementById('error-text');
+    const limitText    = document.getElementById('limit-text');
+
+    function updateLimitText() {
+      const cur = giveSelect.value;
+      const minVal = limits[cur]?.min ?? 10;
+      const maxVal = limits[cur]?.max ?? 100000;
+      const digits = (cur === 'BTC') ? 8 : 2;
+      limitText.textContent = `Минимум: ${minVal.toLocaleString('ru-RU', {minimumFractionDigits: digits, maximumFractionDigits: digits})} • Максимум: ${maxVal.toLocaleString('ru-RU', {minimumFractionDigits: digits, maximumFractionDigits: digits})}`;
+    }
+
+    function getRate(fromCur, toCur) {
+      if (fromCur === toCur) return 1;
+
+      let rate = rates[fromCur]?.[toCur];
+      if (rate !== undefined && rate > 0) return rate;
+
+      rate = rates[toCur]?.[fromCur];
+      if (rate !== undefined && rate > 0) return 1 / rate;
+
+      return 0;
+    }
+
+    function validateButton() {
+      const giveCur = giveSelect.value;
+      const getCur  = getSelect.value;
+
+      const giveVal = parseFloat(amountGiveEl.value.replace(/ /g, '').replace(',', '.')) || 0;
+      const getVal  = parseFloat(amountGetEl.value.replace(/ /g, '').replace(',', '.')) || 0;
+
+      const min = limits[giveCur]?.min ?? 10;
+      const max = limits[giveCur]?.max ?? 100000;
+      const reserve = reserves[getCur] ?? Infinity;
+
+      let msg = '';
+
+      if (giveVal > 0 && giveVal < min) msg = `Меньше минимума (${min})`;
+      else if (giveVal > max) msg = `Больше максимума (${max})`;
+      else if (getVal > reserve) msg = 'Превышен резерв';
+
+      if (msg) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        submitBtn.classList.remove('hover:scale-105', 'hover:shadow-3xl');
+        errorText.textContent = msg;
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        submitBtn.classList.add('hover:scale-105', 'hover:shadow-3xl');
+        errorText.textContent = '';
+      }
+    }
+
+    function recalculate(source = 'give') {
+      const giveCur = giveSelect.value;
+      const getCur  = getSelect.value;
+
+      if (reserveEl) {
+        const reserveValue = reserves[getCur] ?? 0;
+        const digits = (getCur === 'BTC') ? 8 : 2;
+        reserveEl.textContent = reserveValue.toLocaleString('ru-RU', {minimumFractionDigits: digits, maximumFractionDigits: digits});
+      }
+
+      let giveVal = parseFloat(amountGiveEl.value.replace(/ /g, '').replace(',', '.')) || 0;
+      let getVal  = parseFloat(amountGetEl.value.replace(/ /g, '').replace(',', '.')) || 0;
+
+      const rate = getRate(giveCur, getCur);
+
+      if (rate === 0 && giveCur !== getCur) {
+        if (source === 'get') {
+          amountGiveEl.value = '0.00';
+        } else {
+          amountGetEl.value = '0.00';
+        }
+        validateButton();
+        return;
+      }
+
+      if (source === 'get') {
+        giveVal = getVal / rate;
+        amountGiveEl.value = giveVal.toFixed(giveCur === 'BTC' ? 8 : 2).replace(/\.?0+$/, '');
+      } else {
+        getVal = giveVal * rate;
+        amountGetEl.value = getVal.toFixed(getCur === 'BTC' ? 8 : 2).replace(/\.?0+$/, '');
+      }
+
+      validateButton();
+    }
+
+    // Слушатели
+    amountGiveEl.addEventListener('input', () => recalculate('give'));
+    amountGetEl.addEventListener('input', () => recalculate('get'));
+    giveSelect.addEventListener('change', () => {
+      updateLimitText();
+      recalculate('give');
+    });
+    getSelect.addEventListener('change', () => {
+      recalculate('give');
+    });
+
+    document.getElementById('swap-btn').addEventListener('click', () => {
+      [giveSelect.value, getSelect.value] = [getSelect.value, giveSelect.value];
+      updateLimitText();
+      recalculate('give');
+    });
+
+    // Старт
+    updateLimitText();
+    recalculate('give');
+    validateButton(); // инициализация цвета кнопки при загрузке
+  </script>
 
 </body>
 </html>

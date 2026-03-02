@@ -5,7 +5,7 @@ require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
 
-// session_start() уже в auth.php — не дублируем
+// session_start() уже в auth.php
 
 $error = $success = '';
 
@@ -15,18 +15,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     $confirm  = $_POST['confirm'] ?? '';
 
+    // Валидация
     if (empty($username) || empty($email) || empty($password)) {
         $error = 'Заполните все поля';
-    } elseif (strlen($password) < 6) {
-        $error = 'Пароль должен быть минимум 6 символов';
-    } elseif ($password !== $confirm) {
-        $error = 'Пароли не совпадают';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Некорректный email';
-    } elseif (register($username, $email, $password)) {
-        $success = 'Регистрация успешна! Теперь можете <a href="login.php" class="text-blue-600 underline">войти</a>';
+    } elseif (strlen($password) < 8) {
+        $error = 'Пароль должен быть минимум 8 символов';
+    } elseif (!preg_match('/[A-Z]/', $password)) {
+        $error = 'Пароль должен содержать хотя бы одну заглавную букву';
+    } elseif (!preg_match('/[a-z]/', $password)) {
+        $error = 'Пароль должен содержать хотя бы одну строчную букву';
+    } elseif (!preg_match('/[0-9]/', $password)) {
+        $error = 'Пароль должен содержать хотя бы одну цифру';
+    } elseif ($password !== $confirm) {
+        $error = 'Пароли не совпадают';
     } else {
-        $error = 'Логин или email уже занят';
+        if (register($username, $email, $password)) {
+            // Автоматический вход после регистрации
+            if (login($username, $password)) {
+                $success = 'Регистрация успешна! Вы автоматически вошли.';
+                header('Location: profile.php');
+                exit;
+            } else {
+                $error = 'Регистрация прошла, но автоматический вход не удался. Попробуйте войти вручную.';
+            }
+        } else {
+            $error = 'Логин или email уже занят';
+        }
     }
 }
 ?>
@@ -49,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <?php if ($success): ?>
-      <p class="text-green-600 text-center mb-6 bg-green-50 p-3 rounded"><?= $success ?></p>
+      <p class="text-green-600 text-center mb-6 bg-green-50 p-3 rounded"><?= htmlspecialchars($success) ?></p>
     <?php endif; ?>
 
     <form method="POST" class="space-y-6">
