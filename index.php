@@ -14,13 +14,6 @@ if ($rate <= 0 && isset($rates[$get][$give]) && $rates[$get][$give] > 0) {
 }
 $amount_get = $amount_give * $rate;
 
-// Проверяем, реальный ли курс
-$rate_note = '';
-if ($rate <= 0 || $rate < 0.0001) {  // очень маленький курс тоже считаем ошибкой
-    $rate_note = '⚠️ Реальный курс временно недоступен (API CoinGecko не ответил). Показан примерный/старый курс. Обновите страницу позже.';
-    error_log("[" . date('Y-m-d H:i:s') . "] CoinGecko API не вернул реальный курс для $give → $get. Использован fallback или 0.");
-}
-
 $current_min = $limits[$give]['min'] ?? 10;
 $current_max = $limits[$give]['max'] ?? 100000;
 
@@ -45,6 +38,35 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
       animation: pulse-disabled 2s infinite ease-in-out;
       pointer-events: none;
       cursor: not-allowed;
+    }
+
+    /* Линейный таймер: текст выше полоски */
+    .timer-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 16px;
+      gap: 6px;
+    }
+    .timer-text {
+      font-size: 14px;
+      font-weight: bold;
+      color: #374151;
+    }
+    .timer-bar {
+      width: 120px;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .timer-progress {
+      width: 100%;
+      height: 100%;
+      background: #22c55e;
+      transform: scaleX(1);
+      transform-origin: left;
+      transition: transform 1s linear;
     }
   </style>
 </head>
@@ -76,12 +98,6 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
     <div class="bg-white rounded-2xl shadow-xl p-8 mb-10">
       <h2 class="text-3xl font-bold text-center mb-8">Обменять криптовалюту быстро и выгодно</h2>
 
-      <?php if (!empty($rate_note)): ?>
-        <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-r-lg">
-          <p class="font-medium"><?= $rate_note ?></p>
-        </div>
-      <?php endif; ?>
-
       <form action="create-order.php" method="POST" class="grid md:grid-cols-[1fr_auto_1fr] gap-4 md:gap-8 items-stretch" id="exchange-form">
 
         <!-- Вы отдаёте -->
@@ -110,7 +126,7 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
         <div class="flex items-center justify-center">
           <button type="button" id="swap-btn" class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 flex items-center justify-center shadow-md transition transform hover:scale-110 focus:outline-none">
             <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m4 5H4m0 0l4 4m-4-4l4-4"/>
             </svg>
           </button>
         </div>
@@ -146,7 +162,15 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
         </div>
 
         <div class="md:col-span-3 text-center mt-6">
-          <button type="submit" id="submit-btn" class="inline-flex items-center justify-center bg-gradient-to-r from-green-500 to-teal-600 text-white font-bold text-xl py-5 px-14 rounded-2xl shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-300 transform disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 gap-3">
+          <!-- Линейный таймер над кнопкой -->
+          <div class="timer-wrapper">
+            <div class="timer-text" id="timer-text">00:15</div>
+            <div class="timer-bar">
+              <div class="timer-progress" id="timer-progress"></div>
+            </div>
+          </div>
+
+          <button type="submit" id="submit-btn" class="inline-flex items-center justify-center bg-gradient-to-r from-green-500 to-teal-600 text-white font-bold text-xl py-5 px-14 rounded-2xl shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-300 transform disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 gap-3 mx-auto">
             Обменять
             <i class="fas fa-arrow-right"></i>
           </button>
@@ -178,8 +202,10 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
     </div>
   </footer>
 
-  <!-- JavaScript для калькулятора -->
   <script>
+    const UPDATE_INTERVAL = 15000; // 15 секунд
+    let countdown = 15;
+
     const rates = <?= json_encode($rates) ?>;
     const reserves = <?= json_encode($reserves) ?>;
     const limits = <?= json_encode($limits) ?>;
@@ -193,6 +219,51 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
     const errorText    = document.getElementById('error-text');
     const limitText    = document.getElementById('limit-text');
 
+    // Элементы линейного таймера
+    const timerProgress = document.getElementById('timer-progress');
+    const timerText = document.getElementById('timer-text');
+
+    function updateTimerDisplay() {
+      const progress = (countdown / 15) * 100;
+      timerProgress.style.transform = `scaleX(${progress / 100})`;
+
+      const minutes = Math.floor(countdown / 60);
+      const seconds = countdown % 60;
+      timerText.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function resetTimer() {
+      countdown = 15;
+      updateTimerDisplay();
+    }
+
+    function updateRatesAndReserves() {
+      fetch('get_rates.php')
+        .then(response => response.json())
+        .then(data => {
+          Object.assign(rates, data.rates);
+          Object.assign(reserves, data.reserves);
+          Object.assign(limits, data.limits);
+
+          recalculate('give');
+          updateLimitText();
+          resetTimer();
+        })
+        .catch(err => {
+          console.error('Ошибка обновления курсов:', err);
+          resetTimer();
+        });
+    }
+
+    // Запуск таймера каждую секунду
+    setInterval(() => {
+      countdown--;
+      if (countdown <= 0) {
+        updateRatesAndReserves();
+      }
+      updateTimerDisplay();
+    }, 1000);
+
     function updateLimitText() {
       const cur = giveSelect.value;
       const minVal = limits[cur]?.min ?? 10;
@@ -204,12 +275,15 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
     function getRate(fromCur, toCur) {
       if (fromCur === toCur) return 1;
 
+      // Прямой курс
       let rate = rates[fromCur]?.[toCur];
       if (rate !== undefined && rate > 0) return rate;
 
+      // Обратный курс
       rate = rates[toCur]?.[fromCur];
       if (rate !== undefined && rate > 0) return 1 / rate;
 
+      // Если курса нет — возвращаем 0
       return 0;
     }
 
@@ -258,12 +332,8 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
 
       const rate = getRate(giveCur, getCur);
 
-      if (rate === 0 && giveCur !== getCur) {
-        if (source === 'get') {
-          amountGiveEl.value = '0.00';
-        } else {
-          amountGetEl.value = '0.00';
-        }
+      if (rate === 0) {
+        errorText.textContent = 'Курс для этой пары временно недоступен';
         validateButton();
         return;
       }
@@ -299,7 +369,8 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
     // Старт
     updateLimitText();
     recalculate('give');
-    validateButton(); // инициализация цвета кнопки при загрузке
+    validateButton();
+    updateTimerDisplay(); // инициализация таймера
   </script>
 
 </body>
