@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-define('ADMIN_PASSWORD', 'adminsecret2026'); // ← смени на свой
+define('ADMIN_PASSWORD', '14751475'); // ← смени на свой
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pass = $_POST['password'] ?? '';

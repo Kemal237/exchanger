@@ -1,18 +1,21 @@
 <?php
-// auth.php — ВАЖНО: session_start() только здесь!
+// auth.php — session_start ТОЛЬКО здесь!
 
-session_start();  // ← вызывается один раз на всю сессию
+session_start();
 
-require_once 'db.php';  // ← подключаем PDO
+require_once 'db.php';  // подключаем $pdo
 
 function isLoggedIn() {
     return isset($_SESSION['user_id']);
 }
 
+function isAdmin() {
+    return isLoggedIn() && isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+}
+
 function login($username, $password) {
     global $pdo;
 
-    // Проверка, что $pdo существует
     if (!$pdo) {
         die("Ошибка: подключение к базе данных не удалось");
     }
@@ -22,9 +25,10 @@ function login($username, $password) {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user && password_verify($password, $user['password'])) {
-        $_SESSION['user_id']  = $user['id'];
-        $_SESSION['username'] = $user['username'];
-        $_SESSION['email']    = $user['email'];
+        $_SESSION['user_id']   = $user['id'];
+        $_SESSION['username']  = $user['username'];
+        $_SESSION['email']     = $user['email'];
+        $_SESSION['role']      = $user['role'];  // ← добавляем роль в сессию!
         return true;
     }
     return false;
@@ -40,16 +44,14 @@ function register($username, $email, $password) {
     $hash = password_hash($password, PASSWORD_DEFAULT);
 
     try {
-        $stmt = $pdo->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, 'user')");
         $stmt->execute([$username, $email, $hash]);
         return true;
     } catch (PDOException $e) {
-        // Если логин или email уже занят — возвращаем false
-        return false;
+        return false; // логин или email занят
     }
 }
 
-// Функция обновления профиля (если понадобится позже)
 function updateProfile($user_id, $new_name, $new_email, $new_password = null) {
     global $pdo;
 

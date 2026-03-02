@@ -1,14 +1,13 @@
 <?php
-// profile.php — Личный кабинет (исправленный)
+// profile.php — Личный кабинет
 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Подключаем только необходимое
-require_once 'config.php';   // SITE_NAME и константы
-require_once 'db.php';       // $pdo
-require_once 'auth.php';     // функции + session_start()
+require_once 'config.php';
+require_once 'db.php';
+require_once 'auth.php';
 
 // Проверяем авторизацию
 if (!isLoggedIn()) {
@@ -18,7 +17,7 @@ if (!isLoggedIn()) {
 
 $user_id = $_SESSION['user_id'] ?? 0;
 
-// Получаем заявки пользователя (с защитой от ошибок)
+// Получаем заявки пользователя
 $orders = [];
 try {
     $stmt = $pdo->prepare("SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC");
@@ -71,8 +70,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <header class="bg-blue-800 text-white py-4">
     <div class="container mx-auto px-4 flex justify-between items-center">
       <h1 class="text-2xl font-bold"><?= htmlspecialchars(SITE_NAME ?? 'Swap') ?></h1>
-      <nav class="space-x-6">
+      <nav class="space-x-6 flex items-center">
         <a href="index.php" class="hover:underline">Главная</a>
+        
+        <?php if (isAdmin()): ?>
+          <a href="/admin/login.php" class="text-yellow-300 font-bold hover:underline">Админ-панель</a>
+        <?php endif; ?>
+        
         <a href="logout.php" class="hover:underline">Выйти</a>
       </nav>
     </div>
