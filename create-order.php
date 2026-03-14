@@ -1,5 +1,7 @@
 <?php
 require 'config.php';
+require 'auth.php'; // здесь isLoggedIn()
+
 session_start();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -7,6 +9,23 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// Проверка авторизации
+if (!isLoggedIn()) {
+    // Сохраняем данные формы в сессию
+    $_SESSION['pending_exchange'] = [
+        'give_currency'  => $_POST['give_currency'] ?? '',
+        'get_currency'   => $_POST['get_currency']  ?? '',
+        'amount_give'    => floatval($_POST['amount_give'] ?? 0),
+    ];
+
+    // Показываем сообщение и редиректим на логин
+    $_SESSION['auth_message'] = 'Для создания заявки необходимо войти в аккаунт. После входа вы вернётесь к обмену.';
+
+    header('Location: login.php?redirect=index.php');
+    exit;
+}
+
+// Если авторизован — продолжаем как раньше
 $give_cur = $_POST['give_currency'] ?? '';
 $get_cur  = $_POST['get_currency']  ?? '';
 $amount   = floatval($_POST['amount_give'] ?? 0);

@@ -2,10 +2,20 @@
 require_once 'config.php';
 require_once 'auth.php';  // запускает session_start() и даёт isLoggedIn()
 
-$give = $_GET['give'] ?? 'USDT_TRC20';
-$get  = $_GET['get']  ?? 'RUB';
+// Восстанавливаем данные обмена после успешного логина (если они были сохранены)
+if (isset($_SESSION['pending_exchange'])) {
+    $give        = $_SESSION['pending_exchange']['give_currency']  ?? $give ?? 'USDT_TRC20';
+    $get         = $_SESSION['pending_exchange']['get_currency']   ?? $get  ?? 'RUB';
+    $amount_give = $_SESSION['pending_exchange']['amount_give']    ?? floatval($_GET['amount'] ?? 100);
 
-$amount_give = floatval($_GET['amount'] ?? 100);
+    // Очищаем временные данные после использования
+    unset($_SESSION['pending_exchange']);
+} else {
+    // Обычная логика из GET-параметров
+    $give        = $_GET['give'] ?? 'USDT_TRC20';
+    $get         = $_GET['get']  ?? 'RUB';
+    $amount_give = floatval($_GET['amount'] ?? 100);
+}
 
 // Получаем курс (с защитой от 0)
 $rate = $rates[$give][$get] ?? 0;
