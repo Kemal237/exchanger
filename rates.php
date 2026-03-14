@@ -1,6 +1,6 @@
 <?php
 require_once 'config.php';
-require_once 'auth.php'; // для сессии и isLoggedIn(), если нужно
+require_once 'auth.php';
 ?>
 
 <!DOCTYPE html>
@@ -30,7 +30,6 @@ require_once 'auth.php'; // для сессии и isLoggedIn(), если нуж
   <?php require_once 'header.php'; ?>
 
   <main class="container mx-auto px-4 py-12 max-w-6xl">
-
     <h1 class="text-4xl font-bold text-center mb-4 text-gray-800">Резервы и актуальные курсы</h1>
     <p class="text-center text-lg text-gray-600 mb-12">Мгновенное обновление резервов и рыночных курсов</p>
 
@@ -47,22 +46,26 @@ require_once 'auth.php'; // для сессии и isLoggedIn(), если нуж
           </thead>
           <tbody class="divide-y divide-gray-200">
             <?php
+            $allowed = ['USDT_TRC20', 'RUB', 'BTC'];
             $delay = 0;
-            foreach ($rates as $from => $to_list):
-              foreach ($to_list as $to => $rate):
-                $delay += 100;
+
+            foreach ($rates as $from => $to_list) {
+                if (!in_array($from, $allowed)) continue;
+                foreach ($to_list as $to => $rate) {
+                    if (!in_array($to, $allowed)) continue;
+                    $delay += 100;
             ?>
-              <tr class="hover:bg-gray-50 transition-colors duration-200 animate-fadeInUp delay-<?= $delay ?>">
-                <td class="p-6 font-medium text-gray-800"><?= htmlspecialchars(str_replace('_', ' ', $from)) ?></td>
-                <td class="p-6 font-medium text-gray-800"><?= htmlspecialchars(str_replace('_', ' ', $to)) ?></td>
-                <td class="p-6 font-semibold text-blue-600"><?= number_format($rate, ($to === 'BTC' ? 8 : 4)) ?></td>
-                <td class="p-6 font-medium text-green-600">
-                  <?= number_format($reserves[$to] ?? $reserves[$from] ?? 0, ($to === 'BTC' ? 8 : 2), '.', ' ') ?>
-                </td>
-              </tr>
+                    <tr class="hover:bg-gray-50 transition-colors duration-200 animate-fadeInUp delay-<?= $delay ?>">
+                        <td class="p-6 font-medium text-gray-800"><?= htmlspecialchars(str_replace('_', ' ', $from)) ?></td>
+                        <td class="p-6 font-medium text-gray-800"><?= htmlspecialchars(str_replace('_', ' ', $to)) ?></td>
+                        <td class="p-6 font-semibold text-blue-600"><?= number_format($rate, ($to === 'BTC' ? 8 : 4)) ?></td>
+                        <td class="p-6 font-medium text-green-600">
+                            <?= number_format($reserves[$to] ?? 0, ($to === 'BTC' ? 8 : 2), '.', ' ') ?>
+                        </td>
+                    </tr>
             <?php
-              endforeach;
-            endforeach;
+                }
+            }
             ?>
           </tbody>
         </table>
@@ -74,7 +77,6 @@ require_once 'auth.php'; // для сессии и isLoggedIn(), если нуж
         Вернуться к обмену →
       </a>
     </div>
-
   </main>
 
   <footer class="bg-gray-800 text-white py-8 mt-16">

@@ -17,7 +17,6 @@ $amount_get = $amount_give * $rate;
 $current_min = $limits[$give]['min'] ?? 10;
 $current_max = $limits[$give]['max'] ?? 100000;
 
-// Проверяем, находимся ли мы на главной странице
 $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
 ?>
 
@@ -26,7 +25,7 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title><?= htmlspecialchars(SITE_NAME) ?> — Обмен USDT, BTC, RUB, USD</title>
+  <title><?= htmlspecialchars(SITE_NAME) ?> — Обмен USDT, BTC, RUB</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <style>
@@ -39,8 +38,6 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
       pointer-events: none;
       cursor: not-allowed;
     }
-
-    /* Линейный таймер: текст выше полоски */
     .timer-wrapper {
       display: flex;
       flex-direction: column;
@@ -79,10 +76,7 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
         <?php if (!$is_home): ?>
           <a href="index.php" class="hover:underline">Главная</a>
         <?php endif; ?>
-
-        <!-- Новая ссылка "Резервы и курсы" перед Профилем/Входом -->
         <a href="rates.php" class="hover:underline">Резервы и курсы</a>
-
         <?php if (isLoggedIn()): ?>
           <a href="profile.php" class="hover:underline font-medium">Профиль</a>
           <a href="logout.php" class="hover:underline text-red-300 hover:text-red-400">Выйти</a>
@@ -90,14 +84,12 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
           <a href="login.php" class="hover:underline">Вход</a>
           <a href="register.php" class="hover:underline">Регистрация</a>
         <?php endif; ?>
-
         <a href="rates.xml.php" target="_blank" class="text-yellow-300 hover:underline">Курсы для BestChange</a>
       </nav>
     </div>
   </header>
 
   <main class="container mx-auto px-4 py-10 max-w-5xl">
-
     <div class="bg-white rounded-2xl shadow-xl p-8 mb-10">
       <h2 class="text-3xl font-bold text-center mb-8">Обменять криптовалюту быстро и выгодно</h2>
 
@@ -108,13 +100,14 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
           <label class="block text-lg font-medium mb-2">Вы отдаёте</label>
           <div class="flex border border-gray-300 rounded-lg overflow-hidden">
             <select name="give_currency" id="give-select" class="w-1/2 p-4 bg-gray-50 text-xl focus:outline-none">
-              <?php foreach (array_keys($rates) as $cur): ?>
+              <?php
+              $allowed = ['USDT_TRC20', 'RUB', 'BTC'];
+              foreach ($allowed as $cur): ?>
                 <option value="<?= htmlspecialchars($cur) ?>" <?= $cur === $give ? 'selected' : '' ?>>
                   <?= htmlspecialchars(str_replace('_', ' ', $cur)) ?>
                 </option>
               <?php endforeach; ?>
             </select>
-
             <input type="text"
                    name="amount_give"
                    id="amount-give"
@@ -139,18 +132,12 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
           <label class="block text-lg font-medium mb-2">Вы получаете</label>
           <div class="flex border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
             <select name="get_currency" id="get-select" class="w-1/2 p-4 bg-gray-50 text-xl focus:outline-none">
-              <?php
-              $all_currencies = array_unique(array_merge(
-                  array_keys($rates),
-                  ...array_values(array_map('array_keys', $rates))
-              ));
-              foreach ($all_currencies as $cur): ?>
+              <?php foreach ($allowed as $cur): ?>
                 <option value="<?= htmlspecialchars($cur) ?>" <?= $cur === $get ? 'selected' : '' ?>>
                   <?= htmlspecialchars(str_replace('_', ' ', $cur)) ?>
                 </option>
               <?php endforeach; ?>
             </select>
-
             <input type="text"
                    name="amount_get"
                    id="amount-get"
@@ -165,7 +152,6 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
         </div>
 
         <div class="md:col-span-3 text-center mt-6">
-          <!-- Линейный таймер над кнопкой -->
           <div class="timer-wrapper">
             <div class="timer-text" id="timer-text">00:15</div>
             <div class="timer-bar">
@@ -188,14 +174,12 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
 
       </form>
 
-      <!-- Уменьшенная кнопка на страницу резервов и курсов -->
       <div class="mt-10 text-center">
         <a href="rates.php" class="inline-block bg-gradient-to-r from-green-500 to-teal-600 text-white font-semibold text-lg py-3 px-8 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 transform">
           <i class="fas fa-chart-line mr-2"></i> Актуальные резервы и курсы
         </a>
       </div>
     </div>
-
   </main>
 
   <footer class="bg-gray-800 text-white py-8 mt-16">
@@ -206,7 +190,7 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
   </footer>
 
   <script>
-    const UPDATE_INTERVAL = 15000; // 15 секунд
+    const UPDATE_INTERVAL = 15000;
     let countdown = 15;
 
     const rates = <?= json_encode($rates) ?>;
@@ -222,14 +206,12 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
     const errorText    = document.getElementById('error-text');
     const limitText    = document.getElementById('limit-text');
 
-    // Элементы линейного таймера
     const timerProgress = document.getElementById('timer-progress');
     const timerText = document.getElementById('timer-text');
 
     function updateTimerDisplay() {
       const progress = (countdown / 15) * 100;
       timerProgress.style.transform = `scaleX(${progress / 100})`;
-
       const minutes = Math.floor(countdown / 60);
       const seconds = countdown % 60;
       timerText.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
@@ -247,7 +229,6 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
           Object.assign(rates, data.rates);
           Object.assign(reserves, data.reserves);
           Object.assign(limits, data.limits);
-
           recalculate('give');
           updateLimitText();
           resetTimer();
@@ -258,7 +239,6 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
         });
     }
 
-    // Запуск таймера каждую секунду
     setInterval(() => {
       countdown--;
       if (countdown <= 0) {
@@ -277,23 +257,16 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
 
     function getRate(fromCur, toCur) {
       if (fromCur === toCur) return 1;
-
-      // Прямой курс
       let rate = rates[fromCur]?.[toCur];
       if (rate !== undefined && rate > 0) return rate;
-
-      // Обратный курс
       rate = rates[toCur]?.[fromCur];
       if (rate !== undefined && rate > 0) return 1 / rate;
-
-      // Если курса нет — возвращаем 0
       return 0;
     }
 
     function validateButton() {
       const giveCur = giveSelect.value;
       const getCur  = getSelect.value;
-
       const giveVal = parseFloat(amountGiveEl.value.replace(/ /g, '').replace(',', '.')) || 0;
       const getVal  = parseFloat(amountGetEl.value.replace(/ /g, '').replace(',', '.')) || 0;
 
@@ -302,7 +275,6 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
       const reserve = reserves[getCur] ?? Infinity;
 
       let msg = '';
-
       if (giveVal > 0 && giveVal < min) msg = `Меньше минимума (${min})`;
       else if (giveVal > max) msg = `Больше максимума (${max})`;
       else if (getVal > reserve) msg = 'Превышен резерв';
@@ -352,7 +324,6 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
       validateButton();
     }
 
-    // Слушатели
     amountGiveEl.addEventListener('input', () => recalculate('give'));
     amountGetEl.addEventListener('input', () => recalculate('get'));
     giveSelect.addEventListener('change', () => {
@@ -369,12 +340,10 @@ $is_home = basename($_SERVER['SCRIPT_NAME']) === 'index.php';
       recalculate('give');
     });
 
-    // Старт
     updateLimitText();
     recalculate('give');
     validateButton();
-    updateTimerDisplay(); // инициализация таймера
+    updateTimerDisplay();
   </script>
-
 </body>
 </html>

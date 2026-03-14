@@ -35,7 +35,6 @@ function saveCachedRates($rates, $reserves, $limits) {
 }
 
 // === Реальные курсы с CoinGecko + наценка 2.5% ===
-
 function getRealRates() {
     $url = 'https://api.coingecko.com/api/v3/simple/price?ids=tether,bitcoin&vs_currencies=rub,usd,eur';
     
@@ -51,7 +50,6 @@ function getRealRates() {
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
     
-    // Если API не ответил — возвращаем null (чтобы не перезаписывать кэш)
     if ($curl_error || $json === false || $http_code !== 200) {
         error_log("[" . date('Y-m-d H:i:s') . "] cURL CoinGecko error: $curl_error | HTTP $http_code");
         return null;
@@ -59,7 +57,6 @@ function getRealRates() {
     
     $data = json_decode($json, true) ?? [];
     
-    // Проверяем, что пришли нормальные данные
     if (empty($data['tether']) || empty($data['bitcoin'])) {
         return null;
     }
@@ -91,21 +88,13 @@ if ($cached) {
     $reserves = $cached['reserves'];
     $limits   = $cached['limits'];
 } else {
-    // Если кэша нет — используем дефолтные значения (только при первом запуске)
     $real_rates = getRealRates();
 
     if ($real_rates) {
-        // Пересчитываем курсы
-        $market_usdt_rub = $real_rates['tether']['rub']     ?? 90.00;
-        $market_usdt_usd = $real_rates['tether']['usd']     ?? 1.00;
-        $market_usdt_eur = $real_rates['tether']['eur']     ?? 0.92;
-        $market_btc_usd  = $real_rates['bitcoin']['usd']    ?? 80000.00;
-        $market_btc_eur  = $real_rates['bitcoin']['eur']    ?? 74000.00;
-        $market_usd_rub  = $real_rates['usd']['rub']        ?? 90.00;
-        $market_eur_rub  = $real_rates['eur']['rub']        ?? 97.83;
-
-        $market_usd_eur  = $market_usdt_eur;
-        $market_eur_usd  = $market_usdt_eur > 0 ? 1 / $market_usdt_eur : 1.087;
+        $market_usdt_rub = $real_rates['tether']['rub']   ?? 90.00;
+        $market_usdt_usd = $real_rates['tether']['usd']   ?? 1.00;
+        $market_btc_usd  = $real_rates['bitcoin']['usd']  ?? 80000.00;
+        $market_usd_rub  = $real_rates['usd']['rub']      ?? 90.00;
 
         $markup_sell = 1.025;
         $markup_buy  = 0.975;
@@ -113,37 +102,19 @@ if ($cached) {
         $rates = [
             'USDT_TRC20' => [
                 'RUB' => round($market_usdt_rub * $markup_sell, 2),
-                'USD' => round($market_usdt_usd * $markup_sell, 4),
-                'EUR' => round($market_usdt_eur * $markup_sell, 4),
                 'BTC' => $market_btc_usd > 0 ? round(1 / $market_btc_usd * $markup_buy, 8) : 0.0000125,
             ],
             'RUB' => [
                 'USDT_TRC20' => $market_usdt_rub > 0 ? round(1 / ($market_usdt_rub * $markup_buy), 6) : 0.01111,
-                'USD'        => $market_usd_rub > 0 ? round(1 / ($market_usd_rub * $markup_buy), 6) : 0.01111,
-                'EUR'        => $market_eur_rub > 0 ? round(1 / ($market_eur_rub * $markup_buy), 6) : 0.01025,
                 'BTC'        => ($market_btc_usd && $market_usd_rub) ? round(1 / ($market_btc_usd * $market_usd_rub * $markup_buy), 8) : 0.000000125,
             ],
             'BTC' => [
                 'USDT_TRC20' => round($market_btc_usd * $markup_sell, 0),
-                'USD'        => round($market_btc_usd * $markup_sell, 0),
                 'RUB'        => round($market_btc_usd * $market_usd_rub * $markup_sell, 0),
-                'EUR'        => round($market_btc_eur * $markup_sell, 0),
-            ],
-            'USD' => [
-                'USDT_TRC20' => $market_usdt_usd > 0 ? round(1 / ($market_usdt_usd * $markup_buy), 4) : 0.99,
-                'RUB'        => round($market_usd_rub * $markup_sell, 2),
-                'EUR'        => $market_usd_eur > 0 ? round($market_usd_eur * $markup_sell, 4) : 0.92,
-                'BTC'        => $market_btc_usd > 0 ? round(1 / ($market_btc_usd * $markup_buy), 8) : 0.0000125,
-            ],
-            'EUR' => [
-                'USDT_TRC20' => $market_usdt_eur > 0 ? round(1 / ($market_usdt_eur * $markup_buy), 4) : 1.087,
-                'RUB'        => round($market_eur_rub * $markup_sell, 2),
-                'USD'        => $market_eur_usd > 0 ? round($market_eur_usd * $markup_sell, 4) : 1.087,
-                'BTC'        => ($market_btc_usd && $market_usd_eur) ? round(1 / ($market_btc_usd * $market_usd_eur * $markup_buy), 8) : 0.0000135,
             ],
         ];
 
-        // Добавляем обратные курсы для всех пар (чтобы работало в обе стороны)
+        // Добавляем обратные курсы автоматически
         $reverse_rates = [];
         foreach ($rates as $from => $toArray) {
             foreach ($toArray as $to => $value) {
@@ -154,7 +125,6 @@ if ($cached) {
             }
         }
 
-        // Сливаем обратные курсы в основной массив
         foreach ($reverse_rates as $from => $toArray) {
             if (!isset($rates[$from])) $rates[$from] = [];
             foreach ($toArray as $to => $value) {
@@ -168,19 +138,14 @@ if ($cached) {
             'USDT_TRC20' => ['min' => 50,    'max' => 55000],
             'RUB'        => ['min' => 5000,  'max' => 2000000],
             'BTC'        => ['min' => 0.001, 'max' => 10],
-            'USD'        => ['min' => 50,    'max' => 60000],
-            'EUR'        => ['min' => 50,    'max' => 70000],
         ];
 
         $reserves = [
             'USDT_TRC20' => 1245678.45,
             'RUB'        => 45892000,
             'BTC'        => 12.78451637,
-            'USD'        => 101233,
-            'EUR'        => 300002,
         ];
 
-        // Сохраняем в кэш сразу
         saveCachedRates($rates, $reserves, $limits);
     }
 }
