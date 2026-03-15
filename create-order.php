@@ -1,7 +1,8 @@
 <?php
-require 'config.php';
-require 'auth.php'; // здесь isLoggedIn()
+// create-order.php — сохраняет данные и перенаправляет на подтверждение Telegram
 
+require_once 'config.php';
+require_once 'auth.php';
 session_start();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -9,51 +10,35 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Проверка авторизации
 if (!isLoggedIn()) {
-    // Сохраняем данные формы в сессию
     $_SESSION['pending_exchange'] = [
-        'give_currency'  => $_POST['give_currency'] ?? '',
-        'get_currency'   => $_POST['get_currency']  ?? '',
-        'amount_give'    => floatval($_POST['amount_give'] ?? 0),
+        'give_currency' => $_POST['give_currency'] ?? '',
+        'get_currency'  => $_POST['get_currency'] ?? '',
+        'amount_give'   => floatval($_POST['amount_give'] ?? 0),
     ];
-
-    // Показываем сообщение и редиректим на логин
-    $_SESSION['auth_message'] = 'Для создания заявки необходимо войти в аккаунт. После входа вы вернётесь к обмену.';
-
-    header('Location: login.php?redirect=index.php');
+    header('Location: login.php');
     exit;
 }
 
-// Если авторизован — продолжаем как раньше
-$give_cur = $_POST['give_currency'] ?? '';
-$get_cur  = $_POST['get_currency']  ?? '';
-$amount   = floatval($_POST['amount_give'] ?? 0);
+$give_currency = $_POST['give_currency'] ?? '';
+$amount_give   = floatval($_POST['amount_give'] ?? 0);
+$get_currency  = $_POST['get_currency'] ?? '';
+$amount_get    = floatval($_POST['amount_get'] ?? 0);
 
-$allowed = ['USDT_TRC20', 'RUB', 'BTC'];
-
-if (!in_array($give_cur, $allowed) || !in_array($get_cur, $allowed)) {
-    die('Недопустимая валютная пара');
+if ($amount_give <= 0 || $amount_get <= 0) {
+    $_SESSION['error'] = 'Некорректные данные обмена';
+    header('Location: index.php');
+    exit;
 }
 
-if ($amount <= 0 || !isset($rates[$give_cur][$get_cur]) || $rates[$give_cur][$get_cur] <= 0) {
-    die('Неверные данные или курс недоступен');
-}
-
-$rate = $rates[$give_cur][$get_cur];
-$to_receive = $amount * $rate;
-
-$order_id = 'ORD-' . time() . '-' . rand(1000,9999);
-
-$_SESSION['order'] = [
-    'id'          => $order_id,
-    'give_cur'    => $give_cur,
-    'amount_give' => $amount,
-    'get_cur'     => $get_cur,
-    'amount_get'  => $to_receive,
-    'rate'        => $rate,
-    'created'     => date('c'),
+// Сохраняем данные для страницы подтверждения Telegram
+$_SESSION['pending_order'] = [
+    'give_currency' => $give_currency,
+    'amount_give'   => $amount_give,
+    'get_currency'  => $get_currency,
+    'amount_get'    => $amount_get,
 ];
 
-header('Location: order.php?id=' . $order_id);
+header('Location: order.php');
 exit;
+?>

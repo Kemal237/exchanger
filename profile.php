@@ -140,23 +140,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   <td class="p-4">
                     <?php
                     $status = $order['status'] ?? 'new';
-                    $status_text = [
-                        'new'       => 'Новая',
-                        'paid'      => 'Оплачена',
-                        'processed' => 'Обработана',
-                        'rejected'  => 'Отклонена',
-                        'canceled'  => 'Отменена',
-                    ][$status] ?? 'Неизвестно';
-                    $status_color = [
-                        'new'       => 'bg-yellow-100 text-yellow-800',
-                        'paid'      => 'bg-blue-100 text-blue-800',
-                        'processed' => 'bg-green-100 text-green-800',
-                        'rejected'  => 'bg-red-100 text-red-800',
-                        'canceled'  => 'bg-gray-100 text-gray-800',
-                    ][$status] ?? 'bg-gray-100';
+                    $statuses = [
+                        'new'       => ['text' => 'Новая',     'class' => 'bg-yellow-100 text-yellow-800'],
+                        'in_process'=> ['text' => 'В обработке','class' => 'bg-blue-100 text-blue-800'],
+                        'success'   => ['text' => 'Успешно',   'class' => 'bg-green-100 text-green-800'],
+                        'canceled'  => ['text' => 'Отменено',  'class' => 'bg-red-100 text-red-800'],
+                    ];
+                    $s = $statuses[$status] ?? ['text' => 'Неизвестно', 'class' => 'bg-gray-100 text-gray-800'];
                     ?>
-                    <span class="px-3 py-1 rounded-full text-sm <?= $status_color ?>">
-                      <?= $status_text ?>
+                    <span class="px-3 py-1 rounded-full text-sm <?= $s['class'] ?>">
+                      <?= $s['text'] ?>
                     </span>
                   </td>
                 </tr>
