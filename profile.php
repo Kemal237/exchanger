@@ -1,5 +1,5 @@
 <?php
-// profile.php — Личный кабинет (полная версия с админ-кнопкой, toast и отменой заявок)
+// profile.php — Личный кабинет с автопрокруткой к новой заявке
 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -15,19 +15,19 @@ if (!isLoggedIn()) {
 }
 
 $user_id = $_SESSION['user_id'] ?? 0;
-$isAdmin = isAdmin();   // ← проверка, является ли пользователь админом
+$isAdmin = isAdmin();
 
 // Отмена заявки
 if (isset($_GET['cancel_order'])) {
     $order_id = $_GET['cancel_order'];
     $stmt = $pdo->prepare("UPDATE orders SET status = 'canceled', canceled_at = NOW() WHERE id = ? AND user_id = ? AND status = 'new'");
     $stmt->execute([$order_id, $user_id]);
-    $_SESSION['toast'] = ['type' => 'success', 'message' => "Заявка $order_id успешно отменена"];
+    $_SESSION['toast'] = ['type' => 'success', 'message' => "Заявка $order_id отменена"];
     header('Location: profile.php');
     exit;
 }
 
-// Получаем заявки пользователя
+// Получаем заявки
 $orders = [];
 try {
     $stmt = $pdo->prepare("SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC");
@@ -37,7 +37,11 @@ try {
     $error = "Ошибка загрузки заявок: " . $e->getMessage();
 }
 
-// Обработка формы редактирования профиля
+// Получаем ID новой заявки для подсветки
+$highlight_order = $_SESSION['highlight_order'] ?? null;
+unset($_SESSION['highlight_order']); // очищаем после использования
+
+// Обработка формы профиля
 $error = $success = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $new_name     = trim($_POST['username'] ?? '');
@@ -65,7 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $query .= ", telegram = ?";
             $params[] = $new_telegram;
-
             $query .= " WHERE id = ?";
             $params[] = $user_id;
 
@@ -74,7 +77,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $_SESSION['username'] = $new_name;
             $_SESSION['email']    = $new_email;
-
             $_SESSION['toast'] = ['type' => 'success', 'message' => 'Профиль успешно обновлён'];
             header('Location: profile.php');
             exit;
@@ -84,7 +86,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Получаем текущий Telegram
 $stmt = $pdo->prepare("SELECT telegram FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
 $current_telegram = $stmt->fetchColumn() ?? '';
@@ -99,21 +100,38 @@ $current_telegram = $stmt->fetchColumn() ?? '';
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     #toast {
-      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-      z-index: 9999; padding: 16px 32px; border-radius: 12px; color: white;
-      font-weight: bold; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      opacity: 0; transition: opacity 0.5s ease;
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9999;
+        padding: 16px 32px;
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        opacity: 0;
+        transition: all 0.4s ease;
+        min-width: 300px;
+        text-align: center;
     }
-    #toast.show { opacity: 1; }
-    #toast.success { background: #10b981; }
-    #toast.error   { background: #ef4444; }
-  </style>
+    #toast.show {
+        opacity: 1;
+        top: 30px;
+    }
+    #toast.success {
+        background: linear-gradient(135deg, #10b981, #34d399);
+    }
+    #toast.error {
+        background: linear-gradient(135deg, #ef4444, #f87171);
+    }
+</style>
 </head>
 <body class="bg-gray-100">
 
   <?php require_once 'header.php'; ?>
 
-  <!-- Toast сообщение -->
+  <!-- Toast -->
   <?php if (isset($_SESSION['toast'])): ?>
     <div id="toast" class="<?= $_SESSION['toast']['type'] ?>">
       <?= htmlspecialchars($_SESSION['toast']['message']) ?>
@@ -142,20 +160,18 @@ $current_telegram = $stmt->fetchColumn() ?? '';
       <form method="POST" class="space-y-6 mb-12 bg-gray-50 p-8 rounded-xl">
         <div>
           <label class="block text-gray-700 mb-2">Имя / Логин</label>
-          <input type="text" name="username" value="<?= htmlspecialchars($_SESSION['username'] ?? '') ?>" required 
-                 class="w-full p-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <input type="text" name="username" value="<?= htmlspecialchars($_SESSION['username'] ?? '') ?>" required class="w-full p-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
         </div>
 
         <div>
           <label class="block text-gray-700 mb-2">Email</label>
-          <input type="email" name="email" value="<?= htmlspecialchars($_SESSION['email'] ?? '') ?>" required 
-                 class="w-full p-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <input type="email" name="email" value="<?= htmlspecialchars($_SESSION['email'] ?? '') ?>" required class="w-full p-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
         </div>
 
         <div>
           <label class="block text-gray-700 mb-2">Telegram</label>
-          <input type="text" name="telegram" value="<?= htmlspecialchars($current_telegram) ?>" placeholder="@username" 
-                 class="w-full p-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <input type="text" name="telegram" value="<?= htmlspecialchars($current_telegram) ?>" placeholder="@username" class="w-full p-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <p class="text-sm text-gray-500 mt-1">Оставьте пустым, если не хотите указывать</p>
         </div>
 
         <div>
@@ -180,7 +196,7 @@ $current_telegram = $stmt->fetchColumn() ?? '';
         <p class="text-gray-600">У вас пока нет заявок.</p>
       <?php else: ?>
         <div class="overflow-x-auto rounded-lg border border-gray-200">
-          <table class="w-full text-left">
+          <table class="w-full text-left" id="orders-table">
             <thead class="bg-gray-100">
               <tr>
                 <th class="p-4 border-b">№ заявки</th>
@@ -192,12 +208,15 @@ $current_telegram = $stmt->fetchColumn() ?? '';
               </tr>
             </thead>
             <tbody>
-              <?php foreach ($orders as $order): ?>
-                <tr class="border-b hover:bg-gray-50">
-                  <td class="p-4 font-medium"><?= htmlspecialchars($order['id'] ?? '—') ?></td>
-                  <td class="p-4"><?= date('d.m.Y H:i', strtotime($order['created_at'] ?? 'now')) ?></td>
-                  <td class="p-4"><?= number_format($order['amount_give'] ?? 0, 2) ?> <?= htmlspecialchars($order['give_currency'] ?? '—') ?></td>
-                  <td class="p-4"><?= number_format($order['amount_get'] ?? 0, 2) ?> <?= htmlspecialchars($order['get_currency'] ?? '—') ?></td>
+              <?php foreach ($orders as $order): 
+                $isNew = ($highlight_order && $order['id'] === $highlight_order);
+              ?>
+                <tr id="order-<?= htmlspecialchars($order['id']) ?>" 
+                    class="border-b hover:bg-gray-50 <?= $isNew ? 'highlight-row' : '' ?>">
+                  <td class="p-4 font-medium"><?= htmlspecialchars($order['id']) ?></td>
+                  <td class="p-4"><?= date('d.m.Y H:i', strtotime($order['created_at'])) ?></td>
+                  <td class="p-4"><?= number_format($order['amount_give'] ?? 0, 2) ?> <?= htmlspecialchars($order['give_currency']) ?></td>
+                  <td class="p-4"><?= number_format($order['amount_get'] ?? 0, 2) ?> <?= htmlspecialchars($order['get_currency']) ?></td>
                   <td class="p-4">
                     <?php
                     $status = $order['status'] ?? 'new';
@@ -216,8 +235,8 @@ $current_telegram = $stmt->fetchColumn() ?? '';
                   <td class="p-4">
                     <?php if ($status === 'new'): ?>
                       <a href="?cancel_order=<?= htmlspecialchars($order['id']) ?>" 
-                         onclick="return confirm('Вы уверены, что хотите отменить заявку?');"
-                         class="text-red-600 hover:text-red-800 font-medium">Отменить</a>
+                         onclick="return confirm('Отменить заявку?');"
+                         class="text-red-600 hover:text-red-800">Отменить</a>
                     <?php endif; ?>
                   </td>
                 </tr>
@@ -235,12 +254,24 @@ $current_telegram = $stmt->fetchColumn() ?? '';
     // Автозакрытие toast
     const toast = document.getElementById('toast');
     if (toast) {
-      toast.classList.add('show');
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 5000);
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 5000);
     }
-  </script>
+    // Автопрокрутка к новой заявке
+    <?php if (isset($highlight_order) && $highlight_order): ?>
+    window.onload = function() {
+        const row = document.getElementById('order-<?= htmlspecialchars($highlight_order) ?>');
+        if (row) {
+            row.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+        }
+    };
+    <?php endif; ?>
+</script>
 
 </body>
 </html>

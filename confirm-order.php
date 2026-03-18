@@ -1,23 +1,17 @@
 <?php
-// confirm-order.php — финальное создание заявки после подтверждения
+// confirm-order.php — финальное создание заявки
 
 require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
 
-// session_start() НЕ НУЖЕН — он уже в auth.php
+// session_start() УЖЕ вызывается в auth.php — не дублируем!
 
-if (!isLoggedIn()) {
-    header('Location: login.php');
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+if (!isLoggedIn() || $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');
     exit;
 }
 
-// Получаем данные из формы подтверждения (order.php)
 $give_currency = $_POST['give_currency'] ?? '';
 $amount_give   = floatval($_POST['amount_give'] ?? 0);
 $get_currency  = $_POST['get_currency'] ?? '';
@@ -35,7 +29,7 @@ $user_id = $_SESSION['user_id'];
 // Генерируем уникальный номер заявки
 $order_id = 'ORD-' . time() . '-' . rand(1000, 9999);
 
-// Создаём заявку БЕЗ поля telegram (потому что его нет в таблице orders)
+// Создаём заявку БЕЗ поля telegram (его нет в таблице orders)
 $stmt = $pdo->prepare("
     INSERT INTO orders 
     (id, user_id, give_currency, amount_give, get_currency, amount_get, status, created_at)
@@ -43,8 +37,11 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$order_id, $user_id, $give_currency, $amount_give, $get_currency, $amount_get]);
 
-// Успех
-$_SESSION['success'] = "Заявка успешно создана! Номер: <strong>$order_id</strong>";
+// Сохраняем ID новой заявки для подсветки в профиле
+$_SESSION['highlight_order'] = $order_id;
+
+$_SESSION['toast'] = ['type' => 'success', 'message' => "Заявка успешно создана! Номер: $order_id"];
+
 header('Location: profile.php');
 exit;
 ?>
