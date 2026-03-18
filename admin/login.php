@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-define('ADMIN_PASSWORD', '14751475'); // ← смени на свой
+define('ADMIN_PASSWORD', '14751475'); // ← смени на свой надёжный пароль
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pass = $_POST['password'] ?? '';
@@ -19,6 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Админ-панель — Вход</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -28,19 +29,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h1 class="text-3xl font-bold text-center mb-8">Вход в админ-панель</h1>
 
     <?php if (isset($error)): ?>
-      <p class="text-red-400 text-center mb-6"><?= $error ?></p>
+      <p class="text-red-400 text-center mb-6"><?= htmlspecialchars($error) ?></p>
     <?php endif; ?>
 
     <form method="POST" class="space-y-6">
       <div>
-        <label class="block mb-2">Пароль</label>
-        <input type="password" name="password" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <label class="block mb-2 text-gray-300">Пароль</label>
+        <input type="password" name="password" required 
+               class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
       </div>
 
-      <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition">
+      <button type="submit" 
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg transition font-medium">
         Войти
       </button>
     </form>
+
+    <!-- Кнопка "На главную" -->
+    <div class="mt-6 text-center">
+      <a href="../index.php" 
+         class="inline-block text-gray-400 hover:text-white transition text-sm">
+        ← На главную страницу сайта
+      </a>
+    </div>
   </div>
 
 </body>
