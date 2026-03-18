@@ -1,5 +1,5 @@
 <?php
-// admin/orders.php — админ-панель заявок
+// admin/orders.php — админ-панель заявок (исправленная версия)
 
 session_start();
 
@@ -17,11 +17,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_status'])) {
     $new_status = $_POST['new_status'];
 
     $valid_statuses = ['new', 'in_process', 'success', 'canceled'];
+
     if (in_array($new_status, $valid_statuses)) {
         $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
         $stmt->execute([$new_status, $order_id]);
-        $_SESSION['admin_message'] = "Статус заявки $order_id изменён на $new_status";
+        $_SESSION['admin_message'] = "Статус заявки $order_id изменён на «" . ucfirst(str_replace('_', ' ', $new_status)) . "»";
+    } else {
+        $_SESSION['admin_message'] = "Ошибка: некорректный статус";
     }
+
     header('Location: orders.php');
     exit;
 }
@@ -106,7 +110,7 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <th class="p-4">Отдаёт</th>
             <th class="p-4">Получает</th>
             <th class="p-4">Статус</th>
-            <th class="p-4">Изменить</th>
+            <th class="p-4">Изменить статус</th>
           </tr>
         </thead>
         <tbody>
@@ -121,10 +125,10 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php
                 $status = $order['status'] ?? 'new';
                 $statuses = [
-                    'new'       => ['text' => 'Новая',     'class' => 'bg-yellow-100 text-yellow-800'],
-                    'in_process'=> ['text' => 'В обработке','class' => 'bg-blue-100 text-blue-800'],
-                    'success'   => ['text' => 'Успешно',   'class' => 'bg-green-100 text-green-800'],
-                    'canceled'  => ['text' => 'Отменено',  'class' => 'bg-red-100 text-red-800'],
+                    'new'        => ['text' => 'Новая',     'class' => 'bg-yellow-100 text-yellow-800'],
+                    'in_process' => ['text' => 'В обработке','class' => 'bg-blue-100 text-blue-800'],
+                    'success'    => ['text' => 'Успешно',   'class' => 'bg-green-100 text-green-800'],
+                    'canceled'   => ['text' => 'Отменено',  'class' => 'bg-red-100 text-red-800'],
                 ];
                 $s = $statuses[$status] ?? ['text' => 'Неизвестно', 'class' => 'bg-gray-100 text-gray-800'];
                 ?>
@@ -135,13 +139,13 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
               <td class="p-4">
                 <form method="POST" class="flex items-center gap-2">
                   <input type="hidden" name="order_id" value="<?= htmlspecialchars($order['id']) ?>">
-                  <select name="new_status" class="border rounded p-2">
+                  <select name="new_status" class="border rounded p-2 text-sm">
                     <option value="new" <?= $status === 'new' ? 'selected' : '' ?>>Новая</option>
                     <option value="in_process" <?= $status === 'in_process' ? 'selected' : '' ?>>В обработке</option>
                     <option value="success" <?= $status === 'success' ? 'selected' : '' ?>>Успешно</option>
                     <option value="canceled" <?= $status === 'canceled' ? 'selected' : '' ?>>Отменено</option>
                   </select>
-                  <button type="submit" name="change_status" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                  <button type="submit" name="change_status" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
                     Изменить
                   </button>
                 </form>
