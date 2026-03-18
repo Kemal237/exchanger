@@ -1,5 +1,5 @@
 <?php
-// admin/index.php — Главная админ-панели (статистика + все курсы)
+// admin/index.php — Главная админ-панели (обновлённая статистика)
 
 session_start();
 
@@ -15,7 +15,7 @@ require_once __DIR__ . '/../db.php';
 $period = $_GET['period'] ?? 'today';
 
 $start_date = date('Y-m-d 00:00:00');
-$end_date = date('Y-m-d H:i:s');
+$end_date   = date('Y-m-d H:i:s');
 
 switch ($period) {
     case 'today':
@@ -32,33 +32,38 @@ switch ($period) {
         $start_date = date('Y-m-d 00:00:00', strtotime('-30 days'));
         break;
     case 'all':
-        $start_date = '2000-01-01 00:00:00'; // весь период
+        $start_date = '2000-01-01 00:00:00';
         break;
 }
 
 // Статистика пользователей за период
-$stmt_users_period = $pdo->prepare("SELECT COUNT(*) FROM users WHERE created_at >= ? AND created_at <= ?");
-$stmt_users_period->execute([$start_date, $end_date]);
-$new_users_period = $stmt_users_period->fetchColumn();
+$stmt_users = $pdo->prepare("SELECT COUNT(*) FROM users WHERE created_at >= ? AND created_at <= ?");
+$stmt_users->execute([$start_date, $end_date]);
+$new_users_period = $stmt_users->fetchColumn();
 
-// Общая статистика пользователей (за всё время)
 $total_users = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
 $admins = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'admin'")->fetchColumn();
 
 // Статистика заявок за выбранный период
-$stmt_orders_period = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE created_at >= ? AND created_at <= ?");
-$stmt_orders_period->execute([$start_date, $end_date]);
-$total_orders_period = $stmt_orders_period->fetchColumn();
+$stmt_total     = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE created_at >= ? AND created_at <= ?");
+$stmt_success   = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE status = 'success' AND created_at >= ? AND created_at <= ?");
+$stmt_in_process= $pdo->prepare("SELECT COUNT(*) FROM orders WHERE status = 'in_process' AND created_at >= ? AND created_at <= ?");
+$stmt_new       = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE status = 'new' AND created_at >= ? AND created_at <= ?");
+$stmt_canceled  = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE status = 'canceled' AND created_at >= ? AND created_at <= ?");
 
-$stmt_processed_period = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE status = 'processed' AND created_at >= ? AND created_at <= ?");
-$stmt_processed_period->execute([$start_date, $end_date]);
-$processed_period = $stmt_processed_period->fetchColumn();
+$stmt_total->execute([$start_date, $end_date]);
+$stmt_success->execute([$start_date, $end_date]);
+$stmt_in_process->execute([$start_date, $end_date]);
+$stmt_new->execute([$start_date, $end_date]);
+$stmt_canceled->execute([$start_date, $end_date]);
 
-$stmt_rejected_period = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE status = 'rejected' AND created_at >= ? AND created_at <= ?");
-$stmt_rejected_period->execute([$start_date, $end_date]);
-$rejected_period = $stmt_rejected_period->fetchColumn();
+$total_orders_period   = $stmt_total->fetchColumn();
+$success_period        = $stmt_success->fetchColumn();
+$in_process_period     = $stmt_in_process->fetchColumn();
+$new_period            = $stmt_new->fetchColumn();
+$canceled_period       = $stmt_canceled->fetchColumn();
 
-// Текущие курсы без наценки (все пары)
+// Текущие курсы без наценки
 $real_rates = getRealRates();
 ?>
 
@@ -90,11 +95,11 @@ $real_rates = getRealRates();
     <section class="mb-8">
       <h2 class="text-2xl font-bold mb-4">Статистика за период</h2>
       <div class="flex flex-wrap gap-3">
-        <a href="?period=today" class="px-4 py-2 rounded-lg <?= $period === 'today' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300' ?>">Сегодня</a>
-        <a href="?period=yesterday" class="px-4 py-2 rounded-lg <?= $period === 'yesterday' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300' ?>">Вчера</a>
-        <a href="?period=7days" class="px-4 py-2 rounded-lg <?= $period === '7days' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300' ?>">7 дней</a>
-        <a href="?period=30days" class="px-4 py-2 rounded-lg <?= $period === '30days' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300' ?>">30 дней</a>
-        <a href="?period=all" class="px-4 py-2 rounded-lg <?= $period === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300' ?>">Весь период</a>
+        <a href="?period=today"      class="px-5 py-2 rounded-lg <?= $period === 'today' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300' ?>">Сегодня</a>
+        <a href="?period=yesterday"  class="px-5 py-2 rounded-lg <?= $period === 'yesterday' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300' ?>">Вчера</a>
+        <a href="?period=7days"      class="px-5 py-2 rounded-lg <?= $period === '7days' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300' ?>">7 дней</a>
+        <a href="?period=30days"     class="px-5 py-2 rounded-lg <?= $period === '30days' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300' ?>">30 дней</a>
+        <a href="?period=all"        class="px-5 py-2 rounded-lg <?= $period === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300' ?>">Весь период</a>
       </div>
     </section>
 
@@ -117,26 +122,34 @@ $real_rates = getRealRates();
       </div>
     </section>
 
-    <!-- Статистика заявок (теперь полностью за выбранный период) -->
+    <!-- Статистика заявок — 5 блоков -->
     <section class="mb-10">
       <h2 class="text-2xl font-bold mb-6">Заявки (за выбранный период)</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white p-6 rounded-xl shadow">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow text-center">
           <h3 class="text-lg font-semibold text-gray-600">Всего</h3>
-          <p class="text-4xl font-bold"><?= $total_orders_period ?></p>
+          <p class="text-5xl font-bold"><?= $total_orders_period ?></p>
         </div>
-        <div class="bg-white p-6 rounded-xl shadow">
-          <h3 class="text-lg font-semibold text-green-600">Обработано</h3>
-          <p class="text-4xl font-bold"><?= $processed_period ?></p>
+        <div class="bg-white p-6 rounded-xl shadow text-center">
+          <h3 class="text-lg font-semibold text-green-600">Успешные</h3>
+          <p class="text-5xl font-bold"><?= $success_period ?></p>
         </div>
-        <div class="bg-white p-6 rounded-xl shadow">
-          <h3 class="text-lg font-semibold text-red-600">Отклонено</h3>
-          <p class="text-4xl font-bold"><?= $rejected_period ?></p>
+        <div class="bg-white p-6 rounded-xl shadow text-center">
+          <h3 class="text-lg font-semibold text-blue-600">В обработке</h3>
+          <p class="text-5xl font-bold"><?= $in_process_period ?></p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow text-center">
+          <h3 class="text-lg font-semibold text-yellow-600">Новые</h3>
+          <p class="text-5xl font-bold"><?= $new_period ?></p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow text-center">
+          <h3 class="text-lg font-semibold text-red-600">Отмененные</h3>
+          <p class="text-5xl font-bold"><?= $canceled_period ?></p>
         </div>
       </div>
     </section>
 
-    <!-- Все курсы без наценки -->
+    <!-- Текущие курсы без наценки -->
     <section>
       <h2 class="text-2xl font-bold mb-6">Текущие рыночные курсы (без наценки)</h2>
       <div class="bg-white rounded-xl shadow overflow-x-auto">
@@ -152,9 +165,8 @@ $real_rates = getRealRates();
             <?php foreach ($rates as $from => $to_list): ?>
               <?php foreach ($to_list as $to => $rate_with_markup): ?>
                 <?php
-                // Обратный расчёт реального курса (без наценки)
                 $real_rate = $rate_with_markup;
-                if ($markup_sell > 0) {
+                if (isset($markup_sell) && $markup_sell > 0) {
                     $real_rate = $rate_with_markup / $markup_sell;
                 }
                 ?>

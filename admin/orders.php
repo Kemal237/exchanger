@@ -1,5 +1,5 @@
 <?php
-// admin/orders.php — админ-панель заявок (исправленная версия)
+// admin/orders.php — админ-панель заявок с возможностью удаления
 
 session_start();
 
@@ -11,19 +11,28 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db.php';
 
-// Обработка изменения статуса
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_status'])) {
-    $order_id = $_POST['order_id'];
-    $new_status = $_POST['new_status'];
+// === Обработка действий ===
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $valid_statuses = ['new', 'in_process', 'success', 'canceled'];
+    // Изменение статуса
+    if (isset($_POST['change_status'])) {
+        $order_id = $_POST['order_id'];
+        $new_status = $_POST['new_status'];
 
-    if (in_array($new_status, $valid_statuses)) {
-        $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
-        $stmt->execute([$new_status, $order_id]);
-        $_SESSION['admin_message'] = "Статус заявки $order_id изменён на «" . ucfirst(str_replace('_', ' ', $new_status)) . "»";
-    } else {
-        $_SESSION['admin_message'] = "Ошибка: некорректный статус";
+        $valid_statuses = ['new', 'in_process', 'success', 'canceled'];
+        if (in_array($new_status, $valid_statuses)) {
+            $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
+            $stmt->execute([$new_status, $order_id]);
+            $_SESSION['admin_message'] = "Статус заявки $order_id изменён на «" . ucfirst(str_replace('_', ' ', $new_status)) . "»";
+        }
+    }
+
+    // Удаление заявки
+    if (isset($_POST['delete_order'])) {
+        $order_id = $_POST['order_id'];
+        $stmt = $pdo->prepare("DELETE FROM orders WHERE id = ?");
+        $stmt->execute([$order_id]);
+        $_SESSION['admin_message'] = "Заявка $order_id успешно удалена";
     }
 
     header('Location: orders.php');
@@ -110,13 +119,13 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <th class="p-4">Отдаёт</th>
             <th class="p-4">Получает</th>
             <th class="p-4">Статус</th>
-            <th class="p-4">Изменить статус</th>
+            <th class="p-4">Действия</th>
           </tr>
         </thead>
         <tbody>
           <?php foreach ($orders as $order): ?>
             <tr class="border-b hover:bg-gray-50">
-              <td class="p-4"><?= htmlspecialchars($order['id']) ?></td>
+              <td class="p-4 font-medium"><?= htmlspecialchars($order['id']) ?></td>
               <td class="p-4"><?= date('d.m.Y H:i', strtotime($order['created_at'])) ?></td>
               <td class="p-4"><?= htmlspecialchars($order['username'] ?? 'ID: ' . $order['user_id']) ?></td>
               <td class="p-4"><?= number_format($order['amount_give'], 2) ?> <?= htmlspecialchars($order['give_currency']) ?></td>
@@ -137,18 +146,30 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </span>
               </td>
               <td class="p-4">
-                <form method="POST" class="flex items-center gap-2">
-                  <input type="hidden" name="order_id" value="<?= htmlspecialchars($order['id']) ?>">
-                  <select name="new_status" class="border rounded p-2 text-sm">
-                    <option value="new" <?= $status === 'new' ? 'selected' : '' ?>>Новая</option>
-                    <option value="in_process" <?= $status === 'in_process' ? 'selected' : '' ?>>В обработке</option>
-                    <option value="success" <?= $status === 'success' ? 'selected' : '' ?>>Успешно</option>
-                    <option value="canceled" <?= $status === 'canceled' ? 'selected' : '' ?>>Отменено</option>
-                  </select>
-                  <button type="submit" name="change_status" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
-                    Изменить
-                  </button>
-                </form>
+                <div class="flex items-center gap-3">
+                  <!-- Изменение статуса -->
+                  <form method="POST" class="flex items-center gap-2">
+                    <input type="hidden" name="order_id" value="<?= htmlspecialchars($order['id']) ?>">
+                    <select name="new_status" class="border rounded p-2 text-sm">
+                      <option value="new"        <?= $status === 'new' ? 'selected' : '' ?>>Новая</option>
+                      <option value="in_process" <?= $status === 'in_process' ? 'selected' : '' ?>>В обработке</option>
+                      <option value="success"    <?= $status === 'success' ? 'selected' : '' ?>>Успешно</option>
+                      <option value="canceled"   <?= $status === 'canceled' ? 'selected' : '' ?>>Отменено</option>
+                    </select>
+                    <button type="submit" name="change_status" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+                      Изменить
+                    </button>
+                  </form>
+
+                  <!-- Удаление заявки -->
+                  <form method="POST" onsubmit="return confirm('Вы уверены, что хотите УДАЛИТЬ заявку <?= htmlspecialchars($order['id']) ?>? Это действие нельзя отменить!');">
+                    <input type="hidden" name="order_id" value="<?= htmlspecialchars($order['id']) ?>">
+                    <button type="submit" name="delete_order" 
+                            class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm">
+                      Удалить
+                    </button>
+                  </form>
+                </div>
               </td>
             </tr>
           <?php endforeach; ?>

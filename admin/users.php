@@ -1,5 +1,5 @@
 <?php
-// admin/users.php — Управление пользователями
+// admin/users.php — Управление пользователями с сортировкой
 
 session_start();
 
@@ -11,34 +11,47 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db.php';
 
-// Список всех пользователей
-$stmt = $pdo->query("SELECT id, username, email, role, created_at FROM users ORDER BY created_at DESC");
-$users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// === Обработка сортировки ===
+$allowed_columns = ['id', 'username', 'email', 'telegram', 'role', 'created_at'];
+$sort_column = isset($_GET['sort']) && in_array($_GET['sort'], $allowed_columns) ? $_GET['sort'] : 'id';
+$sort_order  = (isset($_GET['order']) && $_GET['order'] === 'desc') ? 'DESC' : 'ASC';
 
-// Обработка редактирования пользователя
+// Переключение направления сортировки
+$next_order = ($sort_order === 'ASC') ? 'desc' : 'asc';
+
+// Обработка удаления
+if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
+    $delete_id = (int)$_GET['delete'];
+    $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+    $stmt->execute([$delete_id]);
+    $_SESSION['admin_message'] = "Пользователь успешно удалён";
+    header('Location: users.php');
+    exit;
+}
+
+// Обработка редактирования
 $edit_error = $edit_success = '';
 $edit_user = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit') {
-    $user_id = (int)($_POST['user_id'] ?? 0);
+    $user_id      = (int)($_POST['user_id'] ?? 0);
     $new_username = trim($_POST['username'] ?? '');
-    $new_email = trim($_POST['email'] ?? '');
-    $new_role = $_POST['role'] ?? 'user';
+    $new_email    = trim($_POST['email'] ?? '');
+    $new_telegram = trim($_POST['telegram'] ?? '');
+    $new_role     = $_POST['role'] ?? 'user';
     $new_password = $_POST['new_password'] ?? '';
 
     if (empty($new_username) || empty($new_email)) {
         $edit_error = 'Заполните имя и email';
-    } elseif (!filter_var($new_email, FILTER_VALIDATE_EMAIL)) {
-        $edit_error = 'Некорректный email';
     } else {
         try {
             if ($new_password) {
                 $hash = password_hash($new_password, PASSWORD_DEFAULT);
-                $stmt = $pdo->prepare("UPDATE users SET username = ?, email = ?, role = ?, password = ? WHERE id = ?");
-                $stmt->execute([$new_username, $new_email, $new_role, $hash, $user_id]);
+                $stmt = $pdo->prepare("UPDATE users SET username = ?, email = ?, telegram = ?, role = ?, password = ? WHERE id = ?");
+                $stmt->execute([$new_username, $new_email, $new_telegram, $new_role, $hash, $user_id]);
             } else {
-                $stmt = $pdo->prepare("UPDATE users SET username = ?, email = ?, role = ? WHERE id = ?");
-                $stmt->execute([$new_username, $new_email, $new_role, $user_id]);
+                $stmt = $pdo->prepare("UPDATE users SET username = ?, email = ?, telegram = ?, role = ? WHERE id = ?");
+                $stmt->execute([$new_username, $new_email, $new_telegram, $new_role, $user_id]);
             }
             $edit_success = 'Пользователь успешно обновлён';
         } catch (PDOException $e) {
@@ -47,13 +60,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Если нажали "Редактировать" — загружаем данные пользователя
+// Загрузка данных пользователя для редактирования
 if (isset($_GET['edit'])) {
     $edit_id = (int)$_GET['edit'];
     $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
     $stmt->execute([$edit_id]);
     $edit_user = $stmt->fetch(PDO::FETCH_ASSOC);
 }
+
+// Получение списка пользователей с сортировкой
+$stmt = $pdo->prepare("
+    SELECT id, username, email, telegram, role, created_at 
+    FROM users 
+    ORDER BY $sort_column $sort_order
+");
+$stmt->execute();
+$users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -70,6 +92,7 @@ if (isset($_GET['edit'])) {
     <div class="container mx-auto px-4 flex justify-between items-center">
       <h1 class="text-2xl font-bold">Админ-панель</h1>
       <nav class="space-x-6">
+        <a href="index.php" class="hover:underline">Главная</a>
         <a href="orders.php" class="hover:underline">Заявки</a>
         <a href="users.php" class="text-yellow-300 font-bold hover:underline">Пользователи</a>
         <a href="logout.php" class="hover:underline">Выйти</a>
@@ -93,7 +116,7 @@ if (isset($_GET['edit'])) {
       </p>
     <?php endif; ?>
 
-    <!-- Форма редактирования (появляется при нажатии "Редактировать") -->
+    <!-- Форма редактирования -->
     <?php if ($edit_user): ?>
       <div class="bg-white rounded-xl shadow p-8 mb-10">
         <h2 class="text-2xl font-bold mb-6">Редактирование пользователя: <?= htmlspecialchars($edit_user['username']) ?></h2>
@@ -110,6 +133,11 @@ if (isset($_GET['edit'])) {
           <div>
             <label class="block text-gray-700 mb-2">Email</label>
             <input type="email" name="email" value="<?= htmlspecialchars($edit_user['email']) ?>" required class="w-full p-3 border rounded-lg">
+          </div>
+
+          <div>
+            <label class="block text-gray-700 mb-2">Telegram</label>
+            <input type="text" name="telegram" value="<?= htmlspecialchars($edit_user['telegram'] ?? '') ?>" placeholder="@username" class="w-full p-3 border rounded-lg">
           </div>
 
           <div>
@@ -137,16 +165,17 @@ if (isset($_GET['edit'])) {
       </div>
     <?php endif; ?>
 
-    <!-- Список пользователей -->
+    <!-- Список пользователей с сортировкой -->
     <div class="bg-white rounded-xl shadow overflow-hidden">
       <table class="w-full text-left">
         <thead class="bg-gray-100">
           <tr>
-            <th class="p-4">ID</th>
-            <th class="p-4">Логин</th>
-            <th class="p-4">Email</th>
-            <th class="p-4">Роль</th>
-            <th class="p-4">Дата регистрации</th>
+            <th class="p-4 cursor-pointer hover:bg-gray-200" onclick="sortTable('id')">ID <?= $sort_column === 'id' ? ($sort_order === 'ASC' ? '↑' : '↓') : '' ?></th>
+            <th class="p-4 cursor-pointer hover:bg-gray-200" onclick="sortTable('username')">Логин <?= $sort_column === 'username' ? ($sort_order === 'ASC' ? '↑' : '↓') : '' ?></th>
+            <th class="p-4 cursor-pointer hover:bg-gray-200" onclick="sortTable('email')">Email <?= $sort_column === 'email' ? ($sort_order === 'ASC' ? '↑' : '↓') : '' ?></th>
+            <th class="p-4 cursor-pointer hover:bg-gray-200" onclick="sortTable('telegram')">Telegram <?= $sort_column === 'telegram' ? ($sort_order === 'ASC' ? '↑' : '↓') : '' ?></th>
+            <th class="p-4 cursor-pointer hover:bg-gray-200" onclick="sortTable('role')">Роль <?= $sort_column === 'role' ? ($sort_order === 'ASC' ? '↑' : '↓') : '' ?></th>
+            <th class="p-4 cursor-pointer hover:bg-gray-200" onclick="sortTable('created_at')">Дата регистрации <?= $sort_column === 'created_at' ? ($sort_order === 'ASC' ? '↑' : '↓') : '' ?></th>
             <th class="p-4">Действия</th>
           </tr>
         </thead>
@@ -156,15 +185,18 @@ if (isset($_GET['edit'])) {
               <td class="p-4"><?= $user['id'] ?></td>
               <td class="p-4"><?= htmlspecialchars($user['username']) ?></td>
               <td class="p-4"><?= htmlspecialchars($user['email']) ?></td>
+              <td class="p-4"><?= htmlspecialchars($user['telegram'] ?? '—') ?></td>
               <td class="p-4">
-                <span class="px-3 py-1 rounded-full text-sm
-                  <?= $user['role'] === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800' ?>">
+                <span class="px-3 py-1 rounded-full text-sm <?= $user['role'] === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800' ?>">
                   <?= $user['role'] === 'admin' ? 'Админ' : 'Пользователь' ?>
                 </span>
               </td>
               <td class="p-4"><?= date('d.m.Y H:i', strtotime($user['created_at'])) ?></td>
-              <td class="p-4">
+              <td class="p-4 space-x-4">
                 <a href="?edit=<?= $user['id'] ?>" class="text-blue-600 hover:underline">Редактировать</a>
+                <a href="?delete=<?= $user['id'] ?>" 
+                   onclick="return confirm('Вы уверены, что хотите удалить пользователя <?= htmlspecialchars($user['username']) ?>?');"
+                   class="text-red-600 hover:underline">Удалить</a>
               </td>
             </tr>
           <?php endforeach; ?>
@@ -173,6 +205,21 @@ if (isset($_GET['edit'])) {
     </div>
 
   </main>
+
+  <script>
+    function sortTable(column) {
+      let order = 'asc';
+      const url = new URL(window.location.href);
+      
+      if (url.searchParams.get('sort') === column && url.searchParams.get('order') === 'asc') {
+        order = 'desc';
+      }
+      
+      url.searchParams.set('sort', column);
+      url.searchParams.set('order', order);
+      window.location.href = url.toString();
+    }
+  </script>
 
 </body>
 </html>
