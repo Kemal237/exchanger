@@ -6,20 +6,17 @@ define('ADMIN_EMAIL', 'admin@your-domain.com');
 
 // === Кэширование последних успешных курсов ===
 define('CACHE_FILE', __DIR__ . '/cache_rates.json');
-define('CACHE_TTL', 3600); // 1 час — если файл старше, считаем его недействительным
+define('CACHE_TTL', 3600);
 
 function getCachedRates() {
-    if (!file_exists(CACHE_FILE)) {
-        return null;
-    }
+    if (!file_exists(CACHE_FILE)) return null;
 
     $content = file_get_contents(CACHE_FILE);
     $data = json_decode($content, true);
 
     if (!$data || !isset($data['timestamp']) || (time() - $data['timestamp']) > CACHE_TTL) {
-        return null; // кэш устарел
+        return null;
     }
-
     return $data;
 }
 
@@ -30,7 +27,6 @@ function saveCachedRates($rates, $reserves, $limits) {
         'reserves'  => $reserves,
         'limits'    => $limits
     ];
-
     file_put_contents(CACHE_FILE, json_encode($data, JSON_PRETTY_PRINT));
 }
 
@@ -41,7 +37,7 @@ function getRealRates() {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);  // временно — в продакшене верни true
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
     curl_setopt($ch, CURLOPT_USERAGENT, 'Swap/1.0 (compatible; +https://cr873507.tw1.ru)');
     
@@ -71,17 +67,15 @@ function getRealRates() {
         return null;
     }
 
-    $result = [
+    return [
         'tether'  => $tether,
         'bitcoin' => $bitcoin,
         'usd'     => ['rub' => $usd_rub],
         'eur'     => ['rub' => $eur_rub],
     ];
-    
-    return $result;
 }
 
-// Загружаем кэш (если есть)
+// Загрузка курсов (твой существующий код)
 $cached = getCachedRates();
 if ($cached) {
     $rates    = $cached['rates'];
@@ -114,7 +108,7 @@ if ($cached) {
             ],
         ];
 
-        // Добавляем обратные курсы автоматически
+        // Добавляем обратные курсы
         $reverse_rates = [];
         foreach ($rates as $from => $toArray) {
             foreach ($toArray as $to => $value) {
@@ -124,7 +118,6 @@ if ($cached) {
                 }
             }
         }
-
         foreach ($reverse_rates as $from => $toArray) {
             if (!isset($rates[$from])) $rates[$from] = [];
             foreach ($toArray as $to => $value) {
@@ -148,4 +141,26 @@ if ($cached) {
 
         saveCachedRates($rates, $reserves, $limits);
     }
+}
+
+// ================================================
+// НОВЫЙ КОД: Сохранение данных обмена перед редиректом на логин
+// ================================================
+
+if (!function_exists('savePendingExchange')) {
+    function savePendingExchange() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            session_start(); // на всякий случай
+            $_SESSION['pending_exchange'] = [
+                'give'        => $_POST['give_currency'] ?? 'USDT_TRC20',
+                'get'         => $_POST['get_currency']  ?? 'RUB',
+                'amount_give' => floatval($_POST['amount_give'] ?? 100),
+            ];
+        }
+    }
+}
+
+// Вызываем функцию, если пришёл POST от формы обмена
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['give_currency'])) {
+    savePendingExchange();
 }

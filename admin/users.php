@@ -70,7 +70,7 @@ if (isset($_GET['edit'])) {
     <div class="container mx-auto px-4 flex justify-between items-center">
       <h1 class="text-2xl font-bold">Админ-панель</h1>
       <nav class="space-x-6">
-        <a href="index.php" class="hover:underline">Заявки</a>
+        <a href="orders.php" class="hover:underline">Заявки</a>
         <a href="users.php" class="text-yellow-300 font-bold hover:underline">Пользователи</a>
         <a href="logout.php" class="hover:underline">Выйти</a>
       </nav>
