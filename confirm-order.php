@@ -1,11 +1,11 @@
 <?php
-// confirm-order.php — финальное создание заявки
+// confirm-order.php — создание заявки с проверкой и вычетом резерва
 
 require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
 
-// session_start() УЖЕ вызывается в auth.php — не дублируем!
+// session_start() уже вызывается в auth.php — не дублируем!
 
 if (!isLoggedIn() || $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');
@@ -24,9 +24,16 @@ if ($amount_give <= 0 || $amount_get <= 0 || empty($telegram)) {
     exit;
 }
 
+// Проверка наличия резерва
+if (!hasEnoughReserve($get_currency, $amount_get)) {
+    $_SESSION['error'] = 'Недостаточно резерва по валюте ' . htmlspecialchars($get_currency);
+    header('Location: index.php');
+    exit;
+}
+
 $user_id = $_SESSION['user_id'];
 
-// Генерируем уникальный номер заявки
+// Генерируем номер заявки
 $order_id = 'ORD-' . time() . '-' . rand(1000, 9999);
 
 // Создаём заявку БЕЗ поля telegram (его нет в таблице orders)
@@ -37,7 +44,10 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$order_id, $user_id, $give_currency, $amount_give, $get_currency, $amount_get]);
 
-// Сохраняем ID новой заявки для подсветки в профиле
+// Вычитаем из резерва получаемой валюты
+updateReserve($get_currency, $amount_get);
+
+// Сохраняем для подсветки в профиле
 $_SESSION['highlight_order'] = $order_id;
 
 $_SESSION['toast'] = ['type' => 'success', 'message' => "Заявка успешно создана! Номер: $order_id"];

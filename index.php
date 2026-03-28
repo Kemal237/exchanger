@@ -126,7 +126,7 @@ $current_max = $limits[$give]['max'] ?? 100000;
                    placeholder="<?= ($get === 'BTC') ? '0.00000000' : '100.00' ?>">
           </div>
           <div class="relative">
-            <p class="text-sm text-gray-500 mt-1">Резерв: <strong id="reserve-get"><?= number_format($reserves[$get] ?? 0, ($get === 'BTC' ? 8 : 2), '.', ' ') ?></strong></p>
+            <p class="text-sm text-gray-500 mt-1">Резерв: <strong id="reserve-get"><?= number_format(getReserve($get), ($get === 'BTC' ? 8 : 2), '.', ' ') ?></strong></p>
           </div>
         </div>
 
@@ -171,7 +171,6 @@ $current_max = $limits[$give]['max'] ?? 100000;
 
   <script>
     const rates = <?= json_encode($rates) ?>;
-    const reserves = <?= json_encode($reserves) ?>;
     const limits = <?= json_encode($limits) ?>;
 
     const amountGiveEl = document.getElementById('amount-give');
@@ -219,7 +218,7 @@ $current_max = $limits[$give]['max'] ?? 100000;
       }
 
       if (reserveEl) {
-        reserveEl.textContent = Number(reserves[to] || 0).toLocaleString('ru-RU', {
+        reserveEl.textContent = Number(getReserve(to) || 0).toLocaleString('ru-RU', {
           minimumFractionDigits: to === 'BTC' ? 8 : 2,
           maximumFractionDigits: to === 'BTC' ? 8 : 2
         });
@@ -246,7 +245,7 @@ $current_max = $limits[$give]['max'] ?? 100000;
       recalculate();
     });
 
-    // При нажатии "Обменять" — если не авторизован → на логин
+    // При нажатии "Обменять"
     document.getElementById('exchange-form').addEventListener('submit', function(e) {
       if (!<?= json_encode(isLoggedIn()) ?>) {
         e.preventDefault();
@@ -255,7 +254,6 @@ $current_max = $limits[$give]['max'] ?? 100000;
           .then(() => window.location.href = 'login.php');
         return;
       }
-      // Если авторизован — форма отправляется нормально
     });
 
     // Инициализация

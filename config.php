@@ -75,7 +75,7 @@ function getRealRates() {
     ];
 }
 
-// Загрузка курсов (твой существующий код)
+// Загрузка курсов
 $cached = getCachedRates();
 if ($cached) {
     $rates    = $cached['rates'];
@@ -108,7 +108,6 @@ if ($cached) {
             ],
         ];
 
-        // Добавляем обратные курсы
         $reverse_rates = [];
         foreach ($rates as $from => $toArray) {
             foreach ($toArray as $to => $value) {
@@ -144,13 +143,41 @@ if ($cached) {
 }
 
 // ================================================
-// НОВЫЙ КОД: Сохранение данных обмена перед редиректом на логин
+// ДИНАМИЧЕСКИЕ РЕЗЕРВЫ ИЗ БАЗЫ ДАННЫХ
+// ================================================
+
+function getReserve($currency) {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT amount FROM reserves WHERE currency = ?");
+    $stmt->execute([$currency]);
+    $amount = $stmt->fetchColumn();
+    return $amount !== false ? (float)$amount : 0.0;
+}
+
+function updateReserve($currency, $amount_to_subtract) {
+    global $pdo;
+    $stmt = $pdo->prepare("
+        INSERT INTO reserves (currency, amount) 
+        VALUES (?, ?) 
+        ON DUPLICATE KEY UPDATE amount = amount - ?
+    ");
+    $stmt->execute([$currency, $amount_to_subtract, $amount_to_subtract]);
+    return true;
+}
+
+function hasEnoughReserve($currency, $required_amount) {
+    $current = getReserve($currency);
+    return $current >= $required_amount;
+}
+
+// ================================================
+// Сохранение данных обмена перед редиректом на логин
 // ================================================
 
 if (!function_exists('savePendingExchange')) {
     function savePendingExchange() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            session_start(); // на всякий случай
+            session_start();
             $_SESSION['pending_exchange'] = [
                 'give'        => $_POST['give_currency'] ?? 'USDT_TRC20',
                 'get'         => $_POST['get_currency']  ?? 'RUB',
@@ -160,7 +187,6 @@ if (!function_exists('savePendingExchange')) {
     }
 }
 
-// Вызываем функцию, если пришёл POST от формы обмена
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['give_currency'])) {
     savePendingExchange();
 }
