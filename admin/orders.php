@@ -68,6 +68,7 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <a href="index.php" class="hover:underline">Главная</a>
         <a href="orders.php" class="text-yellow-300 font-bold hover:underline">Заявки</a>
         <a href="users.php" class="hover:underline">Пользователи</a>
+        <a href="reserves.php" class="hover:underline">Резервы</a>
         <a href="logout.php" class="hover:underline">Выйти</a>
       </nav>
     </div>
