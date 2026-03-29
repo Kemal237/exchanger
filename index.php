@@ -14,17 +14,12 @@ if (isset($_SESSION['pending_exchange'])) {
     $amount_give = floatval($_GET['amount'] ?? 100);
 }
 
-// Защита от отсутствия курсов
+// Защита от отсутствия данных
 if (!isset($rates) || !is_array($rates)) {
     $rates = [
         'USDT_TRC20' => ['RUB' => 95.00, 'BTC' => 0.000012],
         'RUB'        => ['USDT_TRC20' => 0.0105, 'BTC' => 0.00000012],
         'BTC'        => ['USDT_TRC20' => 82000, 'RUB' => 7800000],
-    ];
-    $reserves = [
-        'USDT_TRC20' => 1500000,
-        'RUB'        => 50000000,
-        'BTC'        => 15.5,
     ];
     $limits = [
         'USDT_TRC20' => ['min' => 50, 'max' => 50000],
@@ -33,14 +28,8 @@ if (!isset($rates) || !is_array($rates)) {
     ];
 }
 
-$rate = $rates[$give][$get] ?? 0;
-if ($rate <= 0 && isset($rates[$get][$give]) && $rates[$get][$give] > 0) {
-    $rate = 1 / $rates[$get][$give];
-}
-$amount_get = $amount_give * $rate;
-
-$current_min = $limits[$give]['min'] ?? 10;
-$current_max = $limits[$give]['max'] ?? 100000;
+// Передаём все резервы в JavaScript
+$js_reserves = json_encode($reserves ?? []);
 ?>
 
 <!DOCTYPE html>
@@ -122,11 +111,10 @@ $current_max = $limits[$give]['max'] ?? 100000;
                    id="amount-get"
                    value="<?= number_format($amount_get, ($get === 'BTC' ? 8 : 2), '.', '') ?>"
                    class="w-1/2 p-4 text-2xl font-bold focus:outline-none border-l-0 text-green-600 bg-white"
-                   required
                    placeholder="<?= ($get === 'BTC') ? '0.00000000' : '100.00' ?>">
           </div>
           <div class="relative">
-            <p class="text-sm text-gray-500 mt-1">Резерв: <strong id="reserve-get"><?= number_format(getReserve($get), ($get === 'BTC' ? 8 : 2), '.', ' ') ?></strong></p>
+            <p class="text-sm text-gray-500 mt-1">Резерв: <strong id="reserve-get">—</strong></p>
           </div>
         </div>
 
@@ -172,27 +160,45 @@ $current_max = $limits[$give]['max'] ?? 100000;
   <script>
     const rates = <?= json_encode($rates) ?>;
     const limits = <?= json_encode($limits) ?>;
+    const reserves = <?= $js_reserves ?>;   // <-- резервы из PHP
 
     const amountGiveEl = document.getElementById('amount-give');
     const amountGetEl  = document.getElementById('amount-get');
     const giveSelect   = document.getElementById('give-select');
     const getSelect    = document.getElementById('get-select');
     const reserveEl    = document.getElementById('reserve-get');
-    const submitBtn    = document.getElementById('submit-btn');
-    const errorText    = document.getElementById('error-text');
-    const limitText    = document.getElementById('limit-text');
 
     const timerProgress = document.getElementById('timer-progress');
     const timerText     = document.getElementById('timer-text');
 
     let countdown = 15;
 
+    // Таймер
     function updateTimerDisplay() {
       const progress = (countdown / 15) * 100;
       timerProgress.style.transform = `scaleX(${progress / 100})`;
       const min = Math.floor(countdown / 60);
       const sec = countdown % 60;
       timerText.textContent = `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+    }
+
+    setInterval(() => {
+      countdown--;
+      if (countdown < 0) countdown = 15;
+      updateTimerDisplay();
+    }, 1000);
+
+    updateTimerDisplay();
+
+    // ==================== РЕЗЕРВ ====================
+    function updateGetReserve() {
+      const to = getSelect.value;
+      const res = reserves[to] || 0;
+      const digits = (to === 'BTC') ? 8 : 2;
+      reserveEl.textContent = Number(res).toLocaleString('ru-RU', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      });
     }
 
     function getRate(from, to) {
@@ -204,48 +210,43 @@ $current_max = $limits[$give]['max'] ?? 100000;
       return 0;
     }
 
-    function recalculate() {
+    function recalculate(source = 'give') {
       const from = giveSelect.value;
       const to   = getSelect.value;
       const rate = getRate(from, to);
 
-      let gv = parseFloat(amountGiveEl.value.replace(/[^0-9.]/g, '')) || 0;
-      let tv = parseFloat(amountGetEl.value.replace(/[^0-9.]/g, '')) || 0;
-
-      if (rate > 0) {
-        tv = gv * rate;
-        amountGetEl.value = tv.toFixed(to === 'BTC' ? 8 : 2);
+      if (source === 'get') {
+        let tvStr = amountGetEl.value.replace(/ /g, '').replace(',', '.');
+        let tv = parseFloat(tvStr) || 0;
+        if (rate > 0) {
+          let gv = tv / rate;
+          amountGiveEl.value = gv.toFixed(from === 'BTC' ? 8 : 2).replace(/\.?0+$/, '');
+        }
+      } else {
+        let gvStr = amountGiveEl.value.replace(/ /g, '').replace(',', '.');
+        let gv = parseFloat(gvStr) || 0;
+        if (rate > 0) {
+          let tv = gv * rate;
+          amountGetEl.value = tv.toFixed(to === 'BTC' ? 8 : 2).replace(/\.?0+$/, '');
+        }
       }
 
-      if (reserveEl) {
-        reserveEl.textContent = Number(getReserve(to) || 0).toLocaleString('ru-RU', {
-          minimumFractionDigits: to === 'BTC' ? 8 : 2,
-          maximumFractionDigits: to === 'BTC' ? 8 : 2
-        });
-      }
-    }
-
-    function updateLimitText() {
-      const cur = giveSelect.value;
-      const minVal = limits[cur]?.min ?? 10;
-      const maxVal = limits[cur]?.max ?? 100000;
-      const digits = (cur === 'BTC') ? 8 : 2;
-      limitText.textContent = `Минимум: ${minVal.toLocaleString('ru-RU', {minimumFractionDigits: digits, maximumFractionDigits: digits})} • Максимум: ${maxVal.toLocaleString('ru-RU', {minimumFractionDigits: digits, maximumFractionDigits: digits})}`;
+      updateGetReserve();
     }
 
     // Слушатели
-    amountGiveEl.addEventListener('input', recalculate);
-    amountGetEl.addEventListener('input', recalculate);
-    giveSelect.addEventListener('change', () => { updateLimitText(); recalculate(); });
-    getSelect.addEventListener('change', recalculate);
+    amountGiveEl.addEventListener('input', () => recalculate('give'));
+    amountGetEl.addEventListener('input', () => recalculate('get'));
+    giveSelect.addEventListener('change', () => recalculate('give'));
+    getSelect.addEventListener('change', () => recalculate('give'));
 
+    // Swap
     document.getElementById('swap-btn').addEventListener('click', () => {
       [giveSelect.value, getSelect.value] = [getSelect.value, giveSelect.value];
-      updateLimitText();
-      recalculate();
+      recalculate('give');
     });
 
-    // При нажатии "Обменять"
+    // При отправке формы
     document.getElementById('exchange-form').addEventListener('submit', function(e) {
       if (!<?= json_encode(isLoggedIn()) ?>) {
         e.preventDefault();
@@ -257,15 +258,8 @@ $current_max = $limits[$give]['max'] ?? 100000;
     });
 
     // Инициализация
-    updateLimitText();
-    recalculate();
-    updateTimerDisplay();
-
-    setInterval(() => {
-      countdown--;
-      if (countdown <= 0) countdown = 15;
-      updateTimerDisplay();
-    }, 1000);
+    recalculate('give');
+    updateGetReserve();
   </script>
 
 </body>
