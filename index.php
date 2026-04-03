@@ -21,6 +21,11 @@ if (!isset($rates) || !is_array($rates)) {
         'RUB'        => ['USDT_TRC20' => 0.0105, 'BTC' => 0.00000012],
         'BTC'        => ['USDT_TRC20' => 82000, 'RUB' => 7800000],
     ];
+    $reserves = [
+        'USDT_TRC20' => 1500000,
+        'RUB'        => 50000000,
+        'BTC'        => 15.5,
+    ];
     $limits = [
         'USDT_TRC20' => ['min' => 50, 'max' => 50000],
         'RUB'        => ['min' => 5000, 'max' => 2000000],
@@ -157,16 +162,39 @@ $js_reserves = json_encode($reserves ?? []);
     </div>
   </footer>
 
+  <!-- ВСПЛЫВАЮЩЕЕ ОКНО TELEGRAM -->
+  <div id="telegram-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4">
+      <h3 class="text-2xl font-bold text-center mb-2">Укажите Telegram</h3>
+      <p class="text-center text-gray-600 mb-6">Чтобы мы могли оперативно связаться с вами по заявке</p>
+      
+      <form id="telegram-form" class="space-y-6">
+        <input type="text" id="telegram-input" name="telegram" 
+               placeholder="@username" 
+               class="w-full p-5 border border-gray-300 rounded-2xl text-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+               required>
+        
+        <button type="submit" 
+                class="w-full py-5 bg-gradient-to-r from-green-500 to-teal-600 text-white font-bold text-xl rounded-2xl hover:brightness-110 transition">
+          Подтвердить
+        </button>
+      </form>
+    </div>
+  </div>
+
   <script>
     const rates = <?= json_encode($rates) ?>;
     const limits = <?= json_encode($limits) ?>;
-    const reserves = <?= $js_reserves ?>;   // <-- резервы из PHP
+    const reserves = <?= $js_reserves ?>;
 
     const amountGiveEl = document.getElementById('amount-give');
     const amountGetEl  = document.getElementById('amount-get');
     const giveSelect   = document.getElementById('give-select');
     const getSelect    = document.getElementById('get-select');
     const reserveEl    = document.getElementById('reserve-get');
+    const submitBtn    = document.getElementById('submit-btn');
+    const errorText    = document.getElementById('error-text');
+    const limitText    = document.getElementById('limit-text');
 
     const timerProgress = document.getElementById('timer-progress');
     const timerText     = document.getElementById('timer-text');
@@ -190,7 +218,7 @@ $js_reserves = json_encode($reserves ?? []);
 
     updateTimerDisplay();
 
-    // ==================== РЕЗЕРВ ====================
+    // ==================== РЕЗЕРВ И ПЕРЕСЧЁТ ====================
     function updateGetReserve() {
       const to = getSelect.value;
       const res = reserves[to] || 0;
@@ -232,32 +260,106 @@ $js_reserves = json_encode($reserves ?? []);
       }
 
       updateGetReserve();
+      validateButton();
+    }
+
+    function updateLimitText() {
+      const cur = giveSelect.value;
+      const minVal = limits[cur]?.min ?? 10;
+      const maxVal = limits[cur]?.max ?? 100000;
+      const digits = (cur === 'BTC') ? 8 : 2;
+      limitText.textContent = `Минимум: ${minVal.toLocaleString('ru-RU', {minimumFractionDigits: digits, maximumFractionDigits: digits})} • Максимум: ${maxVal.toLocaleString('ru-RU', {minimumFractionDigits: digits, maximumFractionDigits: digits})}`;
+    }
+
+    function validateButton() {
+      const from = giveSelect.value;
+      const minVal = limits[from]?.min ?? 0;
+      const maxVal = limits[from]?.max ?? Infinity;
+
+      let gvStr = amountGiveEl.value.replace(/ /g, '').replace(',', '.');
+      let gv = parseFloat(gvStr) || 0;
+
+      if (gv < minVal || gv > maxVal || gv <= 0) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-400');
+        errorText.textContent = (gv < minVal) ? 'Сумма меньше минимума' : 'Сумма превышает максимум';
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-400');
+        errorText.textContent = '';
+      }
     }
 
     // Слушатели
-    amountGiveEl.addEventListener('input', () => recalculate('give'));
-    amountGetEl.addEventListener('input', () => recalculate('get'));
-    giveSelect.addEventListener('change', () => recalculate('give'));
-    getSelect.addEventListener('change', () => recalculate('give'));
+    amountGiveEl.addEventListener('input', () => { recalculate('give'); validateButton(); });
+    amountGetEl.addEventListener('input', () => { recalculate('get'); validateButton(); });
+    giveSelect.addEventListener('change', () => { updateLimitText(); recalculate('give'); validateButton(); });
+    getSelect.addEventListener('change', () => { recalculate('give'); validateButton(); });
 
-    // Swap
+    // Swap — теперь правильно переносит сумму
     document.getElementById('swap-btn').addEventListener('click', () => {
+      const tempValue = amountGiveEl.value;
+      amountGiveEl.value = amountGetEl.value;
+      amountGetEl.value = tempValue;
       [giveSelect.value, getSelect.value] = [getSelect.value, giveSelect.value];
+      updateLimitText();
       recalculate('give');
+      validateButton();
     });
 
-    // При отправке формы
+    // ==================== TELEGRAM MODAL ====================
+    const telegramModal = document.getElementById('telegram-modal');
+    const telegramForm = document.getElementById('telegram-form');
+
     document.getElementById('exchange-form').addEventListener('submit', function(e) {
-      if (!<?= json_encode(isLoggedIn()) ?>) {
+      validateButton();
+      if (submitBtn.disabled) {
         e.preventDefault();
-        const formData = new FormData(this);
-        fetch('save-pending-exchange.php', { method: 'POST', body: formData })
-          .then(() => window.location.href = 'login.php');
         return;
       }
+
+      e.preventDefault(); // Останавливаем отправку
+
+      fetch('telegram-handler.php')
+        .then(r => r.json())
+        .then(data => {
+          if (data.hasTelegram) {
+            this.submit();               // Telegram уже есть — отправляем форму
+          } else {
+            telegramModal.classList.remove('hidden'); // Показываем модалку
+          }
+        })
+        .catch(() => telegramModal.classList.remove('hidden'));
+    });
+
+    // Закрытие модалки
+    telegramModal.addEventListener('click', function(e) {
+      if (e.target === telegramModal) telegramModal.classList.add('hidden');
+    });
+
+    // Сохранение Telegram через telegram-handler.php
+    telegramForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const telegram = document.getElementById('telegram-input').value.trim();
+
+      fetch('telegram-handler.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'telegram=' + encodeURIComponent(telegram)
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          telegramModal.classList.add('hidden');
+          document.getElementById('exchange-form').submit(); // Отправляем основную форму
+        } else {
+          alert(data.message || 'Ошибка сохранения Telegram');
+        }
+      });
     });
 
     // Инициализация
+    updateLimitText();
     recalculate('give');
     updateGetReserve();
   </script>
