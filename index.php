@@ -336,7 +336,7 @@ $js_reserves = json_encode($reserves ?? []);
       validateButton();
     });
 
-    // ==================== TELEGRAM MODAL + АВТОРИЗАЦИЯ ====================
+    // ==================== TELEGRAM MODAL ====================
     const telegramModal = document.getElementById('telegram-modal');
     const telegramForm = document.getElementById('telegram-form');
 
@@ -358,12 +358,12 @@ $js_reserves = json_encode($reserves ?? []);
 
       e.preventDefault();
 
-      // Авторизован — проверяем Telegram
-      fetch('telegram-handler.php')
+      // Проверка Telegram (с timestamp, чтобы браузер не кэшировал ответ)
+      fetch('telegram-handler.php?t=' + Date.now())
         .then(r => r.json())
         .then(data => {
-          if (data.hasTelegram) {
-            this.submit();
+          if (data.hasTelegram === true) {
+            this.submit();               // Telegram уже есть — сразу отправляем форму
           } else {
             telegramModal.classList.remove('hidden');
           }
@@ -371,10 +371,12 @@ $js_reserves = json_encode($reserves ?? []);
         .catch(() => telegramModal.classList.remove('hidden'));
     });
 
+    // Закрытие модалки
     telegramModal.addEventListener('click', function(e) {
       if (e.target === telegramModal) telegramModal.classList.add('hidden');
     });
 
+    // Сохранение Telegram
     telegramForm.addEventListener('submit', function(e) {
       e.preventDefault();
       const telegram = document.getElementById('telegram-input').value.trim();
