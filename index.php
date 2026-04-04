@@ -231,7 +231,6 @@ $js_reserves = json_encode($reserves ?? []);
 
     updateTimerDisplay();
 
-    // ==================== РЕЗЕРВ И ПЕРЕСЧЁТ ====================
     function updateGetReserve() {
       const to = getSelect.value;
       const res = reserves[to] || 0;
@@ -288,7 +287,6 @@ $js_reserves = json_encode($reserves ?? []);
       const from = giveSelect.value;
       const to   = getSelect.value;
 
-      // === НОВАЯ ПРОВЕРКА: ОДИНАКОВЫЕ ВАЛЮТЫ ===
       if (from === to) {
         submitBtn.disabled = true;
         submitBtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-400');
@@ -338,7 +336,7 @@ $js_reserves = json_encode($reserves ?? []);
       validateButton();
     });
 
-    // Telegram modal
+    // ==================== TELEGRAM MODAL + АВТОРИЗАЦИЯ ====================
     const telegramModal = document.getElementById('telegram-modal');
     const telegramForm = document.getElementById('telegram-form');
 
@@ -348,8 +346,19 @@ $js_reserves = json_encode($reserves ?? []);
         e.preventDefault();
         return;
       }
+
+      // Если пользователь НЕ авторизован — сохраняем данные и редирект на login
+      if (!<?= json_encode(isLoggedIn()) ?>) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        fetch('save-pending-exchange.php', { method: 'POST', body: formData })
+          .then(() => window.location.href = 'login.php');
+        return;
+      }
+
       e.preventDefault();
 
+      // Авторизован — проверяем Telegram
       fetch('telegram-handler.php')
         .then(r => r.json())
         .then(data => {
