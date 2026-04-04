@@ -33,7 +33,22 @@ if (!isset($rates) || !is_array($rates)) {
     ];
 }
 
-// Передаём все резервы в JavaScript
+// ==================== ЗАГРУЗКА ИЗ БАЗЫ ДАННЫХ ====================
+try {
+    $stmt = $pdo->query("SELECT currency, amount AS reserve_amount, min, max FROM reserves");
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $cur = $row['currency'];
+        $reserves[$cur] = $row['reserve_amount'] ?? $reserves[$cur] ?? 0;
+        $limits[$cur]   = [
+            'min' => $row['min'] ?? ($limits[$cur]['min'] ?? 0),
+            'max' => $row['max'] ?? ($limits[$cur]['max'] ?? 999999999)
+        ];
+    }
+} catch (Exception $e) {
+    // Если таблица ещё не готова — используем fallback
+}
+
+// Передаём актуальные резервы в JavaScript
 $js_reserves = json_encode($reserves ?? []);
 ?>
 
@@ -138,9 +153,7 @@ $js_reserves = json_encode($reserves ?? []);
           </button>
 
           <div class="mt-4 flex flex-col gap-1">
-            <p class="text-sm text-gray-600" id="limit-text">
-              Минимум: <?= number_format($current_min, ($give === 'BTC' ? 8 : 2), '.', ' ') ?> • Максимум: <?= number_format($current_max, ($give === 'BTC' ? 8 : 2), '.', ' ') ?>
-            </p>
+            <p class="text-sm text-gray-600" id="limit-text"></p>
             <p id="error-text" class="text-sm font-medium text-red-600 min-h-[1.25rem]"></p>
           </div>
         </div>
@@ -267,22 +280,40 @@ $js_reserves = json_encode($reserves ?? []);
       const cur = giveSelect.value;
       const minVal = limits[cur]?.min ?? 10;
       const maxVal = limits[cur]?.max ?? 100000;
-      const digits = (cur === 'BTC') ? 8 : 2;
+      const digits = (cur === 'BTC') ? 8 : 3;
       limitText.textContent = `Минимум: ${minVal.toLocaleString('ru-RU', {minimumFractionDigits: digits, maximumFractionDigits: digits})} • Максимум: ${maxVal.toLocaleString('ru-RU', {minimumFractionDigits: digits, maximumFractionDigits: digits})}`;
     }
 
     function validateButton() {
       const from = giveSelect.value;
+      const to   = getSelect.value;
+
+      // === НОВАЯ ПРОВЕРКА: ОДИНАКОВЫЕ ВАЛЮТЫ ===
+      if (from === to) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-400');
+        errorText.textContent = 'Одинаковые валюты';
+        return;
+      }
+
       const minVal = limits[from]?.min ?? 0;
       const maxVal = limits[from]?.max ?? Infinity;
+      const getReserveVal = reserves[to] || 0;
 
       let gvStr = amountGiveEl.value.replace(/ /g, '').replace(',', '.');
       let gv = parseFloat(gvStr) || 0;
+
+      let tvStr = amountGetEl.value.replace(/ /g, '').replace(',', '.');
+      let tv = parseFloat(tvStr) || 0;
 
       if (gv < minVal || gv > maxVal || gv <= 0) {
         submitBtn.disabled = true;
         submitBtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-400');
         errorText.textContent = (gv < minVal) ? 'Сумма меньше минимума' : 'Сумма превышает максимум';
+      } else if (tv > getReserveVal) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-400');
+        errorText.textContent = 'Превышен резерв';
       } else {
         submitBtn.disabled = false;
         submitBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-400');
@@ -296,7 +327,7 @@ $js_reserves = json_encode($reserves ?? []);
     giveSelect.addEventListener('change', () => { updateLimitText(); recalculate('give'); validateButton(); });
     getSelect.addEventListener('change', () => { recalculate('give'); validateButton(); });
 
-    // Swap — теперь правильно переносит сумму
+    // Swap
     document.getElementById('swap-btn').addEventListener('click', () => {
       const tempValue = amountGiveEl.value;
       amountGiveEl.value = amountGetEl.value;
@@ -307,7 +338,7 @@ $js_reserves = json_encode($reserves ?? []);
       validateButton();
     });
 
-    // ==================== TELEGRAM MODAL ====================
+    // Telegram modal
     const telegramModal = document.getElementById('telegram-modal');
     const telegramForm = document.getElementById('telegram-form');
 
@@ -317,27 +348,24 @@ $js_reserves = json_encode($reserves ?? []);
         e.preventDefault();
         return;
       }
-
-      e.preventDefault(); // Останавливаем отправку
+      e.preventDefault();
 
       fetch('telegram-handler.php')
         .then(r => r.json())
         .then(data => {
           if (data.hasTelegram) {
-            this.submit();               // Telegram уже есть — отправляем форму
+            this.submit();
           } else {
-            telegramModal.classList.remove('hidden'); // Показываем модалку
+            telegramModal.classList.remove('hidden');
           }
         })
         .catch(() => telegramModal.classList.remove('hidden'));
     });
 
-    // Закрытие модалки
     telegramModal.addEventListener('click', function(e) {
       if (e.target === telegramModal) telegramModal.classList.add('hidden');
     });
 
-    // Сохранение Telegram через telegram-handler.php
     telegramForm.addEventListener('submit', function(e) {
       e.preventDefault();
       const telegram = document.getElementById('telegram-input').value.trim();
@@ -351,7 +379,7 @@ $js_reserves = json_encode($reserves ?? []);
       .then(data => {
         if (data.success) {
           telegramModal.classList.add('hidden');
-          document.getElementById('exchange-form').submit(); // Отправляем основную форму
+          document.getElementById('exchange-form').submit();
         } else {
           alert(data.message || 'Ошибка сохранения Telegram');
         }
