@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: localhost
--- Время создания: Мар 28 2026 г., 11:57
+-- Время создания: Апр 04 2026 г., 14:47
 -- Версия сервера: 8.0.44-35
 -- Версия PHP: 7.4.33
 
@@ -57,8 +57,13 @@ INSERT INTO `orders` (`id`, `user_id`, `give_currency`, `amount_give`, `get_curr
 ('ORD-1773586891-8652', 3, 'USDT_TRC20', 100.00000000, 'RUB', 8193.00000000, 0.00000000, 'canceled', '2026-03-15 19:10:35', '2026-03-15 18:01:31', '2026-03-15 19:10:35'),
 ('ORD-1773587036-1497', 3, 'USDT_TRC20', 100.00000000, 'RUB', 8193.00000000, 0.00000000, 'canceled', '2026-03-15 18:54:58', '2026-03-15 18:03:56', '2026-03-15 18:54:58'),
 ('ORD-1773587739-4150', 3, 'USDT_TRC20', 100.00000000, 'RUB', 8193.00000000, 0.00000000, 'canceled', '2026-03-15 18:54:40', '2026-03-15 18:15:39', '2026-03-24 10:17:48'),
-('ORD-1773854042-8830', 5, 'USDT_TRC20', 100.00000000, 'RUB', 8597.00000000, 0.00000000, 'success', NULL, '2026-03-18 20:14:02', '2026-03-18 20:14:55'),
-('ORD-1774688244-5563', 3, 'USDT_TRC20', 100.00000000, 'RUB', 8340.00000000, 0.00000000, 'new', NULL, '2026-03-28 11:57:24', '2026-03-28 11:57:24');
+('ORD-1773854042-8830', 5, 'USDT_TRC20', 100.00000000, 'RUB', 8597.00000000, 0.00000000, 'success', NULL, '2026-03-18 20:14:02', '2026-03-30 11:34:48'),
+('ORD-1774688244-5563', 3, 'USDT_TRC20', 100.00000000, 'RUB', 8340.00000000, 0.00000000, 'new', NULL, '2026-03-28 11:57:24', '2026-03-28 11:57:24'),
+('ORD-1774689009-1305', 3, 'USDT_TRC20', 100.00000000, 'RUB', 8340.00000000, 0.00000000, 'in_process', NULL, '2026-03-28 12:10:09', '2026-03-31 10:06:48'),
+('ORD-1775205774-1666', 7, 'USDT_TRC20', 156.84000000, 'RUB', 12884.41000000, 0.00000000, 'success', NULL, '2026-04-03 11:42:54', '2026-04-03 11:43:57'),
+('ORD-1775302368-6340', 5, 'USDT_TRC20', 100.00000000, 'RUB', 8232.00000000, 0.00000000, 'new', NULL, '2026-04-04 14:32:48', '2026-04-04 14:32:48'),
+('ORD-1775303167-5544', 7, 'USDT_TRC20', 100.00000000, 'RUB', 8232.00000000, 0.00000000, 'canceled', '2026-04-04 14:46:20', '2026-04-04 14:46:07', '2026-04-04 14:46:20'),
+('ORD-1775303184-1618', 7, 'USDT_TRC20', 100.00000000, 'RUB', 8232.00000000, 0.00000000, 'new', NULL, '2026-04-04 14:46:24', '2026-04-04 14:46:24');
 
 -- --------------------------------------------------------
 
@@ -70,6 +75,8 @@ CREATE TABLE IF NOT EXISTS `reserves` (
   `currency` varchar(50) NOT NULL,
   `amount` decimal(18,8) NOT NULL DEFAULT '0.00000000',
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `min` decimal(20,3) NOT NULL DEFAULT '0.000',
+  `max` decimal(20,3) NOT NULL DEFAULT '0.000',
   PRIMARY KEY (`currency`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -77,10 +84,10 @@ CREATE TABLE IF NOT EXISTS `reserves` (
 -- Дамп данных таблицы `reserves`
 --
 
-INSERT INTO `reserves` (`currency`, `amount`, `updated_at`) VALUES
-('BTC', 12.78451637, '2026-03-28 11:50:10'),
-('RUB', 45883660.00000000, '2026-03-28 11:57:24'),
-('USDT_TRC20', 1245678.45000000, '2026-03-28 11:50:10');
+INSERT INTO `reserves` (`currency`, `amount`, `updated_at`, `min`, `max`) VALUES
+('BTC', 12.78451637, '2026-03-29 17:26:13', 0.001, 10.000),
+('RUB', 45759304.00000000, '2026-04-04 14:46:24', 6000.000, 210000.000),
+('USDT_TRC20', 1245858.45000000, '2026-04-04 14:35:15', 50.000, 50000.000);
 
 -- --------------------------------------------------------
 
@@ -111,7 +118,7 @@ INSERT INTO `users` (`id`, `username`, `email`, `telegram`, `password`, `created
 (3, 'kolbasa', 'shadowraze702@gmail.com', '@kolbasa', '$2y$10$NC786k7yVl/UvHkCIEkxNOB/efovBoT9J3vVXyJCfjaoCgUQqQyE6', '2026-02-28 21:11:40', 'user'),
 (4, 'enyaa9', 'enyaa999@gmail.com', NULL, '$2y$10$/Wg401g/3t4yCSgzdaAekOq30xGPiP/BkdVIaZMTvTLcGvKYDVKna', '2026-02-28 21:18:24', 'admin'),
 (5, 'Kem4ik', 'kemal.b31@mail.ru', '@kem4ik', '$2y$10$YoGJLJXb9COdx.KJGHI9IO5.JkCThw7l0avWxc7BHhm.iOGFANCsy', '2026-03-02 13:40:55', 'admin'),
-(7, 'test2', 'ssss@mail.ru', NULL, '$2y$10$4cGE0oMQQQYm4xubm.kfz.eFyyS0IVtkRbcAsSxosdu3ifPi2GrGO', '2026-03-02 15:05:30', 'user');
+(7, 'test2', 'ssss@mail.ru', '@test2', '$2y$10$eMGdbQioFzIH1IbSqaeotuTi4hE09GJw2RYFfmaVCfZto8ifYLbVG', '2026-03-02 15:05:30', 'user');
 
 --
 -- Ограничения внешнего ключа сохраненных таблиц
