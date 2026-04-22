@@ -1,5 +1,5 @@
 <?php
-// profile.php — Личный кабинет с автопрокруткой к новой заявке
+// profile.php — Личный кабинет
 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -37,11 +37,11 @@ try {
     $error = "Ошибка загрузки заявок: " . $e->getMessage();
 }
 
-// Получаем ID новой заявки для подсветки
+// Подсветка новой заявки
 $highlight_order = $_SESSION['highlight_order'] ?? null;
-unset($_SESSION['highlight_order']); // очищаем после использования
+unset($_SESSION['highlight_order']);
 
-// Обработка формы профиля
+// Форма профиля
 $error = $success = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $new_name     = trim($_POST['username'] ?? '');
@@ -86,191 +86,278 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$stmt = $pdo->prepare("SELECT telegram FROM users WHERE id = ?");
+$stmt = $pdo->prepare("SELECT telegram, created_at FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
-$current_telegram = $stmt->fetchColumn() ?? '';
-?>
+$userRow = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+$current_telegram = $userRow['telegram'] ?? '';
+$user_created = $userRow['created_at'] ?? null;
 
+// Статистика
+$total_orders = count($orders);
+$success_orders = count(array_filter($orders, fn($o) => ($o['status'] ?? '') === 'success'));
+$active_orders = count(array_filter($orders, fn($o) => in_array($o['status'] ?? '', ['new', 'in_process'])));
+
+$page_title = 'Личный кабинет — ' . SITE_NAME;
+$current_page = 'profile.php';
+?>
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Личный кабинет — <?= htmlspecialchars(SITE_NAME ?? 'Swap') ?></title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    #toast {
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 9999;
-        padding: 16px 32px;
-        border-radius: 12px;
-        color: white;
-        font-weight: 600;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-        opacity: 0;
-        transition: all 0.4s ease;
-        min-width: 300px;
-        text-align: center;
-    }
-    #toast.show {
-        opacity: 1;
-        top: 30px;
-    }
-    #toast.success {
-        background: linear-gradient(135deg, #10b981, #34d399);
-    }
-    #toast.error {
-        background: linear-gradient(135deg, #ef4444, #f87171);
-    }
-</style>
+  <title><?= htmlspecialchars($page_title) ?></title>
+  <?php require_once 'theme.php'; ?>
 </head>
-<body class="bg-gray-100">
+<body class="bg-bg-base text-txt-primary min-h-screen relative overflow-x-hidden">
 
-  <?php require_once 'header.php'; ?>
+<div class="aurora">
+  <div class="ab ab-1"></div>
+  <div class="ab ab-2"></div>
+  <div class="ab ab-3"></div>
+</div>
+<div class="grid-bg"></div>
+<canvas id="particles" class="fixed inset-0 z-0 pointer-events-none"></canvas>
 
-  <!-- Toast -->
-  <?php if (isset($_SESSION['toast'])): ?>
-    <div id="toast" class="<?= $_SESSION['toast']['type'] ?>">
-      <?= htmlspecialchars($_SESSION['toast']['message']) ?>
+<?php if (isset($_SESSION['toast'])): ?>
+  <div id="toast" class="toast-w <?= htmlspecialchars($_SESSION['toast']['type']) ?>">
+    <?= htmlspecialchars($_SESSION['toast']['message']) ?>
+  </div>
+  <?php unset($_SESSION['toast']); ?>
+<?php endif; ?>
+
+<?php require_once 'header.php'; ?>
+
+<main class="relative z-10 max-w-7xl mx-auto px-6 py-10">
+
+  <!-- Hero -->
+  <section class="mb-10 fade-in">
+    <div class="flex items-center gap-3 text-xs text-txt-muted mb-4">
+      <a href="index.php" class="hover:text-cy transition">Главная</a>
+      <i data-lucide="chevron-right" class="w-3 h-3"></i>
+      <span class="text-txt-secondary">Личный кабинет</span>
     </div>
-    <?php unset($_SESSION['toast']); ?>
-  <?php endif; ?>
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-bold tracking-tight mb-2">
+          Добро пожаловать, <span class="shimmer-text"><?= htmlspecialchars($_SESSION['username'] ?? '') ?></span>
+        </h1>
+        <p class="text-sm text-txt-muted flex items-center gap-2">
+          <i data-lucide="calendar" class="w-4 h-4"></i>
+          <?php if ($user_created): ?>
+            С нами с <?= date('d.m.Y', strtotime($user_created)) ?>
+          <?php else: ?>
+            Ваш личный кабинет
+          <?php endif; ?>
+        </p>
+      </div>
+      <a href="index.php" class="btn-cy px-5 h-11 rounded-lg text-sm font-semibold flex items-center gap-2">
+        <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+        Новый обмен
+      </a>
+    </div>
+  </section>
 
-  <main class="container mx-auto px-4 py-10 max-w-5xl">
+  <!-- Stats -->
+  <section class="grid sm:grid-cols-3 gap-4 mb-10">
+    <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="1">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs text-txt-muted uppercase tracking-wider">Всего заявок</span>
+        <i data-lucide="file-text" class="w-4 h-4 text-cy"></i>
+      </div>
+      <div class="text-2xl font-bold count-up" data-target="<?= $total_orders ?>">0</div>
+    </div>
+    <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="2">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs text-txt-muted uppercase tracking-wider">Успешных</span>
+        <i data-lucide="check-circle-2" class="w-4 h-4 text-emr"></i>
+      </div>
+      <div class="text-2xl font-bold text-emr count-up" data-target="<?= $success_orders ?>">0</div>
+    </div>
+    <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="3">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs text-txt-muted uppercase tracking-wider">В работе</span>
+        <i data-lucide="clock" class="w-4 h-4 text-warn"></i>
+      </div>
+      <div class="text-2xl font-bold text-warn count-up" data-target="<?= $active_orders ?>">0</div>
+    </div>
+  </section>
 
-    <div class="bg-white rounded-2xl shadow-xl p-8">
+  <div class="grid lg:grid-cols-[380px,1fr] gap-6">
 
-      <div class="flex justify-between items-center mb-8">
-        <h1 class="text-3xl font-bold">Личный кабинет</h1>
+    <!-- Settings card -->
+    <aside class="reveal" data-d="1">
+      <div class="gborder spot rounded-2xl bg-bg-card p-6 shadow-card sticky top-24">
+        <div class="flex items-center gap-2 mb-5">
+          <div class="w-8 h-8 rounded-lg bg-cy-soft border border-cy-border flex items-center justify-center">
+            <i data-lucide="settings" class="w-4 h-4 text-cy"></i>
+          </div>
+          <h2 class="text-lg font-bold">Настройки профиля</h2>
+        </div>
+
+        <?php if ($error): ?>
+          <div class="mb-4 px-3.5 py-2.5 rounded-lg bg-danger/10 border border-danger/30 text-xs text-danger flex items-start gap-2">
+            <i data-lucide="alert-circle" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+            <span><?= htmlspecialchars($error) ?></span>
+          </div>
+        <?php endif; ?>
+
+        <form method="POST" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-txt-secondary mb-1.5 uppercase tracking-wider">Логин</label>
+            <input type="text" name="username" required
+                   value="<?= htmlspecialchars($_SESSION['username'] ?? '') ?>"
+                   class="input-d w-full h-10 px-3 rounded-lg text-sm">
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-txt-secondary mb-1.5 uppercase tracking-wider">Email</label>
+            <input type="email" name="email" required
+                   value="<?= htmlspecialchars($_SESSION['email'] ?? '') ?>"
+                   class="input-d w-full h-10 px-3 rounded-lg text-sm">
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-txt-secondary mb-1.5 uppercase tracking-wider">Telegram</label>
+            <input type="text" name="telegram" placeholder="@username"
+                   value="<?= htmlspecialchars($current_telegram) ?>"
+                   class="input-d w-full h-10 px-3 rounded-lg text-sm">
+            <p class="text-[11px] text-txt-muted mt-1">Для уведомлений по заявкам</p>
+          </div>
+
+          <div class="pt-3 border-t border-line">
+            <p class="text-[11px] text-txt-muted mb-3 uppercase tracking-wider">Смена пароля</p>
+
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-medium text-txt-secondary mb-1.5">Новый пароль</label>
+                <input type="password" name="new_password"
+                       class="input-d w-full h-10 px-3 rounded-lg text-sm"
+                       placeholder="Оставьте пустым, если не меняете">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-txt-secondary mb-1.5">Повторите пароль</label>
+                <input type="password" name="confirm_password"
+                       class="input-d w-full h-10 px-3 rounded-lg text-sm"
+                       placeholder="••••••••">
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-cy w-full h-11 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 mt-2">
+            <i data-lucide="save" class="w-4 h-4"></i>
+            Сохранить изменения
+          </button>
+        </form>
+
         <?php if ($isAdmin): ?>
-          <a href="admin/index.php" class="bg-purple-600 text-white px-6 py-3 rounded-xl hover:bg-purple-700 transition font-medium">
-            👑 Админ-панель
+          <a href="admin/index.php" class="btn-ghost mt-4 w-full h-10 rounded-lg text-sm font-medium flex items-center justify-center gap-2" style="border-color: rgba(167,139,250,0.35); color: #A78BFA;">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+            Админ-панель
           </a>
         <?php endif; ?>
       </div>
+    </aside>
 
-      <?php if (isset($error) && $error): ?>
-        <p class="text-red-600 mb-6 bg-red-50 p-4 rounded border border-red-200"><?= htmlspecialchars($error) ?></p>
-      <?php endif; ?>
-
-      <!-- Форма редактирования профиля -->
-      <form method="POST" class="space-y-6 mb-12 bg-gray-50 p-8 rounded-xl">
-        <div>
-          <label class="block text-gray-700 mb-2">Имя / Логин</label>
-          <input type="text" name="username" value="<?= htmlspecialchars($_SESSION['username'] ?? '') ?>" required class="w-full p-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <!-- Orders -->
+    <section class="reveal" data-d="2">
+      <div class="gborder rounded-2xl bg-bg-card shadow-card overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-5 border-b border-line">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-vi-soft border border-vi/30 flex items-center justify-center">
+              <i data-lucide="list-ordered" class="w-4 h-4 text-vi"></i>
+            </div>
+            <h2 class="text-lg font-bold">История обмена</h2>
+          </div>
+          <span class="text-xs text-txt-muted"><?= $total_orders ?> <?= $total_orders === 1 ? 'заявка' : ($total_orders >= 2 && $total_orders <= 4 ? 'заявки' : 'заявок') ?></span>
         </div>
 
-        <div>
-          <label class="block text-gray-700 mb-2">Email</label>
-          <input type="email" name="email" value="<?= htmlspecialchars($_SESSION['email'] ?? '') ?>" required class="w-full p-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
-        </div>
-
-        <div>
-          <label class="block text-gray-700 mb-2">Telegram</label>
-          <input type="text" name="telegram" value="<?= htmlspecialchars($current_telegram) ?>" placeholder="@username" class="w-full p-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <p class="text-sm text-gray-500 mt-1">Оставьте пустым, если не хотите указывать</p>
-        </div>
-
-        <div>
-          <label class="block text-gray-700 mb-2">Новый пароль (оставьте пустым, если не меняете)</label>
-          <input type="password" name="new_password" class="w-full p-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
-        </div>
-
-        <div>
-          <label class="block text-gray-700 mb-2">Повторите новый пароль</label>
-          <input type="password" name="confirm_password" class="w-full p-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
-        </div>
-
-        <button type="submit" class="bg-blue-600 text-white py-4 px-10 rounded-xl hover:bg-blue-700 transition font-medium">
-          Сохранить изменения
-        </button>
-      </form>
-
-      <!-- Заявки -->
-      <h2 class="text-2xl font-bold mb-6">Ваши заявки</h2>
-
-      <?php if (empty($orders)): ?>
-        <p class="text-gray-600">У вас пока нет заявок.</p>
-      <?php else: ?>
-        <div class="overflow-x-auto rounded-lg border border-gray-200">
-          <table class="w-full text-left" id="orders-table">
-            <thead class="bg-gray-100">
-              <tr>
-                <th class="p-4 border-b">№ заявки</th>
-                <th class="p-4 border-b">Дата</th>
-                <th class="p-4 border-b">Отдаёте</th>
-                <th class="p-4 border-b">Получаете</th>
-                <th class="p-4 border-b">Статус</th>
-                <th class="p-4 border-b">Действия</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php foreach ($orders as $order): 
-                $isNew = ($highlight_order && $order['id'] === $highlight_order);
-              ?>
-                <tr id="order-<?= htmlspecialchars($order['id']) ?>" 
-                    class="border-b hover:bg-gray-50 <?= $isNew ? 'highlight-row' : '' ?>">
-                  <td class="p-4 font-medium"><?= htmlspecialchars($order['id']) ?></td>
-                  <td class="p-4"><?= date('d.m.Y H:i', strtotime($order['created_at'])) ?></td>
-                  <td class="p-4"><?= number_format($order['amount_give'] ?? 0, 2) ?> <?= htmlspecialchars($order['give_currency']) ?></td>
-                  <td class="p-4"><?= number_format($order['amount_get'] ?? 0, 2) ?> <?= htmlspecialchars($order['get_currency']) ?></td>
-                  <td class="p-4">
-                    <?php
-                    $status = $order['status'] ?? 'new';
-                    $statuses = [
-                        'new'       => ['text' => 'Новая',     'class' => 'bg-yellow-100 text-yellow-800'],
-                        'in_process'=> ['text' => 'В обработке','class' => 'bg-blue-100 text-blue-800'],
-                        'success'   => ['text' => 'Успешно',   'class' => 'bg-green-100 text-green-800'],
-                        'canceled'  => ['text' => 'Отменено',  'class' => 'bg-red-100 text-red-800'],
-                    ];
-                    $s = $statuses[$status] ?? ['text' => 'Новая', 'class' => 'bg-yellow-100 text-yellow-800'];
-                    ?>
-                    <span class="px-3 py-1 rounded-full text-sm <?= $s['class'] ?>">
-                      <?= $s['text'] ?>
-                    </span>
-                  </td>
-                  <td class="p-4">
-                    <?php if ($status === 'new'): ?>
-                      <a href="?cancel_order=<?= htmlspecialchars($order['id']) ?>" 
-                         onclick="return confirm('Отменить заявку?');"
-                         class="text-red-600 hover:text-red-800">Отменить</a>
-                    <?php endif; ?>
-                  </td>
+        <?php if (empty($orders)): ?>
+          <div class="p-12 text-center">
+            <div class="w-16 h-16 rounded-full bg-bg-soft border border-line mx-auto mb-4 flex items-center justify-center">
+              <i data-lucide="inbox" class="w-7 h-7 text-txt-muted"></i>
+            </div>
+            <p class="text-txt-secondary mb-1">У вас пока нет заявок</p>
+            <p class="text-xs text-txt-muted mb-5">Создайте первую прямо сейчас</p>
+            <a href="index.php" class="btn-cy inline-flex items-center gap-2 px-5 h-11 rounded-lg text-sm font-semibold">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              Создать обмен
+            </a>
+          </div>
+        <?php else: ?>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm" id="orders-table">
+              <thead>
+                <tr class="text-left text-xs text-txt-muted uppercase tracking-wider bg-bg-soft/40">
+                  <th class="px-6 py-3 font-medium">№</th>
+                  <th class="px-4 py-3 font-medium">Дата</th>
+                  <th class="px-4 py-3 font-medium">Отдаёте</th>
+                  <th class="px-4 py-3 font-medium">Получаете</th>
+                  <th class="px-4 py-3 font-medium">Статус</th>
+                  <th class="px-4 py-3 font-medium text-right">Действия</th>
                 </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
-      <?php endif; ?>
+              </thead>
+              <tbody class="divide-y divide-line">
+                <?php foreach ($orders as $order):
+                  $isNew = ($highlight_order && $order['id'] === $highlight_order);
+                  $status = $order['status'] ?? 'new';
+                  $statuses = [
+                      'new'        => ['text' => 'Новая',       'cls' => 'st-new',    'icon' => 'clock'],
+                      'in_process' => ['text' => 'В обработке', 'cls' => 'st-proc',   'icon' => 'loader'],
+                      'success'    => ['text' => 'Успешно',     'cls' => 'st-ok',     'icon' => 'check-circle-2'],
+                      'canceled'   => ['text' => 'Отменено',    'cls' => 'st-cancel', 'icon' => 'x-circle'],
+                  ];
+                  $s = $statuses[$status] ?? $statuses['new'];
+                ?>
+                  <tr id="order-<?= htmlspecialchars($order['id']) ?>" class="row-h transition <?= $isNew ? 'highlight-row' : '' ?>">
+                    <td class="px-6 py-4 font-mono text-xs text-txt-secondary">#<?= htmlspecialchars($order['id']) ?></td>
+                    <td class="px-4 py-4 text-txt-secondary whitespace-nowrap"><?= date('d.m.Y H:i', strtotime($order['created_at'])) ?></td>
+                    <td class="px-4 py-4 font-medium whitespace-nowrap">
+                      <?= number_format($order['amount_give'] ?? 0, 2, '.', ' ') ?>
+                      <span class="text-xs text-txt-muted ml-1"><?= htmlspecialchars($order['give_currency']) ?></span>
+                    </td>
+                    <td class="px-4 py-4 font-medium text-emr whitespace-nowrap">
+                      <?= number_format($order['amount_get'] ?? 0, 2, '.', ' ') ?>
+                      <span class="text-xs text-txt-muted ml-1"><?= htmlspecialchars($order['get_currency']) ?></span>
+                    </td>
+                    <td class="px-4 py-4">
+                      <span class="st <?= $s['cls'] ?>">
+                        <i data-lucide="<?= $s['icon'] ?>" class="w-3 h-3"></i>
+                        <?= $s['text'] ?>
+                      </span>
+                    </td>
+                    <td class="px-4 py-4 text-right">
+                      <?php if ($status === 'new'): ?>
+                        <a href="?cancel_order=<?= htmlspecialchars($order['id']) ?>"
+                           onclick="return confirm('Отменить заявку #<?= htmlspecialchars($order['id']) ?>?');"
+                           class="btn-danger inline-flex items-center gap-1 px-3 h-8 rounded-md text-xs">
+                          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                          Отменить
+                        </a>
+                      <?php else: ?>
+                        <span class="text-xs text-txt-muted">—</span>
+                      <?php endif; ?>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+        <?php endif; ?>
+      </div>
+    </section>
 
-    </div>
+  </div>
+</main>
 
-  </main>
+<?php require_once 'footer.php'; ?>
 
-  <script>
-    // Автозакрытие toast
-    const toast = document.getElementById('toast');
-    if (toast) {
-        toast.classList.add('show');
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 5000);
-    }
-    // Автопрокрутка к новой заявке
-    <?php if (isset($highlight_order) && $highlight_order): ?>
-    window.onload = function() {
-        const row = document.getElementById('order-<?= htmlspecialchars($highlight_order) ?>');
-        if (row) {
-            row.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center' 
-            });
-        }
-    };
-    <?php endif; ?>
+<script>
+  <?php if (isset($highlight_order) && $highlight_order): ?>
+  window.addEventListener('load', function() {
+    const row = document.getElementById('order-<?= htmlspecialchars($highlight_order) ?>');
+    if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+  <?php endif; ?>
 </script>
 
 </body>

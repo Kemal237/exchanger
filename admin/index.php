@@ -1,7 +1,7 @@
 <?php
-// admin/index.php — Главная админ-панели (обновлённая статистика)
+// admin/index.php — Админ-панель: обзор
 
-session_start();
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     header('Location: login.php');
@@ -11,7 +11,6 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db.php';
 
-// Выбор периода (по умолчанию — сегодня)
 $period = $_GET['period'] ?? 'today';
 
 $start_date = date('Y-m-d 00:00:00');
@@ -36,7 +35,6 @@ switch ($period) {
         break;
 }
 
-// Статистика пользователей за период
 $stmt_users = $pdo->prepare("SELECT COUNT(*) FROM users WHERE created_at >= ? AND created_at <= ?");
 $stmt_users->execute([$start_date, $end_date]);
 $new_users_period = $stmt_users->fetchColumn();
@@ -44,7 +42,6 @@ $new_users_period = $stmt_users->fetchColumn();
 $total_users = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
 $admins = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'admin'")->fetchColumn();
 
-// Статистика заявок за выбранный период
 $stmt_total     = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE created_at >= ? AND created_at <= ?");
 $stmt_success   = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE status = 'success' AND created_at >= ? AND created_at <= ?");
 $stmt_in_process= $pdo->prepare("SELECT COUNT(*) FROM orders WHERE status = 'in_process' AND created_at >= ? AND created_at <= ?");
@@ -63,127 +60,184 @@ $in_process_period     = $stmt_in_process->fetchColumn();
 $new_period            = $stmt_new->fetchColumn();
 $canceled_period       = $stmt_canceled->fetchColumn();
 
-// Текущие курсы без наценки
-$real_rates = getRealRates();
-?>
+$real_rates = function_exists('getRealRates') ? getRealRates() : null;
 
+$periodLabels = [
+    'today'     => 'Сегодня',
+    'yesterday' => 'Вчера',
+    '7days'     => '7 дней',
+    '30days'    => '30 дней',
+    'all'       => 'Весь период',
+];
+
+$page_title = 'Админ-панель — ' . SITE_NAME;
+$admin_page = 'index.php';
+?>
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Админ-панель — <?= htmlspecialchars(SITE_NAME) ?></title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title><?= htmlspecialchars($page_title) ?></title>
+  <?php require_once __DIR__ . '/../theme.php'; ?>
 </head>
-<body class="bg-gray-100">
+<body class="bg-bg-base text-txt-primary min-h-screen relative overflow-x-hidden">
 
-  <header class="bg-gray-900 text-white py-4">
-    <div class="container mx-auto px-4 flex justify-between items-center">
-      <h1 class="text-2xl font-bold">Админ-панель</h1>
-      <nav class="space-x-6">
-        <a href="index.php" class="text-yellow-300 font-bold hover:underline">Главная</a>
-        <a href="orders.php" class="hover:underline">Заявки</a>
-        <a href="users.php" class="hover:underline">Пользователи</a>
-        <a href="reserves.php" class="hover:underline">Резервы</a>
-        <a href="logout.php" class="hover:underline">Выйти</a>
-      </nav>
+<div class="aurora">
+  <div class="ab ab-1"></div>
+  <div class="ab ab-2"></div>
+  <div class="ab ab-3"></div>
+</div>
+<div class="grid-bg"></div>
+<canvas id="particles" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+
+<?php require_once __DIR__ . '/header.php'; ?>
+
+<main class="relative z-10 max-w-7xl mx-auto px-6 py-10">
+
+  <section class="mb-8 fade-in">
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-4">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight mb-1">Обзор</h1>
+        <p class="text-sm text-txt-muted flex items-center gap-2">
+          <span class="pdot"></span>
+          Статистика за период: <span class="text-cy ml-1"><?= $periodLabels[$period] ?? 'Сегодня' ?></span>
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-1.5 bg-bg-card p-1 rounded-lg border border-line">
+        <?php foreach ($periodLabels as $key => $label): ?>
+          <a href="?period=<?= $key ?>"
+             class="px-3 h-8 rounded-md text-xs font-medium flex items-center transition <?= $period === $key ? 'bg-cy-soft text-cy border border-cy-border' : 'text-txt-secondary hover:text-cy hover:bg-bg-soft' ?>">
+            <?= $label ?>
+          </a>
+        <?php endforeach; ?>
+      </div>
     </div>
-  </header>
+  </section>
 
-  <main class="container mx-auto px-4 py-10">
-
-    <!-- Выбор периода -->
-    <section class="mb-8">
-      <h2 class="text-2xl font-bold mb-4">Статистика за период</h2>
-      <div class="flex flex-wrap gap-3">
-        <a href="?period=today"      class="px-5 py-2 rounded-lg <?= $period === 'today' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300' ?>">Сегодня</a>
-        <a href="?period=yesterday"  class="px-5 py-2 rounded-lg <?= $period === 'yesterday' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300' ?>">Вчера</a>
-        <a href="?period=7days"      class="px-5 py-2 rounded-lg <?= $period === '7days' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300' ?>">7 дней</a>
-        <a href="?period=30days"     class="px-5 py-2 rounded-lg <?= $period === '30days' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300' ?>">30 дней</a>
-        <a href="?period=all"        class="px-5 py-2 rounded-lg <?= $period === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300' ?>">Весь период</a>
+  <!-- Users stats -->
+  <section class="mb-8">
+    <div class="flex items-center gap-2 mb-4">
+      <i data-lucide="users" class="w-4 h-4 text-cy"></i>
+      <h2 class="text-sm font-semibold text-txt-secondary uppercase tracking-wider">Пользователи</h2>
+    </div>
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="1">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-txt-muted uppercase tracking-wider">За период</span>
+          <i data-lucide="user-plus" class="w-4 h-4 text-cy"></i>
+        </div>
+        <div class="text-3xl font-bold text-cy count-up" data-target="<?= $new_users_period ?>">0</div>
+        <div class="text-xs text-txt-muted mt-1">новых регистраций</div>
       </div>
-    </section>
+      <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="2">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-txt-muted uppercase tracking-wider">Всего</span>
+          <i data-lucide="users" class="w-4 h-4 text-txt-secondary"></i>
+        </div>
+        <div class="text-3xl font-bold count-up" data-target="<?= $total_users ?>">0</div>
+        <div class="text-xs text-txt-muted mt-1">зарегистрировано</div>
+      </div>
+      <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-txt-muted uppercase tracking-wider">Администраторов</span>
+          <i data-lucide="shield-check" class="w-4 h-4 text-vi"></i>
+        </div>
+        <div class="text-3xl font-bold text-vi count-up" data-target="<?= $admins ?>">0</div>
+        <div class="text-xs text-txt-muted mt-1">с привилегиями</div>
+      </div>
+    </div>
+  </section>
 
-    <!-- Статистика пользователей -->
-    <section class="mb-10">
-      <h2 class="text-2xl font-bold mb-6">Пользователи</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white p-6 rounded-xl shadow">
-          <h3 class="text-lg font-semibold text-blue-600">За выбранный период</h3>
-          <p class="text-4xl font-bold"><?= $new_users_period ?></p>
+  <!-- Orders stats -->
+  <section class="mb-8">
+    <div class="flex items-center gap-2 mb-4">
+      <i data-lucide="file-text" class="w-4 h-4 text-cy"></i>
+      <h2 class="text-sm font-semibold text-txt-secondary uppercase tracking-wider">Заявки за период</h2>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="1">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-txt-muted uppercase tracking-wider">Всего</span>
+          <i data-lucide="list" class="w-4 h-4 text-txt-secondary"></i>
         </div>
-        <div class="bg-white p-6 rounded-xl shadow">
-          <h3 class="text-lg font-semibold text-gray-600">Всего зарегистрировано</h3>
-          <p class="text-4xl font-bold"><?= $total_users ?></p>
+        <div class="text-3xl font-bold count-up" data-target="<?= $total_orders_period ?>">0</div>
+      </div>
+      <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="2">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-txt-muted uppercase tracking-wider">Успешные</span>
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-emr"></i>
         </div>
-        <div class="bg-white p-6 rounded-xl shadow">
-          <h3 class="text-lg font-semibold text-purple-600">Администраторов</h3>
-          <p class="text-4xl font-bold"><?= $admins ?></p>
+        <div class="text-3xl font-bold text-emr count-up" data-target="<?= $success_period ?>">0</div>
+      </div>
+      <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-txt-muted uppercase tracking-wider">В работе</span>
+          <i data-lucide="loader" class="w-4 h-4 text-cy"></i>
+        </div>
+        <div class="text-3xl font-bold text-cy count-up" data-target="<?= $in_process_period ?>">0</div>
+      </div>
+      <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-txt-muted uppercase tracking-wider">Новые</span>
+          <i data-lucide="clock" class="w-4 h-4 text-warn"></i>
+        </div>
+        <div class="text-3xl font-bold text-warn count-up" data-target="<?= $new_period ?>">0</div>
+      </div>
+      <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="5">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-txt-muted uppercase tracking-wider">Отменены</span>
+          <i data-lucide="x-circle" class="w-4 h-4 text-danger"></i>
+        </div>
+        <div class="text-3xl font-bold text-danger count-up" data-target="<?= $canceled_period ?>">0</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Rates table -->
+  <section class="reveal" data-d="1">
+    <div class="gborder rounded-2xl bg-bg-card shadow-card overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-5 border-b border-line">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-cy-soft border border-cy-border flex items-center justify-center">
+            <i data-lucide="trending-up" class="w-4 h-4 text-cy"></i>
+          </div>
+          <h2 class="text-lg font-bold">Текущие рыночные курсы <span class="text-xs text-txt-muted font-normal ml-1">(без наценки)</span></h2>
         </div>
       </div>
-    </section>
-
-    <!-- Статистика заявок — 5 блоков -->
-    <section class="mb-10">
-      <h2 class="text-2xl font-bold mb-6">Заявки (за выбранный период)</h2>
-      <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
-        <div class="bg-white p-6 rounded-xl shadow text-center">
-          <h3 class="text-lg font-semibold text-gray-600">Всего</h3>
-          <p class="text-5xl font-bold"><?= $total_orders_period ?></p>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow text-center">
-          <h3 class="text-lg font-semibold text-green-600">Успешные</h3>
-          <p class="text-5xl font-bold"><?= $success_period ?></p>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow text-center">
-          <h3 class="text-lg font-semibold text-blue-600">В обработке</h3>
-          <p class="text-5xl font-bold"><?= $in_process_period ?></p>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow text-center">
-          <h3 class="text-lg font-semibold text-yellow-600">Новые</h3>
-          <p class="text-5xl font-bold"><?= $new_period ?></p>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow text-center">
-          <h3 class="text-lg font-semibold text-red-600">Отмененные</h3>
-          <p class="text-5xl font-bold"><?= $canceled_period ?></p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Текущие курсы без наценки -->
-    <section>
-      <h2 class="text-2xl font-bold mb-6">Текущие рыночные курсы (без наценки)</h2>
-      <div class="bg-white rounded-xl shadow overflow-x-auto">
-        <table class="w-full text-left min-w-max">
-          <thead class="bg-gray-100">
-            <tr>
-              <th class="p-4">Отдаёте</th>
-              <th class="p-4">Получаете</th>
-              <th class="p-4">Курс (реальный)</th>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-xs text-txt-muted uppercase tracking-wider bg-bg-soft/40">
+              <th class="px-6 py-3 font-medium">Отдаёте</th>
+              <th class="px-4 py-3 font-medium">Получаете</th>
+              <th class="px-4 py-3 font-medium text-right">Курс</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="divide-y divide-line">
             <?php foreach ($rates as $from => $to_list): ?>
-              <?php foreach ($to_list as $to => $rate_with_markup): ?>
-                <?php
+              <?php foreach ($to_list as $to => $rate_with_markup):
                 $real_rate = $rate_with_markup;
                 if (isset($markup_sell) && $markup_sell > 0) {
                     $real_rate = $rate_with_markup / $markup_sell;
                 }
-                ?>
-                <tr class="border-t hover:bg-gray-50">
-                  <td class="p-4 font-medium"><?= htmlspecialchars(str_replace('_', ' ', $from)) ?></td>
-                  <td class="p-4 font-medium"><?= htmlspecialchars(str_replace('_', ' ', $to)) ?></td>
-                  <td class="p-4"><?= number_format($real_rate, ($to === 'BTC' ? 8 : 4)) ?></td>
+              ?>
+                <tr class="row-h transition">
+                  <td class="px-6 py-3 font-medium whitespace-nowrap"><?= htmlspecialchars(str_replace('_', ' ', $from)) ?></td>
+                  <td class="px-4 py-3 font-medium whitespace-nowrap"><?= htmlspecialchars(str_replace('_', ' ', $to)) ?></td>
+                  <td class="px-4 py-3 text-right font-mono text-cy whitespace-nowrap"><?= number_format($real_rate, ($to === 'BTC' ? 8 : 4), '.', ' ') ?></td>
                 </tr>
               <?php endforeach; ?>
             <?php endforeach; ?>
           </tbody>
         </table>
       </div>
-    </section>
+    </div>
+  </section>
 
-  </main>
+</main>
+
+<?php require_once __DIR__ . '/footer.php'; ?>
 
 </body>
 </html>

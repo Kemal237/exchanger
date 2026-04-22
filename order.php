@@ -3,8 +3,6 @@ require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
 
-session_start();
-
 if (!isLoggedIn()) {
     header('Location: login.php');
     exit;
@@ -12,7 +10,6 @@ if (!isLoggedIn()) {
 
 $user_id = $_SESSION['user_id'];
 
-// Данные из формы index.php
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');
     exit;
@@ -29,99 +26,190 @@ if ($amount_give <= 0 || $amount_get <= 0) {
     exit;
 }
 
-// Получаем Telegram (он уже должен быть сохранён на главной)
 $stmt = $pdo->prepare("SELECT telegram FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
 $telegram = $stmt->fetchColumn();
 
 if (empty($telegram)) {
-    header('Location: index.php'); // на случай, если кто-то обошёл модалку
+    header('Location: index.php');
     exit;
 }
 
-// Курс и другие детали
 $rate = $rates[$give_currency][$get_currency] ?? 0;
 if ($rate <= 0 && isset($rates[$get_currency][$give_currency]) && $rates[$get_currency][$give_currency] > 0) {
     $rate = 1 / $rates[$get_currency][$give_currency];
 }
-?>
 
+$currencyIcons = [
+    'USDT_TRC20' => ['icon' => 'circle-dollar-sign', 'color' => '#10B981'],
+    'USDT_BEP20' => ['icon' => 'circle-dollar-sign', 'color' => '#10B981'],
+    'BTC'        => ['icon' => 'bitcoin',            'color' => '#F7931A'],
+    'RUB_SBER'   => ['icon' => 'banknote',          'color' => '#22D3EE'],
+    'RUB_TINK'   => ['icon' => 'banknote',          'color' => '#22D3EE'],
+];
+$giveIcon = $currencyIcons[$give_currency] ?? ['icon' => 'coins', 'color' => '#A1A1AA'];
+$getIcon  = $currencyIcons[$get_currency]  ?? ['icon' => 'coins', 'color' => '#A1A1AA'];
+
+$page_title = 'Подтвердите заявку — ' . SITE_NAME;
+?>
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Подтвердите заявку — <?= htmlspecialchars(SITE_NAME) ?></title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title><?= htmlspecialchars($page_title) ?></title>
+  <?php require_once 'theme.php'; ?>
 </head>
-<body class="bg-gray-50 text-gray-900">
+<body class="bg-bg-base text-txt-primary min-h-screen relative overflow-x-hidden">
 
-  <?php require_once 'header.php'; ?>
+<div class="aurora">
+  <div class="ab ab-1"></div>
+  <div class="ab ab-2"></div>
+  <div class="ab ab-3"></div>
+</div>
+<div class="grid-bg"></div>
+<canvas id="particles" class="fixed inset-0 z-0 pointer-events-none"></canvas>
 
-  <main class="container mx-auto px-4 py-12 max-w-4xl">
-    <div class="bg-white rounded-3xl shadow-2xl p-10">
+<?php require_once 'header.php'; ?>
 
-      <h1 class="text-4xl font-bold text-center text-gray-900 mb-10">Подтвердите заявку</h1>
+<main class="relative z-10 max-w-4xl mx-auto px-6 py-10">
 
-      <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-8 rounded-2xl border border-gray-200 mb-10">
-        <div class="grid md:grid-cols-2 gap-10 mb-8">
-          <div class="text-center md:text-left">
-            <p class="text-gray-600 text-xl mb-2">Вы отдаёте</p>
-            <p class="text-5xl font-extrabold text-gray-900">
-              <?= number_format($amount_give, ($give_currency === 'BTC' ? 8 : 2), '.', ' ') ?>
-              <?= htmlspecialchars(str_replace('_', ' ', $give_currency)) ?>
-            </p>
-          </div>
-          <div class="text-center md:text-left">
-            <p class="text-gray-600 text-xl mb-2">Вы получаете</p>
-            <p class="text-5xl font-extrabold text-green-600">
-              <?= number_format($amount_get, ($get_currency === 'BTC' ? 8 : 2), '.', ' ') ?>
-              <?= htmlspecialchars(str_replace('_', ' ', $get_currency)) ?>
-            </p>
-          </div>
+  <div class="flex items-center gap-3 text-xs text-txt-muted mb-4 fade-in">
+    <a href="index.php" class="hover:text-cy transition">Главная</a>
+    <i data-lucide="chevron-right" class="w-3 h-3"></i>
+    <span class="text-txt-secondary">Подтверждение заявки</span>
+  </div>
+
+  <h1 class="text-3xl md:text-4xl font-bold tracking-tight mb-8 fade-in">
+    Подтвердите <span class="shimmer-text">заявку</span>
+  </h1>
+
+  <div class="gborder spot rounded-2xl bg-bg-card p-8 shadow-card mb-6 reveal" data-d="1">
+
+    <div class="grid md:grid-cols-[1fr,auto,1fr] items-center gap-6 mb-8">
+      <!-- Give -->
+      <div class="text-center">
+        <div class="flex items-center justify-center gap-2 mb-3 text-xs text-txt-muted uppercase tracking-wider">
+          <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-danger"></i>
+          Вы отдаёте
         </div>
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3" style="background: <?= $giveIcon['color'] ?>1A; border: 1px solid <?= $giveIcon['color'] ?>33;">
+          <i data-lucide="<?= $giveIcon['icon'] ?>" class="w-7 h-7" style="color: <?= $giveIcon['color'] ?>"></i>
+        </div>
+        <div class="text-3xl md:text-4xl font-bold tracking-tight mb-1">
+          <?= number_format($amount_give, ($give_currency === 'BTC' ? 8 : 2), '.', ' ') ?>
+        </div>
+        <div class="text-sm text-txt-secondary"><?= htmlspecialchars(str_replace('_', ' ', $give_currency)) ?></div>
+      </div>
 
-        <div class="text-center border-t border-gray-200 pt-6">
-          <p class="text-2xl font-semibold text-gray-800 mb-4">
-            Курс: 1 <?= htmlspecialchars(str_replace('_', ' ', $give_currency)) ?> = 
-            <?= number_format($rate, 4, '.', ' ') ?> <?= htmlspecialchars(str_replace('_', ' ', $get_currency)) ?>
-          </p>
-          <p class="text-xl text-gray-700 mb-3">
-            Telegram для связи: <strong><?= htmlspecialchars($telegram) ?></strong>
-          </p>
-          <p class="text-lg text-gray-600">
-            После подтверждения администратор свяжется с вами в Telegram в течение 5–30 минут
-          </p>
+      <!-- Arrow -->
+      <div class="flex items-center justify-center">
+        <div class="w-10 h-10 rounded-full bg-cy-soft border border-cy-border flex items-center justify-center">
+          <i data-lucide="arrow-right" class="w-5 h-5 text-cy"></i>
         </div>
       </div>
 
-      <div class="bg-yellow-50 border border-yellow-300 rounded-2xl p-6 mb-10">
-        <h3 class="text-xl font-bold text-yellow-800 mb-4">Важно перед подтверждением</h3>
-        <ul class="list-disc pl-6 text-lg text-yellow-900 space-y-2">
-          <li>Убедитесь, что указанные суммы верны — после создания изменить их нельзя</li>
-          <li>Оплата производится только после получения реквизитов от администратора в Telegram</li>
-          <li>Срок оплаты — 30 минут после получения инструкций</li>
+      <!-- Get -->
+      <div class="text-center">
+        <div class="flex items-center justify-center gap-2 mb-3 text-xs text-txt-muted uppercase tracking-wider">
+          <i data-lucide="arrow-down-left" class="w-3.5 h-3.5 text-emr"></i>
+          Вы получаете
+        </div>
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3" style="background: <?= $getIcon['color'] ?>1A; border: 1px solid <?= $getIcon['color'] ?>33;">
+          <i data-lucide="<?= $getIcon['icon'] ?>" class="w-7 h-7" style="color: <?= $getIcon['color'] ?>"></i>
+        </div>
+        <div class="text-3xl md:text-4xl font-bold tracking-tight mb-1 text-emr">
+          <?= number_format($amount_get, ($get_currency === 'BTC' ? 8 : 2), '.', ' ') ?>
+        </div>
+        <div class="text-sm text-txt-secondary"><?= htmlspecialchars(str_replace('_', ' ', $get_currency)) ?></div>
+      </div>
+    </div>
+
+    <div class="border-t border-line pt-6 space-y-4">
+      <div class="flex items-center justify-between text-sm">
+        <span class="text-txt-muted flex items-center gap-2">
+          <i data-lucide="trending-up" class="w-4 h-4"></i>
+          Фиксированный курс
+        </span>
+        <span class="font-mono font-medium">
+          1 <?= htmlspecialchars(str_replace('_', ' ', $give_currency)) ?>
+          <span class="text-txt-muted mx-1.5">=</span>
+          <?= number_format($rate, 4, '.', ' ') ?>
+          <?= htmlspecialchars(str_replace('_', ' ', $get_currency)) ?>
+        </span>
+      </div>
+      <div class="flex items-center justify-between text-sm">
+        <span class="text-txt-muted flex items-center gap-2">
+          <i data-lucide="send" class="w-4 h-4"></i>
+          Telegram для связи
+        </span>
+        <span class="font-mono font-medium text-cy"><?= htmlspecialchars($telegram) ?></span>
+      </div>
+      <div class="flex items-center justify-between text-sm">
+        <span class="text-txt-muted flex items-center gap-2">
+          <i data-lucide="clock" class="w-4 h-4"></i>
+          Время ответа
+        </span>
+        <span class="font-medium">5–30 минут</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Warning -->
+  <div class="gborder rounded-2xl bg-bg-card p-6 mb-6 reveal" data-d="2" style="--tw-border-opacity:0;">
+    <div class="flex items-start gap-3">
+      <div class="w-9 h-9 rounded-lg bg-warn/10 border border-warn/30 flex items-center justify-center flex-shrink-0">
+        <i data-lucide="alert-triangle" class="w-5 h-5 text-warn"></i>
+      </div>
+      <div class="flex-1">
+        <h3 class="font-semibold mb-3">Важно перед подтверждением</h3>
+        <ul class="space-y-2 text-sm text-txt-secondary">
+          <li class="flex items-start gap-2">
+            <i data-lucide="check" class="w-4 h-4 text-cy mt-0.5 flex-shrink-0"></i>
+            <span>Убедитесь, что указанные суммы верны — после создания изменить их нельзя</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i data-lucide="check" class="w-4 h-4 text-cy mt-0.5 flex-shrink-0"></i>
+            <span>Оплата производится только после получения реквизитов от администратора в Telegram</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i data-lucide="check" class="w-4 h-4 text-cy mt-0.5 flex-shrink-0"></i>
+            <span>Срок оплаты — 30 минут после получения инструкций</span>
+          </li>
         </ul>
       </div>
-
-      <form method="POST" action="confirm-order.php" class="text-center">
-        <input type="hidden" name="give_currency" value="<?= htmlspecialchars($give_currency) ?>">
-        <input type="hidden" name="amount_give" value="<?= $amount_give ?>">
-        <input type="hidden" name="get_currency" value="<?= htmlspecialchars($get_currency) ?>">
-        <input type="hidden" name="amount_get" value="<?= $amount_get ?>">
-        <input type="hidden" name="telegram" value="<?= htmlspecialchars($telegram) ?>">
-
-        <button type="submit" class="inline-block bg-gradient-to-r from-green-500 to-teal-600 text-white font-bold text-2xl py-6 px-20 rounded-3xl shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-300">
-          Подтвердить и создать заявку
-        </button>
-      </form>
-
-      <p class="text-center text-sm text-gray-500 mt-8">
-        Нажимая кнопку, вы соглашаетесь с <a href="#" class="text-blue-600 hover:underline">правилами обмена</a> и <a href="#" class="text-blue-600 hover:underline">политикой AML/KYC</a>
-      </p>
-
     </div>
-  </main>
+  </div>
+
+  <!-- Actions -->
+  <form method="POST" action="confirm-order.php" class="reveal" data-d="3">
+    <input type="hidden" name="give_currency" value="<?= htmlspecialchars($give_currency) ?>">
+    <input type="hidden" name="amount_give" value="<?= $amount_give ?>">
+    <input type="hidden" name="get_currency" value="<?= htmlspecialchars($get_currency) ?>">
+    <input type="hidden" name="amount_get" value="<?= $amount_get ?>">
+    <input type="hidden" name="telegram" value="<?= htmlspecialchars($telegram) ?>">
+
+    <div class="flex flex-col sm:flex-row gap-3">
+      <a href="index.php" class="btn-ghost flex-1 h-12 rounded-xl text-sm font-medium flex items-center justify-center gap-2">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        Назад
+      </a>
+      <button type="submit" class="btn-cy flex-1 h-12 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
+        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+        Подтвердить и создать заявку
+      </button>
+    </div>
+  </form>
+
+  <p class="text-center text-xs text-txt-muted mt-6">
+    Нажимая кнопку, вы соглашаетесь с
+    <a href="aml.php" class="text-cy hover:underline">AML политикой</a> и
+    <a href="kyc.php" class="text-cy hover:underline">KYC процедурой</a>
+  </p>
+
+</main>
+
+<?php require_once 'footer.php'; ?>
 
 </body>
 </html>
