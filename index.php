@@ -55,6 +55,12 @@ function currency_label($cur) {
     return str_replace('_', ' ', $cur);
 }
 function currency_digits($cur) { return $cur === 'BTC' ? 8 : 2; }
+
+$currencyConfig = [
+    'USDT_TRC20' => ['symbol' => '₮', 'label' => 'USDT TRC20', 'short' => 'USDT', 'icolor' => '#10B981'],
+    'BTC'        => ['symbol' => '₿', 'label' => 'BTC',        'short' => 'BTC',  'icolor' => '#F7931A'],
+    'RUB'        => ['symbol' => '₽', 'label' => 'RUB',        'short' => 'RUB',  'icolor' => '#A78BFA'],
+];
 ?>
 <!DOCTYPE html>
 <html lang="ru" class="scroll-smooth">
@@ -78,7 +84,7 @@ function currency_digits($cur) { return $cur === 'BTC' ? 8 : 2; }
 <main class="relative max-w-7xl mx-auto px-6 py-10">
 
   <!-- Hero -->
-  <section class="grid lg:grid-cols-[1fr,480px] gap-10 items-start">
+  <section class="grid lg:grid-cols-[1fr,540px] gap-10 items-start">
 
     <!-- Left intro -->
     <div class="fade-in">
@@ -148,13 +154,34 @@ function currency_digits($cur) { return $cur === 'BTC' ? 8 : 2; }
             <input type="text" name="amount_give" id="amount-give"
                    value="<?= number_format($amount_give, ($give === 'BTC' ? 8 : 2), '.', '') ?>"
                    class="flex-1 bg-transparent text-2xl font-semibold outline-none placeholder:text-txt-muted" required>
-            <select name="give_currency" id="give-select" class="input-d text-sm rounded-lg px-3 h-10 cursor-pointer">
-              <?php foreach (array_keys($rates) as $cur): ?>
-                <option value="<?= htmlspecialchars($cur) ?>" <?= $cur === $give ? 'selected' : '' ?>>
-                  <?= htmlspecialchars(currency_label($cur)) ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
+            <div class="relative flex-shrink-0" id="give-select-wrapper">
+              <input type="hidden" name="give_currency" id="give-select" value="<?= htmlspecialchars($give) ?>">
+              <?php $gc = $currencyConfig[$give] ?? ['symbol'=>'?','label'=>$give,'icolor'=>'#888']; ?>
+              <button type="button" onclick="toggleCurrencyDrop('give-select-wrapper')"
+                      class="currency-btn flex items-center gap-2 h-10 px-3 rounded-lg bg-bg-soft border border-line hover:border-cy-border transition whitespace-nowrap">
+                <div class="cur-icon w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                     style="background:<?= $gc['icolor'] ?>1A;border:1px solid <?= $gc['icolor'] ?>33;color:<?= $gc['icolor'] ?>">
+                  <?= $gc['symbol'] ?>
+                </div>
+                <span class="cur-label text-sm font-medium"><?= htmlspecialchars($gc['short'] ?? $gc['label']) ?></span>
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-txt-muted ml-0.5"></i>
+              </button>
+              <div id="give-drop" class="cur-drop hidden fixed z-[9999] min-w-[155px] bg-bg-card border border-line rounded-xl shadow-card py-1">
+                <?php foreach (array_keys($rates) as $cur):
+                  $c = $currencyConfig[$cur] ?? ['symbol'=>'?','label'=>$cur,'icolor'=>'#888'];
+                ?>
+                <button type="button" data-value="<?= $cur ?>" onclick="setCurrency('give','<?= $cur ?>')"
+                        class="cur-opt w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-bg-soft transition text-sm <?= $cur===$give?'bg-bg-soft':'' ?>">
+                  <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                       style="background:<?= $c['icolor'] ?>1A;border:1px solid <?= $c['icolor'] ?>33;color:<?= $c['icolor'] ?>">
+                    <?= $c['symbol'] ?>
+                  </div>
+                  <span><?= htmlspecialchars($c['label']) ?></span>
+                  <?php if ($cur===$give): ?><i data-lucide="check" class="chk-icon w-3.5 h-3.5 text-cy ml-auto"></i><?php endif; ?>
+                </button>
+                <?php endforeach; ?>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -173,18 +200,39 @@ function currency_digits($cur) { return $cur === 'BTC' ? 8 : 2; }
           </div>
           <div class="flex items-center gap-3">
             <input type="text" name="amount_get" id="amount-get" class="flex-1 bg-transparent text-2xl font-semibold outline-none text-cy">
-            <select name="get_currency" id="get-select" class="input-d text-sm rounded-lg px-3 h-10 cursor-pointer">
-              <?php
-              $all_currencies = array_unique(array_merge(
-                  array_keys($rates),
-                  ...array_values(array_map('array_keys', $rates))
-              ));
-              foreach ($all_currencies as $cur): ?>
-                <option value="<?= htmlspecialchars($cur) ?>" <?= $cur === $get ? 'selected' : '' ?>>
-                  <?= htmlspecialchars(currency_label($cur)) ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
+            <div class="relative flex-shrink-0" id="get-select-wrapper">
+              <input type="hidden" name="get_currency" id="get-select" value="<?= htmlspecialchars($get) ?>">
+              <?php $gc2 = $currencyConfig[$get] ?? ['symbol'=>'?','label'=>$get,'icolor'=>'#888']; ?>
+              <button type="button" onclick="toggleCurrencyDrop('get-select-wrapper')"
+                      class="currency-btn flex items-center gap-2 h-10 px-3 rounded-lg bg-bg-soft border border-line hover:border-cy-border transition whitespace-nowrap">
+                <div class="cur-icon w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                     style="background:<?= $gc2['icolor'] ?>1A;border:1px solid <?= $gc2['icolor'] ?>33;color:<?= $gc2['icolor'] ?>">
+                  <?= $gc2['symbol'] ?>
+                </div>
+                <span class="cur-label text-sm font-medium"><?= htmlspecialchars($gc2['short'] ?? $gc2['label']) ?></span>
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-txt-muted ml-0.5"></i>
+              </button>
+              <div id="get-drop" class="cur-drop hidden fixed z-[9999] min-w-[155px] bg-bg-card border border-line rounded-xl shadow-card py-1">
+                <?php
+                $all_currencies = array_unique(array_merge(
+                    array_keys($rates),
+                    ...array_values(array_map('array_keys', $rates))
+                ));
+                foreach ($all_currencies as $cur):
+                  $c = $currencyConfig[$cur] ?? ['symbol'=>'?','label'=>$cur,'icolor'=>'#888'];
+                ?>
+                <button type="button" data-value="<?= $cur ?>" onclick="setCurrency('get','<?= $cur ?>')"
+                        class="cur-opt w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-bg-soft transition text-sm <?= $cur===$get?'bg-bg-soft':'' ?>">
+                  <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                       style="background:<?= $c['icolor'] ?>1A;border:1px solid <?= $c['icolor'] ?>33;color:<?= $c['icolor'] ?>">
+                    <?= $c['symbol'] ?>
+                  </div>
+                  <span><?= htmlspecialchars($c['label']) ?></span>
+                  <?php if ($cur===$get): ?><i data-lucide="check" class="chk-icon w-3.5 h-3.5 text-cy ml-auto"></i><?php endif; ?>
+                </button>
+                <?php endforeach; ?>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -472,7 +520,9 @@ function currency_digits($cur) { return $cur === 'BTC' ? 8 : 2; }
     const tmp = amountGiveEl.value;
     amountGiveEl.value = amountGetEl.value;
     amountGetEl.value = tmp;
-    [giveSelect.value, getSelect.value] = [getSelect.value, giveSelect.value];
+    const tmpVal = giveSelect.value;
+    setCurrency('give', getSelect.value, false);
+    setCurrency('get', tmpVal, false);
     updateLimitText();
     recalculate('give');
   });
@@ -522,6 +572,75 @@ function currency_digits($cur) { return $cur === 'BTC' ? 8 : 2; }
         alert(data.message || 'Ошибка сохранения Telegram');
       }
     });
+  });
+
+  // Currency dropdown helpers
+  const currencyConfig = {
+    'USDT_TRC20': { symbol: '₮', label: 'USDT TRC20', short: 'USDT', icolor: '#10B981' },
+    'BTC':        { symbol: '₿', label: 'BTC',        short: 'BTC',  icolor: '#F7931A' },
+    'RUB':        { symbol: '₽', label: 'RUB',        short: 'RUB',  icolor: '#A78BFA' },
+  };
+
+  function toggleCurrencyDrop(wrapperId) {
+    const side = wrapperId.replace('-select-wrapper', '');
+    const wrapper = document.getElementById(wrapperId);
+    const drop = document.getElementById(side + '-drop');
+    const btn = wrapper.querySelector('.currency-btn');
+    document.querySelectorAll('.cur-drop').forEach(d => { if (d !== drop) d.classList.add('hidden'); });
+    if (drop.classList.contains('hidden')) {
+      const rect = btn.getBoundingClientRect();
+      drop.style.top   = (rect.bottom + 6) + 'px';
+      drop.style.right = (window.innerWidth - rect.right) + 'px';
+      drop.style.left  = 'auto';
+    }
+    drop.classList.toggle('hidden');
+  }
+
+  function updateCurrencyDisplay(side, value) {
+    const wrapper = document.getElementById(side + '-select-wrapper');
+    const drop = document.getElementById(side + '-drop');
+    const btn = wrapper.querySelector('.currency-btn');
+    const cfg = currencyConfig[value] || { symbol: '?', label: value, icolor: '#888' };
+    const iconEl = btn.querySelector('.cur-icon');
+    iconEl.style.background = cfg.icolor + '1A';
+    iconEl.style.border = '1px solid ' + cfg.icolor + '33';
+    iconEl.style.color = cfg.icolor;
+    iconEl.textContent = cfg.symbol;
+    btn.querySelector('.cur-label').textContent = cfg.short || cfg.label;
+    drop.querySelectorAll('.cur-opt').forEach(opt => {
+      const isActive = opt.dataset.value === value;
+      opt.classList.toggle('bg-bg-soft', isActive);
+      const chk = opt.querySelector('.chk-icon');
+      if (isActive && !chk) {
+        const i = document.createElement('i');
+        i.setAttribute('data-lucide', 'check');
+        i.className = 'chk-icon w-3.5 h-3.5 text-cy ml-auto';
+        opt.appendChild(i);
+        if (window.lucide) lucide.createIcons({ elements: [i] });
+      } else if (!isActive && chk) {
+        chk.remove();
+      }
+    });
+  }
+
+  function setCurrency(side, value, dispatch = true) {
+    const input = document.getElementById(side + '-select');
+    input.value = value;
+    updateCurrencyDisplay(side, value);
+    document.getElementById(side + '-drop').classList.add('hidden');
+    if (dispatch) input.dispatchEvent(new Event('change'));
+  }
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('[id$="-select-wrapper"]') && !e.target.closest('.cur-drop')) {
+      document.querySelectorAll('.cur-drop').forEach(d => d.classList.add('hidden'));
+    }
+  });
+
+  // Move dropdowns to body to escape transform/overflow containing blocks
+  ['give-drop', 'get-drop'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) document.body.appendChild(el);
   });
 
   // init

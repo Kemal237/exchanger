@@ -32,7 +32,7 @@ function saveCachedRates($rates, $reserves, $limits) {
 
 // === Реальные курсы с CoinGecko + наценка 2.5% ===
 function getRealRates() {
-    $url = 'https://api.coingecko.com/api/v3/simple/price?ids=tether,bitcoin&vs_currencies=rub,usd,eur';
+    $url = 'https://api.coingecko.com/api/v3/simple/price?ids=tether,bitcoin&vs_currencies=rub,usd';
     
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
@@ -61,9 +61,8 @@ function getRealRates() {
     $bitcoin = $data['bitcoin'];
 
     $usd_rub = $tether['rub'] ?? null;
-    $eur_rub = ($tether['eur'] ?? null) > 0 ? $usd_rub / $tether['eur'] : null;
 
-    if ($usd_rub === null || $eur_rub === null) {
+    if ($usd_rub === null) {
         return null;
     }
 
@@ -71,7 +70,6 @@ function getRealRates() {
         'tether'  => $tether,
         'bitcoin' => $bitcoin,
         'usd'     => ['rub' => $usd_rub],
-        'eur'     => ['rub' => $eur_rub],
     ];
 }
 
@@ -95,16 +93,16 @@ if ($cached) {
 
         $rates = [
             'USDT_TRC20' => [
-                'RUB' => round($market_usdt_rub * $markup_sell, 2),
-                'BTC' => $market_btc_usd > 0 ? round(1 / $market_btc_usd * $markup_buy, 8) : 0.0000125,
+                'RUB' => round($market_usdt_rub * $markup_buy, 2),
+                'BTC' => $market_btc_usd > 0 ? round(1 / $market_btc_usd * $markup_buy, 8) : 0.0000122,
             ],
             'RUB' => [
-                'USDT_TRC20' => $market_usdt_rub > 0 ? round(1 / ($market_usdt_rub * $markup_buy), 6) : 0.01111,
-                'BTC'        => ($market_btc_usd && $market_usd_rub) ? round(1 / ($market_btc_usd * $market_usd_rub * $markup_buy), 8) : 0.000000125,
+                'USDT_TRC20' => $market_usdt_rub > 0 ? round(1 / ($market_usdt_rub * $markup_sell), 6) : 0.01083,
+                'BTC'        => ($market_btc_usd && $market_usd_rub) ? round(1 / ($market_btc_usd * $market_usd_rub * $markup_sell), 8) : 0.000000133,
             ],
             'BTC' => [
-                'USDT_TRC20' => round($market_btc_usd * $markup_sell, 0),
-                'RUB'        => round($market_btc_usd * $market_usd_rub * $markup_sell, 0),
+                'USDT_TRC20' => round($market_btc_usd * $markup_buy, 0),
+                'RUB'        => round($market_btc_usd * $market_usd_rub * $markup_buy, 0),
             ],
         ];
 

@@ -14,10 +14,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($username) || empty($password)) {
         $error = 'Заполните все поля';
     } elseif (login($username, $password)) {
+        $allowed = ['profile.php', 'index.php', 'rates.php', 'aml.php', 'kyc.php'];
         $redirect = $_GET['redirect'] ?? 'profile.php';
-        if (isset($_SESSION['pending_exchange'])) {
-            $redirect = 'index.php';
-        }
+        if (!in_array($redirect, $allowed)) $redirect = 'profile.php';
+        if (isset($_SESSION['pending_exchange'])) $redirect = 'index.php';
         header("Location: $redirect");
         exit;
     } else {
