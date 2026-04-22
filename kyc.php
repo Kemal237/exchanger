@@ -25,23 +25,23 @@ $current_page = 'kyc.php';
 
 <?php require_once 'header.php'; ?>
 
-<main class="relative z-10 max-w-4xl mx-auto px-6 py-10">
+<main class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
 
-  <section class="mb-10 fade-in">
-    <div class="flex items-center gap-3 text-xs text-txt-muted mb-4">
+  <section class="mb-8 sm:mb-10 fade-in">
+    <div class="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-txt-muted mb-3 sm:mb-4">
       <a href="index.php" class="hover:text-cy transition">Главная</a>
       <i data-lucide="chevron-right" class="w-3 h-3"></i>
       <span class="text-txt-secondary">KYC процедура</span>
     </div>
     <div class="flex items-center gap-3 mb-3">
-      <div class="w-12 h-12 rounded-xl bg-vi-soft border border-vi/30 flex items-center justify-center">
-        <i data-lucide="user-check" class="w-6 h-6 text-vi"></i>
+      <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-vi-soft border border-vi/30 flex items-center justify-center flex-shrink-0">
+        <i data-lucide="user-check" class="w-5 h-5 sm:w-6 sm:h-6 text-vi"></i>
       </div>
-      <h1 class="text-3xl md:text-4xl font-bold tracking-tight">
+      <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
         <span class="shimmer-text">KYC</span> процедура
       </h1>
     </div>
-    <p class="text-txt-muted">Know Your Customer — верификация личности клиента</p>
+    <p class="text-sm sm:text-base text-txt-muted">Know Your Customer — верификация личности клиента</p>
   </section>
 
   <article class="space-y-5">

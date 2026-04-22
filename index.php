@@ -81,41 +81,42 @@ $currencyConfig = [
 
 <?php require_once 'header.php'; ?>
 
-<main class="relative max-w-7xl mx-auto px-6 py-10">
+<main class="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
 
   <!-- Hero -->
-  <section class="grid lg:grid-cols-[1fr,540px] gap-10 items-start">
+  <section class="grid lg:grid-cols-[1fr,540px] gap-6 lg:gap-10 items-start">
 
     <!-- Left intro -->
     <div class="fade-in">
-      <div class="inline-flex items-center gap-2 px-3 h-7 rounded-full bg-cy-soft border border-cy-border text-cy text-xs font-medium mb-5">
+      <div class="inline-flex items-center gap-2 px-3 h-7 rounded-full bg-cy-soft border border-cy-border text-cy text-[11px] sm:text-xs font-medium mb-4 sm:mb-5">
         <span class="pdot"></span>
-        Онлайн · Курс обновляется каждые 15 секунд
+        <span class="hidden sm:inline">Онлайн · Курс обновляется каждые 15 секунд</span>
+        <span class="sm:hidden">Онлайн · обновление 15с</span>
       </div>
 
-      <h1 class="text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] mb-4">
+      <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.1] mb-3 sm:mb-4">
         Обмен криптовалют<br>
         <span class="shimmer-text">быстро и безопасно</span>
       </h1>
 
-      <p class="text-txt-secondary text-base md:text-lg max-w-xl mb-8 leading-relaxed">
+      <p class="text-txt-secondary text-sm sm:text-base md:text-lg max-w-xl mb-6 sm:mb-8 leading-relaxed">
         USDT · BTC · RUB — моментальный обмен по актуальному курсу.
         Верифицированный сервис в реестре BestChange.
       </p>
 
       <!-- Stats -->
-      <div class="grid grid-cols-3 gap-3 max-w-xl">
-        <div class="spot bg-bg-card border border-line rounded-xl p-4 hover:border-cy-border transition">
-          <div class="text-txt-muted text-xs mb-1">Заявок выполнено</div>
-          <div class="text-xl font-bold count-up" data-target="<?= $total_orders_count ?>">0</div>
+      <div class="grid grid-cols-3 gap-1.5 sm:gap-3 max-w-xl">
+        <div class="spot bg-bg-card border border-line rounded-lg sm:rounded-xl p-2 sm:p-4 hover:border-cy-border transition min-w-0">
+          <div class="text-txt-muted text-[9px] sm:text-xs mb-0.5 sm:mb-1 leading-tight">Заявок</div>
+          <div class="text-xs sm:text-xl font-bold count-up truncate" data-target="<?= $total_orders_count ?>">0</div>
         </div>
-        <div class="spot bg-bg-card border border-line rounded-xl p-4 hover:border-cy-border transition">
-          <div class="text-txt-muted text-xs mb-1">Среднее время</div>
-          <div class="text-xl font-bold">≈ <span class="count-up" data-target="7">0</span> мин</div>
+        <div class="spot bg-bg-card border border-line rounded-lg sm:rounded-xl p-2 sm:p-4 hover:border-cy-border transition min-w-0">
+          <div class="text-txt-muted text-[9px] sm:text-xs mb-0.5 sm:mb-1 leading-tight">Ср. время</div>
+          <div class="text-xs sm:text-xl font-bold truncate">≈ <span class="count-up" data-target="7">0</span> мин</div>
         </div>
-        <div class="spot bg-bg-card border border-line rounded-xl p-4 hover:border-cy-border transition">
-          <div class="text-txt-muted text-xs mb-1">Поддержка</div>
-          <div class="text-xl font-bold">24 / 7</div>
+        <div class="spot bg-bg-card border border-line rounded-lg sm:rounded-xl p-2 sm:p-4 hover:border-cy-border transition min-w-0">
+          <div class="text-txt-muted text-[9px] sm:text-xs mb-0.5 sm:mb-1 leading-tight">Поддержка</div>
+          <div class="text-xs sm:text-xl font-bold truncate">24 / 7</div>
         </div>
       </div>
 
@@ -134,37 +135,37 @@ $currencyConfig = [
     </div>
 
     <!-- Right exchange card -->
-    <div class="fade-in fd1">
-      <form action="order.php" method="POST" id="exchange-form" class="gborder spot bg-bg-card border border-line rounded-2xl p-6 shadow-card block">
-        <div class="flex items-center justify-between mb-5">
-          <h2 class="text-[17px] font-semibold">Обменять</h2>
-          <div class="flex items-center gap-1.5 text-xs text-txt-muted">
+    <div class="fade-in fd1 w-full min-w-0">
+      <form action="order.php" method="POST" id="exchange-form" class="gborder spot bg-bg-card border border-line rounded-2xl p-3 sm:p-6 shadow-card block w-full min-w-0">
+        <div class="flex items-center justify-between mb-4 sm:mb-5">
+          <h2 class="text-base sm:text-[17px] font-semibold">Обменять</h2>
+          <div class="flex items-center gap-1.5 text-[11px] sm:text-xs text-txt-muted">
             <i data-lucide="refresh-cw" class="w-3.5 h-3.5 refresh-icon"></i>
             обновление <span class="text-cy font-medium" id="timer-text">15с</span>
           </div>
         </div>
 
         <!-- You give -->
-        <div class="field rounded-xl p-4 mb-2">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs text-txt-muted">Вы отдаёте</span>
-            <span class="text-xs text-txt-muted">Лимит: <span id="limit-text" class="text-txt-secondary">—</span></span>
+        <div class="field rounded-xl p-2.5 sm:p-4 mb-2">
+          <div class="flex items-center justify-between mb-1.5 sm:mb-2 gap-2">
+            <span class="text-[10px] sm:text-xs text-txt-muted whitespace-nowrap">Вы отдаёте</span>
+            <span class="text-[10px] sm:text-xs text-txt-muted truncate">Лимит: <span id="limit-text" class="text-txt-secondary">—</span></span>
           </div>
-          <div class="flex items-center gap-3">
-            <input type="text" name="amount_give" id="amount-give"
-                   value="<?= number_format($amount_give, ($give === 'BTC' ? 8 : 2), '.', '') ?>"
-                   class="flex-1 bg-transparent text-2xl font-semibold outline-none placeholder:text-txt-muted" required>
+          <div class="flex items-center gap-1.5 sm:gap-3">
+            <input type="text" name="amount_give" id="amount-give" inputmode="decimal"
+                   value="<?= number_format($amount_give, $give === 'BTC' ? 8 : 2, '.', '') ?>"
+                   class="flex-1 min-w-0 w-full bg-transparent text-lg sm:text-2xl font-semibold outline-none placeholder:text-txt-muted" required>
             <div class="relative flex-shrink-0" id="give-select-wrapper">
               <input type="hidden" name="give_currency" id="give-select" value="<?= htmlspecialchars($give) ?>">
               <?php $gc = $currencyConfig[$give] ?? ['symbol'=>'?','label'=>$give,'icolor'=>'#888']; ?>
               <button type="button" onclick="toggleCurrencyDrop('give-select-wrapper')"
-                      class="currency-btn flex items-center gap-2 h-10 px-3 rounded-lg bg-bg-soft border border-line hover:border-cy-border transition whitespace-nowrap">
-                <div class="cur-icon w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                      class="currency-btn flex items-center gap-1.5 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3 rounded-lg bg-bg-soft border border-line hover:border-cy-border transition whitespace-nowrap">
+                <div class="cur-icon w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold flex-shrink-0"
                      style="background:<?= $gc['icolor'] ?>1A;border:1px solid <?= $gc['icolor'] ?>33;color:<?= $gc['icolor'] ?>">
                   <?= $gc['symbol'] ?>
                 </div>
-                <span class="cur-label text-sm font-medium"><?= htmlspecialchars($gc['short'] ?? $gc['label']) ?></span>
-                <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-txt-muted ml-0.5"></i>
+                <span class="cur-label text-xs sm:text-sm font-medium"><?= htmlspecialchars($gc['short'] ?? $gc['label']) ?></span>
+                <i data-lucide="chevron-down" class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-txt-muted"></i>
               </button>
               <div id="give-drop" class="cur-drop hidden fixed z-[9999] min-w-[155px] bg-bg-card border border-line rounded-xl shadow-card py-1">
                 <?php foreach (array_keys($rates) as $cur):
@@ -193,24 +194,24 @@ $currencyConfig = [
         </div>
 
         <!-- You get -->
-        <div class="field rounded-xl p-4 mt-2">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs text-txt-muted">Вы получаете</span>
-            <span class="text-xs text-txt-muted">Резерв: <span id="reserve-get" class="text-txt-secondary">—</span></span>
+        <div class="field rounded-xl p-2.5 sm:p-4 mt-2">
+          <div class="flex items-center justify-between mb-1.5 sm:mb-2 gap-2">
+            <span class="text-[10px] sm:text-xs text-txt-muted whitespace-nowrap">Вы получаете</span>
+            <span class="text-[10px] sm:text-xs text-txt-muted truncate">Резерв: <span id="reserve-get" class="text-txt-secondary">—</span></span>
           </div>
-          <div class="flex items-center gap-3">
-            <input type="text" name="amount_get" id="amount-get" class="flex-1 bg-transparent text-2xl font-semibold outline-none text-cy">
+          <div class="flex items-center gap-1.5 sm:gap-3">
+            <input type="text" name="amount_get" id="amount-get" inputmode="decimal" class="flex-1 min-w-0 w-full bg-transparent text-lg sm:text-2xl font-semibold outline-none text-cy">
             <div class="relative flex-shrink-0" id="get-select-wrapper">
               <input type="hidden" name="get_currency" id="get-select" value="<?= htmlspecialchars($get) ?>">
               <?php $gc2 = $currencyConfig[$get] ?? ['symbol'=>'?','label'=>$get,'icolor'=>'#888']; ?>
               <button type="button" onclick="toggleCurrencyDrop('get-select-wrapper')"
-                      class="currency-btn flex items-center gap-2 h-10 px-3 rounded-lg bg-bg-soft border border-line hover:border-cy-border transition whitespace-nowrap">
-                <div class="cur-icon w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                      class="currency-btn flex items-center gap-1.5 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3 rounded-lg bg-bg-soft border border-line hover:border-cy-border transition whitespace-nowrap">
+                <div class="cur-icon w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold flex-shrink-0"
                      style="background:<?= $gc2['icolor'] ?>1A;border:1px solid <?= $gc2['icolor'] ?>33;color:<?= $gc2['icolor'] ?>">
                   <?= $gc2['symbol'] ?>
                 </div>
-                <span class="cur-label text-sm font-medium"><?= htmlspecialchars($gc2['short'] ?? $gc2['label']) ?></span>
-                <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-txt-muted ml-0.5"></i>
+                <span class="cur-label text-xs sm:text-sm font-medium"><?= htmlspecialchars($gc2['short'] ?? $gc2['label']) ?></span>
+                <i data-lucide="chevron-down" class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-txt-muted"></i>
               </button>
               <div id="get-drop" class="cur-drop hidden fixed z-[9999] min-w-[155px] bg-bg-card border border-line rounded-xl shadow-card py-1">
                 <?php
@@ -237,22 +238,21 @@ $currencyConfig = [
         </div>
 
         <!-- Rate -->
-        <div class="mt-4 flex items-center justify-between text-sm bg-bg-soft border border-line rounded-xl px-4 py-3">
-          <span class="text-txt-muted">Курс</span>
-          <span class="font-medium" id="rate-line">—</span>
+        <div class="mt-3 sm:mt-4 flex items-center justify-between gap-2 text-xs sm:text-sm bg-bg-soft border border-line rounded-xl px-3 sm:px-4 py-2.5 sm:py-3">
+          <span class="text-txt-muted flex-shrink-0">Курс</span>
+          <span class="font-medium truncate text-right" id="rate-line">—</span>
         </div>
 
-        <button type="submit" id="submit-btn" class="btn-cy w-full mt-5 h-12 rounded-xl font-semibold text-base flex items-center justify-center gap-2">
+        <button type="submit" id="submit-btn" class="btn-cy w-full mt-4 sm:mt-5 h-11 sm:h-12 rounded-xl font-semibold text-sm sm:text-base flex items-center justify-center gap-2">
           Обменять
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
 
-        <p id="error-text" class="text-danger text-sm text-center mt-3 min-h-[1.25rem]"></p>
+        <p id="error-text" class="text-danger text-xs sm:text-sm text-center mt-3 min-h-[1.25rem]"></p>
 
-        <div class="mt-2 flex items-center justify-center gap-2 text-xs text-txt-muted">
-          <i data-lucide="lock" class="w-3.5 h-3.5"></i>
-          Нажимая кнопку, вы соглашаетесь с
-          <a class="text-cy hover:underline" href="aml.php">AML политикой</a>
+        <div class="mt-2 flex items-center justify-center gap-1.5 text-[10px] sm:text-xs text-txt-muted text-center">
+          <i data-lucide="lock" class="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0"></i>
+          <span>Нажимая кнопку, вы соглашаетесь с <a class="text-cy hover:underline" href="aml.php">AML политикой</a></span>
         </div>
       </form>
     </div>
@@ -260,18 +260,18 @@ $currencyConfig = [
   </section>
 
   <!-- Reserves -->
-  <section class="mt-16">
-    <div class="flex items-end justify-between mb-5 reveal">
+  <section class="mt-12 sm:mt-16">
+    <div class="flex items-end justify-between gap-3 mb-5 reveal">
       <div>
-        <h3 class="text-2xl font-bold tracking-tight">Резервы</h3>
-        <p class="text-txt-muted text-sm mt-1">Доступные средства обновляются в реальном времени</p>
+        <h3 class="text-xl sm:text-2xl font-bold tracking-tight">Резервы</h3>
+        <p class="text-txt-muted text-xs sm:text-sm mt-1">Доступные средства обновляются в реальном времени</p>
       </div>
-      <a href="rates.php" class="text-sm text-cy hover:text-cy-dark inline-flex items-center gap-1 transition">
-        Все курсы <i data-lucide="arrow-right" class="w-4 h-4"></i>
+      <a href="rates.php" class="text-xs sm:text-sm text-cy hover:text-cy-dark inline-flex items-center gap-1 transition whitespace-nowrap">
+        <span class="hidden sm:inline">Все курсы</span><span class="sm:hidden">Все</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>
       </a>
     </div>
 
-    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
 
       <div class="reveal spot bg-bg-card border border-line hover:border-cy-border rounded-xl p-5 transition" data-d="1">
         <div class="flex items-center justify-between mb-3">
@@ -322,9 +322,9 @@ $currencyConfig = [
   </section>
 
   <!-- How it works -->
-  <section class="mt-16">
-    <h3 class="text-2xl font-bold tracking-tight mb-6 reveal">Как это работает</h3>
-    <div class="grid md:grid-cols-4 gap-4">
+  <section class="mt-12 sm:mt-16">
+    <h3 class="text-xl sm:text-2xl font-bold tracking-tight mb-5 sm:mb-6 reveal">Как это работает</h3>
+    <div class="grid sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
 
       <div class="reveal spot bg-bg-card border border-line rounded-xl p-5 hover:border-cy-border transition" data-d="1">
         <div class="step-num">1</div>

@@ -36,25 +36,25 @@ $current_page = 'rates.php';
 
 <?php require_once 'header.php'; ?>
 
-<main class="relative z-10 max-w-7xl mx-auto px-6 py-10">
+<main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
 
-  <section class="mb-10 fade-in">
-    <div class="flex items-center gap-3 text-xs text-txt-muted mb-4">
+  <section class="mb-8 sm:mb-10 fade-in">
+    <div class="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-txt-muted mb-3 sm:mb-4">
       <a href="index.php" class="hover:text-cy transition">Главная</a>
       <i data-lucide="chevron-right" class="w-3 h-3"></i>
       <span class="text-txt-secondary">Курсы и резервы</span>
     </div>
-    <h1 class="text-3xl md:text-4xl font-bold tracking-tight mb-2">
+    <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-2">
       Резервы и <span class="shimmer-text">актуальные курсы</span>
     </h1>
-    <p class="text-txt-muted flex items-center gap-2">
+    <p class="text-xs sm:text-sm text-txt-muted flex items-center gap-2">
       <span class="pdot"></span>
       Обновлено только что · источник CoinGecko
     </p>
   </section>
 
   <!-- Reserve cards -->
-  <section class="grid md:grid-cols-3 gap-4 mb-10">
+  <section class="grid sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-8 sm:mb-10">
     <?php foreach ($allowed as $idx => $cur):
       $meta = $currencyMeta[$cur];
       $reserve = $reserves[$cur] ?? 0;
@@ -86,16 +86,16 @@ $current_page = 'rates.php';
   <!-- Rates table -->
   <section class="reveal" data-d="4">
     <div class="gborder rounded-2xl bg-bg-card shadow-card overflow-hidden">
-      <div class="flex items-center justify-between px-6 py-5 border-b border-line">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-lg bg-cy-soft border border-cy-border flex items-center justify-center">
+      <div class="flex items-center justify-between gap-2 px-4 sm:px-6 py-4 sm:py-5 border-b border-line">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="w-8 h-8 rounded-lg bg-cy-soft border border-cy-border flex items-center justify-center flex-shrink-0">
             <i data-lucide="trending-up" class="w-4 h-4 text-cy"></i>
           </div>
-          <h2 class="text-lg font-bold">Таблица курсов</h2>
+          <h2 class="text-base sm:text-lg font-bold truncate">Таблица курсов</h2>
         </div>
-        <a href="rates.xml.php" target="_blank" class="text-xs text-cy hover:underline flex items-center gap-1.5">
+        <a href="rates.xml.php" target="_blank" class="text-xs text-cy hover:underline flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap">
           <i data-lucide="code-xml" class="w-3.5 h-3.5"></i>
-          BestChange XML
+          <span class="hidden sm:inline">BestChange XML</span><span class="sm:hidden">XML</span>
         </a>
       </div>
 

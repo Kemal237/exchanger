@@ -59,17 +59,17 @@ $page_title = 'Регистрация — ' . SITE_NAME;
 <div class="grid-bg"></div>
 <canvas id="particles" class="fixed inset-0 z-0 pointer-events-none"></canvas>
 
-<main class="relative z-10 min-h-screen flex items-center justify-center px-6 py-10">
+<main class="relative z-10 min-h-screen flex items-center justify-center px-4 sm:px-6 py-8 sm:py-10">
   <div class="w-full max-w-md fade-in">
 
-    <a href="index.php" class="flex items-center justify-center gap-2 mb-8 group">
+    <a href="index.php" class="flex items-center justify-center gap-2 mb-6 sm:mb-8 group">
       <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cy to-vi flex items-center justify-center shadow-glow group-hover:scale-105 transition">
         <i data-lucide="arrow-left-right" class="w-5 h-5 text-bg-base"></i>
       </div>
       <span class="text-xl font-bold tracking-tight"><?= htmlspecialchars(SITE_NAME) ?></span>
     </a>
 
-    <div class="gborder spot rounded-2xl bg-bg-card/85 backdrop-blur-md p-8 shadow-card">
+    <div class="gborder spot rounded-2xl bg-bg-card/85 backdrop-blur-md p-6 sm:p-8 shadow-card">
       <div class="text-center mb-6">
         <h1 class="text-2xl font-bold mb-1.5">Создать аккаунт</h1>
         <p class="text-sm text-txt-muted">Присоединяйтесь к <?= htmlspecialchars(SITE_NAME) ?></p>

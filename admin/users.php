@@ -125,11 +125,11 @@ $admin_page = 'users.php';
 
 <?php require_once __DIR__ . '/header.php'; ?>
 
-<main class="relative z-10 max-w-7xl mx-auto px-6 py-10">
+<main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
 
-  <section class="mb-8 fade-in">
-    <h1 class="text-3xl font-bold tracking-tight mb-1">Пользователи</h1>
-    <p class="text-sm text-txt-muted"><?= count($users) ?> зарегистрированных пользователей</p>
+  <section class="mb-6 sm:mb-8 fade-in">
+    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight mb-1">Пользователи</h1>
+    <p class="text-xs sm:text-sm text-txt-muted"><?= count($users) ?> зарегистрированных пользователей</p>
   </section>
 
   <?php if ($edit_success): ?>
@@ -146,12 +146,12 @@ $admin_page = 'users.php';
   <?php endif; ?>
 
   <?php if ($edit_user): ?>
-    <section class="gborder spot rounded-2xl bg-bg-card p-6 mb-8 reveal" data-d="1">
-      <div class="flex items-center gap-2 mb-5">
-        <div class="w-8 h-8 rounded-lg bg-vi-soft border border-vi/30 flex items-center justify-center">
+    <section class="gborder spot rounded-2xl bg-bg-card p-4 sm:p-6 mb-6 sm:mb-8 reveal" data-d="1">
+      <div class="flex items-center gap-2 mb-4 sm:mb-5">
+        <div class="w-8 h-8 rounded-lg bg-vi-soft border border-vi/30 flex items-center justify-center flex-shrink-0">
           <i data-lucide="user-cog" class="w-4 h-4 text-vi"></i>
         </div>
-        <h2 class="text-lg font-bold">Редактирование: <span class="text-cy"><?= htmlspecialchars($edit_user['username']) ?></span></h2>
+        <h2 class="text-base sm:text-lg font-bold min-w-0 truncate">Редактирование: <span class="text-cy"><?= htmlspecialchars($edit_user['username']) ?></span></h2>
       </div>
       <form method="POST" class="space-y-4">
         <input type="hidden" name="action" value="edit">
@@ -198,7 +198,7 @@ $admin_page = 'users.php';
   <!-- Список -->
   <section class="reveal" data-d="2">
     <div class="gborder rounded-2xl bg-bg-card shadow-card overflow-hidden">
-      <div class="overflow-x-auto">
+      <div class="hidden md:block overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
             <tr class="text-left text-xs text-txt-muted uppercase tracking-wider bg-bg-soft/40">
@@ -263,6 +263,47 @@ $admin_page = 'users.php';
           </tbody>
         </table>
       </div>
+
+      <!-- Mobile cards -->
+      <div class="md:hidden divide-y divide-line">
+        <?php foreach ($users as $user): ?>
+          <div class="p-4">
+            <div class="flex items-start justify-between gap-2 mb-3">
+              <div class="min-w-0">
+                <div class="font-medium text-sm truncate"><?= htmlspecialchars($user['username']) ?></div>
+                <div class="font-mono text-[11px] text-txt-secondary mt-0.5">#<?= $user['id'] ?></div>
+              </div>
+              <?php if ($user['role'] === 'admin'): ?>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-vi-soft border border-vi/30 text-vi flex-shrink-0">
+                  <i data-lucide="shield-check" class="w-3 h-3"></i> Админ
+                </span>
+              <?php else: ?>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-cy-soft border border-cy-border text-cy flex-shrink-0">
+                  <i data-lucide="user" class="w-3 h-3"></i> User
+                </span>
+              <?php endif; ?>
+            </div>
+            <div class="space-y-1 mb-3 text-[12px]">
+              <div class="flex items-center gap-2 text-txt-secondary"><i data-lucide="mail" class="w-3.5 h-3.5 flex-shrink-0"></i><span class="truncate"><?= htmlspecialchars($user['email']) ?></span></div>
+              <?php if (!empty($user['telegram'])): ?>
+                <div class="flex items-center gap-2 text-cy"><i data-lucide="send" class="w-3.5 h-3.5 flex-shrink-0"></i><span class="truncate font-mono"><?= htmlspecialchars($user['telegram']) ?></span></div>
+              <?php endif; ?>
+              <div class="flex items-center gap-2 text-txt-muted"><i data-lucide="calendar" class="w-3.5 h-3.5 flex-shrink-0"></i><span><?= date('d.m.Y H:i', strtotime($user['created_at'])) ?></span></div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <a href="?edit=<?= $user['id'] ?>" class="btn-ghost flex-1 h-9 rounded-md text-xs inline-flex items-center justify-center gap-1">
+                <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Изменить
+              </a>
+              <button onclick="showUserHistory(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>')" class="btn-ghost flex-1 h-9 rounded-md text-xs inline-flex items-center justify-center gap-1">
+                <i data-lucide="history" class="w-3.5 h-3.5"></i> История
+              </button>
+              <a href="?delete=<?= $user['id'] ?>" onclick="return confirm('Удалить пользователя <?= htmlspecialchars($user['username']) ?>?')" class="btn-danger h-9 px-3 rounded-md text-xs inline-flex items-center gap-1">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </a>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
     </div>
   </section>
 
@@ -271,16 +312,16 @@ $admin_page = 'users.php';
 <!-- History modal -->
 <div id="history-modal" class="hidden fixed inset-0 z-[60]">
   <div class="absolute inset-0 bg-black/75 backdrop-blur-sm" onclick="closeHistoryModal()"></div>
-  <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
-    <div class="gborder rounded-2xl bg-bg-card shadow-card w-full max-w-5xl max-h-[85vh] flex flex-col overflow-hidden">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-line">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-lg bg-cy-soft border border-cy-border flex items-center justify-center">
+  <div class="relative z-10 flex items-center justify-center min-h-screen p-2 sm:p-4">
+    <div class="gborder rounded-2xl bg-bg-card shadow-card w-full max-w-5xl max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-line">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="w-8 h-8 rounded-lg bg-cy-soft border border-cy-border flex items-center justify-center flex-shrink-0">
             <i data-lucide="history" class="w-4 h-4 text-cy"></i>
           </div>
-          <h2 class="text-lg font-bold" id="modal-user-name">История обменов</h2>
+          <h2 class="text-sm sm:text-lg font-bold truncate" id="modal-user-name">История обменов</h2>
         </div>
-        <button onclick="closeHistoryModal()" class="w-8 h-8 rounded-md hover:bg-bg-soft text-txt-secondary hover:text-danger transition flex items-center justify-center">
+        <button onclick="closeHistoryModal()" class="w-8 h-8 rounded-md hover:bg-bg-soft text-txt-secondary hover:text-danger transition flex items-center justify-center flex-shrink-0 ml-2">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
@@ -298,8 +339,8 @@ $admin_page = 'users.php';
           <tbody id="history-body" class="divide-y divide-line"></tbody>
         </table>
       </div>
-      <div class="px-6 py-4 border-t border-line flex justify-end">
-        <button onclick="closeHistoryModal()" class="btn-ghost h-10 px-5 rounded-lg text-sm font-medium flex items-center gap-2">
+      <div class="px-4 sm:px-6 py-3 sm:py-4 border-t border-line flex justify-end">
+        <button onclick="closeHistoryModal()" class="btn-ghost h-10 px-4 sm:px-5 rounded-lg text-sm font-medium flex items-center gap-2">
           <i data-lucide="x" class="w-4 h-4"></i>
           Закрыть
         </button>

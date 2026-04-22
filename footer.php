@@ -1,8 +1,8 @@
 <?php
 if (!defined('SITE_NAME')) require_once __DIR__ . '/config.php';
 ?>
-<footer class="mt-20 border-t border-line relative">
-  <div class="max-w-7xl mx-auto px-6 py-10 grid md:grid-cols-4 gap-8 text-sm">
+<footer class="mt-12 sm:mt-20 border-t border-line relative">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10 grid sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-sm">
     <div>
       <div class="flex items-center gap-2 mb-3">
         <div class="w-7 h-7 rounded-md bg-gradient-to-br from-cy to-vi flex items-center justify-center">
@@ -38,7 +38,7 @@ if (!defined('SITE_NAME')) require_once __DIR__ . '/config.php';
     </div>
   </div>
   <div class="border-t border-line">
-    <div class="max-w-7xl mx-auto px-6 py-5 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-txt-muted">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-txt-muted text-center md:text-left">
       <span>© <?= date('Y') ?> <?= htmlspecialchars(SITE_NAME) ?>. Все права защищены.</span>
       <div class="flex items-center gap-4">
         <span class="flex items-center gap-1.5"><span class="pdot"></span> Сервис онлайн</span>

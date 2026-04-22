@@ -93,21 +93,21 @@ $admin_page = 'index.php';
 
 <?php require_once __DIR__ . '/header.php'; ?>
 
-<main class="relative z-10 max-w-7xl mx-auto px-6 py-10">
+<main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
 
-  <section class="mb-8 fade-in">
-    <div class="flex flex-wrap items-end justify-between gap-4 mb-4">
+  <section class="mb-6 sm:mb-8 fade-in">
+    <div class="flex flex-wrap items-end justify-between gap-3 sm:gap-4 mb-4">
       <div>
-        <h1 class="text-3xl font-bold tracking-tight mb-1">Обзор</h1>
-        <p class="text-sm text-txt-muted flex items-center gap-2">
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight mb-1">Обзор</h1>
+        <p class="text-xs sm:text-sm text-txt-muted flex items-center gap-2">
           <span class="pdot"></span>
           Статистика за период: <span class="text-cy ml-1"><?= $periodLabels[$period] ?? 'Сегодня' ?></span>
         </p>
       </div>
-      <div class="flex flex-wrap gap-1.5 bg-bg-card p-1 rounded-lg border border-line">
+      <div class="flex flex-wrap gap-1 sm:gap-1.5 bg-bg-card p-1 rounded-lg border border-line w-full sm:w-auto overflow-x-auto">
         <?php foreach ($periodLabels as $key => $label): ?>
           <a href="?period=<?= $key ?>"
-             class="px-3 h-8 rounded-md text-xs font-medium flex items-center transition <?= $period === $key ? 'bg-cy-soft text-cy border border-cy-border' : 'text-txt-secondary hover:text-cy hover:bg-bg-soft' ?>">
+             class="px-3 h-8 rounded-md text-xs font-medium flex items-center transition whitespace-nowrap <?= $period === $key ? 'bg-cy-soft text-cy border border-cy-border' : 'text-txt-secondary hover:text-cy hover:bg-bg-soft' ?>">
             <?= $label ?>
           </a>
         <?php endforeach; ?>
@@ -116,80 +116,80 @@ $admin_page = 'index.php';
   </section>
 
   <!-- Users stats -->
-  <section class="mb-8">
-    <div class="flex items-center gap-2 mb-4">
+  <section class="mb-6 sm:mb-8">
+    <div class="flex items-center gap-2 mb-3 sm:mb-4">
       <i data-lucide="users" class="w-4 h-4 text-cy"></i>
-      <h2 class="text-sm font-semibold text-txt-secondary uppercase tracking-wider">Пользователи</h2>
+      <h2 class="text-xs sm:text-sm font-semibold text-txt-secondary uppercase tracking-wider">Пользователи</h2>
     </div>
-    <div class="grid md:grid-cols-3 gap-4">
-      <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="1">
+    <div class="grid grid-cols-3 gap-3 sm:gap-4">
+      <div class="gborder spot rounded-xl bg-bg-card p-3 sm:p-5 reveal" data-d="1">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-txt-muted uppercase tracking-wider">За период</span>
+          <span class="text-[10px] sm:text-xs text-txt-muted uppercase tracking-wider">За период</span>
           <i data-lucide="user-plus" class="w-4 h-4 text-cy"></i>
         </div>
-        <div class="text-3xl font-bold text-cy count-up" data-target="<?= $new_users_period ?>">0</div>
+        <div class="text-xl sm:text-3xl font-bold text-cy count-up" data-target="<?= $new_users_period ?>">0</div>
         <div class="text-xs text-txt-muted mt-1">новых регистраций</div>
       </div>
-      <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="2">
+      <div class="gborder spot rounded-xl bg-bg-card p-3 sm:p-5 reveal" data-d="2">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-txt-muted uppercase tracking-wider">Всего</span>
+          <span class="text-[10px] sm:text-xs text-txt-muted uppercase tracking-wider">Всего</span>
           <i data-lucide="users" class="w-4 h-4 text-txt-secondary"></i>
         </div>
-        <div class="text-3xl font-bold count-up" data-target="<?= $total_users ?>">0</div>
+        <div class="text-xl sm:text-3xl font-bold count-up" data-target="<?= $total_users ?>">0</div>
         <div class="text-xs text-txt-muted mt-1">зарегистрировано</div>
       </div>
-      <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="3">
+      <div class="gborder spot rounded-xl bg-bg-card p-3 sm:p-5 reveal" data-d="3">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-txt-muted uppercase tracking-wider">Администраторов</span>
+          <span class="text-[10px] sm:text-xs text-txt-muted uppercase tracking-wider">Администраторов</span>
           <i data-lucide="shield-check" class="w-4 h-4 text-vi"></i>
         </div>
-        <div class="text-3xl font-bold text-vi count-up" data-target="<?= $admins ?>">0</div>
+        <div class="text-xl sm:text-3xl font-bold text-vi count-up" data-target="<?= $admins ?>">0</div>
         <div class="text-xs text-txt-muted mt-1">с привилегиями</div>
       </div>
     </div>
   </section>
 
   <!-- Orders stats -->
-  <section class="mb-8">
-    <div class="flex items-center gap-2 mb-4">
+  <section class="mb-6 sm:mb-8">
+    <div class="flex items-center gap-2 mb-3 sm:mb-4">
       <i data-lucide="file-text" class="w-4 h-4 text-cy"></i>
-      <h2 class="text-sm font-semibold text-txt-secondary uppercase tracking-wider">Заявки за период</h2>
+      <h2 class="text-xs sm:text-sm font-semibold text-txt-secondary uppercase tracking-wider">Заявки за период</h2>
     </div>
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-      <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="1">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
+      <div class="gborder spot rounded-xl bg-bg-card p-3 sm:p-5 reveal" data-d="1">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-txt-muted uppercase tracking-wider">Всего</span>
+          <span class="text-[10px] sm:text-xs text-txt-muted uppercase tracking-wider">Всего</span>
           <i data-lucide="list" class="w-4 h-4 text-txt-secondary"></i>
         </div>
-        <div class="text-3xl font-bold count-up" data-target="<?= $total_orders_period ?>">0</div>
+        <div class="text-xl sm:text-3xl font-bold count-up" data-target="<?= $total_orders_period ?>">0</div>
       </div>
-      <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="2">
+      <div class="gborder spot rounded-xl bg-bg-card p-3 sm:p-5 reveal" data-d="2">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-txt-muted uppercase tracking-wider">Успешные</span>
+          <span class="text-[10px] sm:text-xs text-txt-muted uppercase tracking-wider">Успешные</span>
           <i data-lucide="check-circle-2" class="w-4 h-4 text-emr"></i>
         </div>
-        <div class="text-3xl font-bold text-emr count-up" data-target="<?= $success_period ?>">0</div>
+        <div class="text-xl sm:text-3xl font-bold text-emr count-up" data-target="<?= $success_period ?>">0</div>
       </div>
-      <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="3">
+      <div class="gborder spot rounded-xl bg-bg-card p-3 sm:p-5 reveal" data-d="3">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-txt-muted uppercase tracking-wider">В работе</span>
+          <span class="text-[10px] sm:text-xs text-txt-muted uppercase tracking-wider">В работе</span>
           <i data-lucide="loader" class="w-4 h-4 text-cy"></i>
         </div>
-        <div class="text-3xl font-bold text-cy count-up" data-target="<?= $in_process_period ?>">0</div>
+        <div class="text-xl sm:text-3xl font-bold text-cy count-up" data-target="<?= $in_process_period ?>">0</div>
       </div>
-      <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="4">
+      <div class="gborder spot rounded-xl bg-bg-card p-3 sm:p-5 reveal" data-d="4">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-txt-muted uppercase tracking-wider">Новые</span>
+          <span class="text-[10px] sm:text-xs text-txt-muted uppercase tracking-wider">Новые</span>
           <i data-lucide="clock" class="w-4 h-4 text-warn"></i>
         </div>
-        <div class="text-3xl font-bold text-warn count-up" data-target="<?= $new_period ?>">0</div>
+        <div class="text-xl sm:text-3xl font-bold text-warn count-up" data-target="<?= $new_period ?>">0</div>
       </div>
-      <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="5">
+      <div class="gborder spot rounded-xl bg-bg-card p-3 sm:p-5 reveal" data-d="5">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-txt-muted uppercase tracking-wider">Отменены</span>
+          <span class="text-[10px] sm:text-xs text-txt-muted uppercase tracking-wider">Отменены</span>
           <i data-lucide="x-circle" class="w-4 h-4 text-danger"></i>
         </div>
-        <div class="text-3xl font-bold text-danger count-up" data-target="<?= $canceled_period ?>">0</div>
+        <div class="text-xl sm:text-3xl font-bold text-danger count-up" data-target="<?= $canceled_period ?>">0</div>
       </div>
     </div>
   </section>
@@ -197,12 +197,12 @@ $admin_page = 'index.php';
   <!-- Rates table -->
   <section class="reveal" data-d="1">
     <div class="gborder rounded-2xl bg-bg-card shadow-card overflow-hidden">
-      <div class="flex items-center justify-between px-6 py-5 border-b border-line">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-lg bg-cy-soft border border-cy-border flex items-center justify-center">
+      <div class="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-line">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="w-8 h-8 rounded-lg bg-cy-soft border border-cy-border flex items-center justify-center flex-shrink-0">
             <i data-lucide="trending-up" class="w-4 h-4 text-cy"></i>
           </div>
-          <h2 class="text-lg font-bold">Текущие рыночные курсы <span class="text-xs text-txt-muted font-normal ml-1">(без наценки)</span></h2>
+          <h2 class="text-sm sm:text-lg font-bold truncate">Текущие курсы <span class="text-[10px] sm:text-xs text-txt-muted font-normal ml-1 hidden sm:inline">(без наценки)</span></h2>
         </div>
       </div>
       <div class="overflow-x-auto">

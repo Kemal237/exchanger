@@ -93,53 +93,53 @@ $admin_page = 'orders.php';
 
 <?php require_once __DIR__ . '/header.php'; ?>
 
-<main class="relative z-10 max-w-7xl mx-auto px-6 py-10">
+<main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
 
-  <section class="mb-8 fade-in">
-    <h1 class="text-3xl font-bold tracking-tight mb-1">Заявки</h1>
-    <p class="text-sm text-txt-muted">Управление заявками на обмен</p>
+  <section class="mb-6 sm:mb-8 fade-in">
+    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight mb-1">Заявки</h1>
+    <p class="text-xs sm:text-sm text-txt-muted">Управление заявками на обмен</p>
   </section>
 
   <!-- Stat filters -->
-  <section class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+  <section class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3 mb-5 sm:mb-6">
     <?php foreach ($filterLabels as $key => $row):
       $iconMap = ['all' => 'list', 'new' => 'clock', 'in_process' => 'loader', 'success' => 'check-circle-2', 'canceled' => 'x-circle'];
       $colorMap = ['all' => 'text-txt-secondary', 'new' => 'text-warn', 'in_process' => 'text-cy', 'success' => 'text-emr', 'canceled' => 'text-danger'];
       $active = $filter === $key;
     ?>
-      <a href="?status=<?= $key ?>" class="gborder spot rounded-xl bg-bg-card p-4 transition <?= $active ? 'ring-2 ring-cy/40' : '' ?>">
-        <div class="flex items-center justify-between mb-1.5">
-          <span class="text-[11px] text-txt-muted uppercase tracking-wider"><?= $row['label'] ?></span>
+      <a href="?status=<?= $key ?>" class="gborder spot rounded-xl bg-bg-card p-3 sm:p-4 transition <?= $active ? 'ring-2 ring-cy/40' : '' ?>">
+        <div class="flex items-center justify-between mb-1 sm:mb-1.5">
+          <span class="text-[10px] sm:text-[11px] text-txt-muted uppercase tracking-wider"><?= $row['label'] ?></span>
           <i data-lucide="<?= $iconMap[$key] ?>" class="w-4 h-4 <?= $colorMap[$key] ?>"></i>
         </div>
-        <div class="text-2xl font-bold <?= $colorMap[$key] ?>"><?= $row['count'] ?></div>
+        <div class="text-lg sm:text-2xl font-bold <?= $colorMap[$key] ?>"><?= $row['count'] ?></div>
       </a>
     <?php endforeach; ?>
   </section>
 
   <!-- Orders table -->
   <section class="gborder rounded-2xl bg-bg-card shadow-card overflow-hidden">
-    <div class="flex items-center justify-between px-6 py-5 border-b border-line">
-      <div class="flex items-center gap-2">
-        <div class="w-8 h-8 rounded-lg bg-cy-soft border border-cy-border flex items-center justify-center">
+    <div class="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-line">
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-8 h-8 rounded-lg bg-cy-soft border border-cy-border flex items-center justify-center flex-shrink-0">
           <i data-lucide="file-text" class="w-4 h-4 text-cy"></i>
         </div>
-        <h2 class="text-lg font-bold">
+        <h2 class="text-base sm:text-lg font-bold truncate">
           <?= htmlspecialchars($filterLabels[$filter]['label']) ?>
-          <span class="text-xs text-txt-muted font-normal ml-2"><?= count($orders) ?> шт.</span>
+          <span class="text-xs text-txt-muted font-normal ml-1 sm:ml-2"><?= count($orders) ?> шт.</span>
         </h2>
       </div>
     </div>
 
     <?php if (empty($orders)): ?>
-      <div class="p-12 text-center">
-        <div class="w-16 h-16 rounded-full bg-bg-soft border border-line mx-auto mb-4 flex items-center justify-center">
-          <i data-lucide="inbox" class="w-7 h-7 text-txt-muted"></i>
+      <div class="p-8 sm:p-12 text-center">
+        <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-bg-soft border border-line mx-auto mb-4 flex items-center justify-center">
+          <i data-lucide="inbox" class="w-6 h-6 sm:w-7 sm:h-7 text-txt-muted"></i>
         </div>
         <p class="text-txt-secondary">Заявок в этом статусе нет</p>
       </div>
     <?php else: ?>
-      <div class="overflow-x-auto">
+      <div class="hidden lg:block overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
             <tr class="text-left text-xs text-txt-muted uppercase tracking-wider bg-bg-soft/40">
@@ -213,6 +213,80 @@ $admin_page = 'orders.php';
             <?php endforeach; ?>
           </tbody>
         </table>
+      </div>
+
+      <!-- Mobile/tablet: card view -->
+      <div class="lg:hidden divide-y divide-line">
+        <?php foreach ($orders as $order):
+          $status = $order['status'] ?? 'new';
+          $statuses = [
+              'new'        => ['text' => 'Новая',       'cls' => 'st-new',    'icon' => 'clock'],
+              'in_process' => ['text' => 'В обработке', 'cls' => 'st-proc',   'icon' => 'loader'],
+              'success'    => ['text' => 'Успешно',     'cls' => 'st-ok',     'icon' => 'check-circle-2'],
+              'canceled'   => ['text' => 'Отменено',    'cls' => 'st-cancel', 'icon' => 'x-circle'],
+          ];
+          $s = $statuses[$status] ?? $statuses['new'];
+        ?>
+          <div class="p-4">
+            <div class="flex items-start justify-between gap-2 mb-3">
+              <div class="min-w-0">
+                <div class="font-mono text-[11px] text-txt-secondary truncate">#<?= htmlspecialchars($order['id']) ?></div>
+                <div class="text-[11px] text-txt-muted mt-0.5"><?= date('d.m.Y H:i', strtotime($order['created_at'])) ?></div>
+              </div>
+              <span class="st <?= $s['cls'] ?> flex-shrink-0">
+                <i data-lucide="<?= $s['icon'] ?>" class="w-3 h-3"></i>
+                <?= $s['text'] ?>
+              </span>
+            </div>
+
+            <div class="mb-3">
+              <div class="text-[10px] text-txt-muted uppercase tracking-wider mb-0.5">Пользователь</div>
+              <div class="font-medium text-sm"><?= htmlspecialchars($order['username'] ?? 'ID: ' . $order['user_id']) ?></div>
+              <?php if (!empty($order['telegram'])): ?>
+                <div class="text-[11px] text-cy mt-0.5"><?= htmlspecialchars($order['telegram']) ?></div>
+              <?php endif; ?>
+            </div>
+
+            <div class="flex items-center justify-between gap-3 mb-3">
+              <div class="flex-1 min-w-0">
+                <div class="text-[10px] text-txt-muted uppercase tracking-wider mb-0.5">Отдаёт</div>
+                <div class="font-medium text-sm truncate">
+                  <?= number_format($order['amount_give'], 2, '.', ' ') ?>
+                  <span class="text-[11px] text-txt-muted"><?= htmlspecialchars($order['give_currency']) ?></span>
+                </div>
+              </div>
+              <i data-lucide="arrow-right" class="w-4 h-4 text-txt-muted flex-shrink-0"></i>
+              <div class="flex-1 min-w-0 text-right">
+                <div class="text-[10px] text-txt-muted uppercase tracking-wider mb-0.5">Получает</div>
+                <div class="font-medium text-emr text-sm truncate">
+                  <?= number_format($order['amount_get'], 2, '.', ' ') ?>
+                  <span class="text-[11px] text-txt-muted"><?= htmlspecialchars($order['get_currency']) ?></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <form method="POST" class="flex items-center gap-1.5 flex-1 min-w-0">
+                <input type="hidden" name="order_id" value="<?= htmlspecialchars($order['id']) ?>">
+                <select name="new_status" class="input-d h-9 px-2 pr-7 rounded-md text-xs flex-1 min-w-0">
+                  <option value="new"        <?= $status === 'new' ? 'selected' : '' ?>>Новая</option>
+                  <option value="in_process" <?= $status === 'in_process' ? 'selected' : '' ?>>В обработке</option>
+                  <option value="success"    <?= $status === 'success' ? 'selected' : '' ?>>Успешно</option>
+                  <option value="canceled"   <?= $status === 'canceled' ? 'selected' : '' ?>>Отменено</option>
+                </select>
+                <button type="submit" name="change_status" class="btn-cy h-9 px-3 rounded-md text-xs font-medium flex items-center gap-1 flex-shrink-0">
+                  <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                </button>
+              </form>
+              <form method="POST" onsubmit="return confirm('Удалить заявку #<?= htmlspecialchars($order['id']) ?>? Это действие необратимо.');">
+                <input type="hidden" name="order_id" value="<?= htmlspecialchars($order['id']) ?>">
+                <button type="submit" name="delete_order" class="btn-danger h-9 px-2.5 rounded-md text-xs flex items-center gap-1">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+        <?php endforeach; ?>
       </div>
     <?php endif; ?>
   </section>

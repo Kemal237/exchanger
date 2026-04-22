@@ -72,81 +72,81 @@ $page_title = 'Подтвердите заявку — ' . SITE_NAME;
 
 <?php require_once 'header.php'; ?>
 
-<main class="relative z-10 max-w-4xl mx-auto px-6 py-10">
+<main class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
 
-  <div class="flex items-center gap-3 text-xs text-txt-muted mb-4 fade-in">
+  <div class="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-txt-muted mb-3 sm:mb-4 fade-in">
     <a href="index.php" class="hover:text-cy transition">Главная</a>
     <i data-lucide="chevron-right" class="w-3 h-3"></i>
     <span class="text-txt-secondary">Подтверждение заявки</span>
   </div>
 
-  <h1 class="text-3xl md:text-4xl font-bold tracking-tight mb-8 fade-in">
+  <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-6 sm:mb-8 fade-in">
     Подтвердите <span class="shimmer-text">заявку</span>
   </h1>
 
-  <div class="gborder spot rounded-2xl bg-bg-card p-8 shadow-card mb-6 reveal" data-d="1">
+  <div class="gborder spot rounded-2xl bg-bg-card p-4 sm:p-8 shadow-card mb-5 sm:mb-6 reveal" data-d="1">
 
-    <div class="grid md:grid-cols-[1fr,auto,1fr] items-center gap-6 mb-8">
+    <div class="grid grid-cols-[1fr,auto,1fr] items-center gap-3 sm:gap-6 mb-6 sm:mb-8">
       <!-- Give -->
-      <div class="text-center">
-        <div class="flex items-center justify-center gap-2 mb-3 text-xs text-txt-muted uppercase tracking-wider">
+      <div class="text-center min-w-0">
+        <div class="flex items-center justify-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 text-[10px] sm:text-xs text-txt-muted uppercase tracking-wider">
           <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-danger"></i>
-          Вы отдаёте
+          <span>Отдаёте</span>
         </div>
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3" style="background: <?= $giveIcon['color'] ?>1A; border: 1px solid <?= $giveIcon['color'] ?>33;">
-          <i data-lucide="<?= $giveIcon['icon'] ?>" class="w-7 h-7" style="color: <?= $giveIcon['color'] ?>"></i>
+        <div class="inline-flex items-center justify-center w-11 h-11 sm:w-14 sm:h-14 rounded-2xl mb-2 sm:mb-3" style="background: <?= $giveIcon['color'] ?>1A; border: 1px solid <?= $giveIcon['color'] ?>33;">
+          <i data-lucide="<?= $giveIcon['icon'] ?>" class="w-5 h-5 sm:w-7 sm:h-7" style="color: <?= $giveIcon['color'] ?>"></i>
         </div>
-        <div class="text-3xl md:text-4xl font-bold tracking-tight mb-1">
-          <?= number_format($amount_give, ($give_currency === 'BTC' ? 8 : 2), '.', ' ') ?>
+        <div class="text-lg sm:text-3xl md:text-4xl font-bold tracking-tight mb-1 break-all">
+          <?= number_format($amount_give, $give_currency === 'BTC' ? 8 : 2, '.', ' ') ?>
         </div>
-        <div class="text-sm text-txt-secondary"><?= htmlspecialchars(str_replace('_', ' ', $give_currency)) ?></div>
+        <div class="text-[11px] sm:text-sm text-txt-secondary"><?= htmlspecialchars(str_replace('_', ' ', $give_currency)) ?></div>
       </div>
 
       <!-- Arrow -->
       <div class="flex items-center justify-center">
-        <div class="w-10 h-10 rounded-full bg-cy-soft border border-cy-border flex items-center justify-center">
-          <i data-lucide="arrow-right" class="w-5 h-5 text-cy"></i>
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cy-soft border border-cy-border flex items-center justify-center">
+          <i data-lucide="arrow-right" class="w-4 h-4 sm:w-5 sm:h-5 text-cy"></i>
         </div>
       </div>
 
       <!-- Get -->
-      <div class="text-center">
-        <div class="flex items-center justify-center gap-2 mb-3 text-xs text-txt-muted uppercase tracking-wider">
+      <div class="text-center min-w-0">
+        <div class="flex items-center justify-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 text-[10px] sm:text-xs text-txt-muted uppercase tracking-wider">
           <i data-lucide="arrow-down-left" class="w-3.5 h-3.5 text-emr"></i>
-          Вы получаете
+          <span>Получаете</span>
         </div>
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3" style="background: <?= $getIcon['color'] ?>1A; border: 1px solid <?= $getIcon['color'] ?>33;">
-          <i data-lucide="<?= $getIcon['icon'] ?>" class="w-7 h-7" style="color: <?= $getIcon['color'] ?>"></i>
+        <div class="inline-flex items-center justify-center w-11 h-11 sm:w-14 sm:h-14 rounded-2xl mb-2 sm:mb-3" style="background: <?= $getIcon['color'] ?>1A; border: 1px solid <?= $getIcon['color'] ?>33;">
+          <i data-lucide="<?= $getIcon['icon'] ?>" class="w-5 h-5 sm:w-7 sm:h-7" style="color: <?= $getIcon['color'] ?>"></i>
         </div>
-        <div class="text-3xl md:text-4xl font-bold tracking-tight mb-1 text-emr">
-          <?= number_format($amount_get, ($get_currency === 'BTC' ? 8 : 2), '.', ' ') ?>
+        <div class="text-lg sm:text-3xl md:text-4xl font-bold tracking-tight mb-1 text-emr break-all">
+          <?= number_format($amount_get, $get_currency === 'BTC' ? 8 : 2, '.', ' ') ?>
         </div>
-        <div class="text-sm text-txt-secondary"><?= htmlspecialchars(str_replace('_', ' ', $get_currency)) ?></div>
+        <div class="text-[11px] sm:text-sm text-txt-secondary"><?= htmlspecialchars(str_replace('_', ' ', $get_currency)) ?></div>
       </div>
     </div>
 
-    <div class="border-t border-line pt-6 space-y-4">
-      <div class="flex items-center justify-between text-sm">
-        <span class="text-txt-muted flex items-center gap-2">
+    <div class="border-t border-line pt-5 sm:pt-6 space-y-3 sm:space-y-4">
+      <div class="flex items-center justify-between gap-3 text-xs sm:text-sm">
+        <span class="text-txt-muted flex items-center gap-2 flex-shrink-0">
           <i data-lucide="trending-up" class="w-4 h-4"></i>
-          Фиксированный курс
+          <span class="hidden sm:inline">Фиксированный курс</span><span class="sm:hidden">Курс</span>
         </span>
-        <span class="font-mono font-medium">
+        <span class="font-mono font-medium text-right truncate">
           1 <?= htmlspecialchars(str_replace('_', ' ', $give_currency)) ?>
-          <span class="text-txt-muted mx-1.5">=</span>
+          <span class="text-txt-muted mx-1">=</span>
           <?= number_format($rate, 4, '.', ' ') ?>
           <?= htmlspecialchars(str_replace('_', ' ', $get_currency)) ?>
         </span>
       </div>
-      <div class="flex items-center justify-between text-sm">
-        <span class="text-txt-muted flex items-center gap-2">
+      <div class="flex items-center justify-between gap-3 text-xs sm:text-sm">
+        <span class="text-txt-muted flex items-center gap-2 flex-shrink-0">
           <i data-lucide="send" class="w-4 h-4"></i>
-          Telegram для связи
+          Telegram
         </span>
-        <span class="font-mono font-medium text-cy"><?= htmlspecialchars($telegram) ?></span>
+        <span class="font-mono font-medium text-cy truncate"><?= htmlspecialchars($telegram) ?></span>
       </div>
-      <div class="flex items-center justify-between text-sm">
-        <span class="text-txt-muted flex items-center gap-2">
+      <div class="flex items-center justify-between gap-3 text-xs sm:text-sm">
+        <span class="text-txt-muted flex items-center gap-2 flex-shrink-0">
           <i data-lucide="clock" class="w-4 h-4"></i>
           Время ответа
         </span>
@@ -156,7 +156,7 @@ $page_title = 'Подтвердите заявку — ' . SITE_NAME;
   </div>
 
   <!-- Warning -->
-  <div class="gborder rounded-2xl bg-bg-card p-6 mb-6 reveal" data-d="2" style="--tw-border-opacity:0;">
+  <div class="gborder rounded-2xl bg-bg-card p-4 sm:p-6 mb-5 sm:mb-6 reveal" data-d="2" style="--tw-border-opacity:0;">
     <div class="flex items-start gap-3">
       <div class="w-9 h-9 rounded-lg bg-warn/10 border border-warn/30 flex items-center justify-center flex-shrink-0">
         <i data-lucide="alert-triangle" class="w-5 h-5 text-warn"></i>

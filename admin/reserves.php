@@ -97,22 +97,22 @@ $admin_page = 'reserves.php';
 
 <?php require_once __DIR__ . '/header.php'; ?>
 
-<main class="relative z-10 max-w-7xl mx-auto px-6 py-10">
+<main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
 
-  <section class="mb-8 fade-in">
-    <h1 class="text-3xl font-bold tracking-tight mb-1">Управление резервами</h1>
-    <p class="text-sm text-txt-muted">Пополнение, списание и установка лимитов обмена</p>
+  <section class="mb-6 sm:mb-8 fade-in">
+    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight mb-1">Управление резервами</h1>
+    <p class="text-xs sm:text-sm text-txt-muted">Пополнение, списание и установка лимитов обмена</p>
   </section>
 
-  <div class="grid lg:grid-cols-2 gap-5 mb-8">
+  <div class="grid lg:grid-cols-2 gap-4 sm:gap-5 mb-6 sm:mb-8">
 
     <!-- Изменить резерв -->
-    <div class="gborder spot rounded-2xl bg-bg-card p-6 reveal" data-d="1">
-      <div class="flex items-center gap-2 mb-5">
-        <div class="w-8 h-8 rounded-lg bg-cy-soft border border-cy-border flex items-center justify-center">
+    <div class="gborder spot rounded-2xl bg-bg-card p-4 sm:p-6 reveal" data-d="1">
+      <div class="flex items-center gap-2 mb-4 sm:mb-5">
+        <div class="w-8 h-8 rounded-lg bg-cy-soft border border-cy-border flex items-center justify-center flex-shrink-0">
           <i data-lucide="wallet" class="w-4 h-4 text-cy"></i>
         </div>
-        <h2 class="text-lg font-bold">Изменить резерв</h2>
+        <h2 class="text-base sm:text-lg font-bold">Изменить резерв</h2>
       </div>
       <form method="POST" class="space-y-4">
         <div>
@@ -145,12 +145,12 @@ $admin_page = 'reserves.php';
     </div>
 
     <!-- Лимиты -->
-    <div class="gborder spot rounded-2xl bg-bg-card p-6 reveal" data-d="2">
-      <div class="flex items-center gap-2 mb-5">
-        <div class="w-8 h-8 rounded-lg bg-vi-soft border border-vi/30 flex items-center justify-center">
+    <div class="gborder spot rounded-2xl bg-bg-card p-4 sm:p-6 reveal" data-d="2">
+      <div class="flex items-center gap-2 mb-4 sm:mb-5">
+        <div class="w-8 h-8 rounded-lg bg-vi-soft border border-vi/30 flex items-center justify-center flex-shrink-0">
           <i data-lucide="sliders-horizontal" class="w-4 h-4 text-vi"></i>
         </div>
-        <h2 class="text-lg font-bold">Лимиты обмена</h2>
+        <h2 class="text-base sm:text-lg font-bold">Лимиты обмена</h2>
       </div>
       <form method="POST" id="limits-form" class="space-y-4">
         <div>
@@ -183,17 +183,17 @@ $admin_page = 'reserves.php';
   <!-- Таблица резервов -->
   <section class="reveal" data-d="3">
     <div class="gborder rounded-2xl bg-bg-card shadow-card overflow-hidden">
-      <div class="flex items-center justify-between px-6 py-5 border-b border-line">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-lg bg-emr/10 border border-emr/30 flex items-center justify-center">
+      <div class="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-line">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="w-8 h-8 rounded-lg bg-emr/10 border border-emr/30 flex items-center justify-center flex-shrink-0">
             <i data-lucide="database" class="w-4 h-4 text-emr"></i>
           </div>
-          <h2 class="text-lg font-bold">Текущие резервы</h2>
+          <h2 class="text-base sm:text-lg font-bold truncate">Текущие резервы</h2>
         </div>
-        <span class="text-xs text-txt-muted"><?= count($reservesList) ?> валют</span>
+        <span class="text-xs text-txt-muted flex-shrink-0 ml-2"><?= count($reservesList) ?> валют</span>
       </div>
 
-      <div class="overflow-x-auto">
+      <div class="hidden md:block overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
             <tr class="text-left text-xs text-txt-muted uppercase tracking-wider bg-bg-soft/40">
@@ -227,6 +227,37 @@ $admin_page = 'reserves.php';
             <?php endforeach; ?>
           </tbody>
         </table>
+      </div>
+
+      <!-- Mobile cards -->
+      <div class="md:hidden divide-y divide-line">
+        <?php foreach ($reservesList as $r):
+          $meta = $currencyMeta[$r['currency']] ?? ['icon' => 'coins', 'color' => '#A1A1AA'];
+        ?>
+          <div class="p-4">
+            <div class="flex items-center gap-2.5 mb-3">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background: <?= $meta['color'] ?>1A; border: 1px solid <?= $meta['color'] ?>33;">
+                <i data-lucide="<?= $meta['icon'] ?>" class="w-4 h-4" style="color: <?= $meta['color'] ?>"></i>
+              </div>
+              <span class="font-medium text-sm"><?= htmlspecialchars(str_replace('_', ' ', $r['currency'])) ?></span>
+              <span class="ml-auto text-[11px] text-txt-muted"><?= $r['updated_at'] ? date('d.m.Y H:i', strtotime($r['updated_at'])) : '—' ?></span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <div class="text-[10px] text-txt-muted uppercase tracking-wider mb-0.5">Резерв</div>
+                <div class="font-mono text-emr break-all"><?= number_format($r['amount'], 4, '.', ' ') ?></div>
+              </div>
+              <div>
+                <div class="text-[10px] text-txt-muted uppercase tracking-wider mb-0.5">Мин</div>
+                <div class="font-mono text-txt-secondary break-all"><?= number_format($r['min'], 4, '.', ' ') ?></div>
+              </div>
+              <div>
+                <div class="text-[10px] text-txt-muted uppercase tracking-wider mb-0.5">Макс</div>
+                <div class="font-mono text-txt-secondary break-all"><?= number_format($r['max'], 4, '.', ' ') ?></div>
+              </div>
+            </div>
+          </div>
+        <?php endforeach; ?>
       </div>
     </div>
   </section>

@@ -166,4 +166,26 @@ tailwind.config = {
   /* Highlight row */
   @keyframes rowHighlight { 0%{background:rgba(34,211,238,0.18);} 100%{background:transparent;} }
   .highlight-row { animation: rowHighlight 3s ease; }
+
+  /* === Mobile-first responsive adjustments === */
+  @media (max-width: 768px) {
+    /* Smaller, less-heavy aurora for perf */
+    .ab-1 { width: 480px; height: 480px; top: -10%; right: -12%; }
+    .ab-2 { width: 420px; height: 420px; bottom: -12%; left: -16%; }
+    .ab-3 { width: 360px; height: 360px; }
+    .grid-bg { background-size: 40px 40px; }
+
+    /* Step badge a touch smaller */
+    .step-num { width: 30px; height: 30px; font-size: 12px; margin-bottom: 12px; }
+
+    /* Toast smaller margins on phone */
+    .toast-w { min-width: 0; left: 12px; right: 12px; transform: none; width: calc(100% - 24px); padding: 12px 18px; font-size: 14px; }
+    .toast-w.show { top: 12px; }
+
+    /* Ensure selects/inputs are tap-friendly (prevent iOS zoom on <16px) */
+    select.input-d, input.input-d { font-size: 16px; }
+  }
+
+  /* Never let anything force horizontal page scroll */
+  html, body { max-width: 100%; overflow-x: hidden; }
 </style>
