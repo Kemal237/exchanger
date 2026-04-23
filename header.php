@@ -15,7 +15,8 @@ $current_page = $current_page ?? basename($_SERVER['SCRIPT_NAME']);
       </a>
       <nav class="hidden md:flex items-center gap-4 lg:gap-6 text-sm">
         <a class="<?= $current_page === 'index.php' ? 'text-cy' : 'text-txt-secondary' ?> hover:text-cy transition whitespace-nowrap" href="index.php">Обмен</a>
-        <a class="<?= $current_page === 'rates.php' ? 'text-cy' : 'text-txt-secondary' ?> hover:text-cy transition whitespace-nowrap" href="rates.php">Курсы и резервы</a>
+        <a class="<?= $current_page === 'rates.php' ? 'text-cy' : 'text-txt-secondary' ?> hover:text-cy transition whitespace-nowrap" href="rates.php">Курсы</a>
+        <a class="<?= $current_page === 'rules.php' ? 'text-cy' : 'text-txt-secondary' ?> hover:text-cy transition whitespace-nowrap" href="rules.php">Правила</a>
         <a class="<?= $current_page === 'aml.php' ? 'text-cy' : 'text-txt-secondary' ?> hover:text-cy transition" href="aml.php">AML</a>
         <a class="<?= $current_page === 'kyc.php' ? 'text-cy' : 'text-txt-secondary' ?> hover:text-cy transition" href="kyc.php">KYC</a>
       </nav>
@@ -59,6 +60,9 @@ $current_page = $current_page ?? basename($_SERVER['SCRIPT_NAME']);
       </a>
       <a class="<?= $current_page === 'rates.php' ? 'text-cy bg-cy-soft' : 'text-txt-secondary' ?> flex items-center gap-3 px-3 h-11 rounded-lg hover:bg-bg-soft transition" href="rates.php">
         <i data-lucide="trending-up" class="w-4 h-4"></i> Курсы и резервы
+      </a>
+      <a class="<?= $current_page === 'rules.php' ? 'text-cy bg-cy-soft' : 'text-txt-secondary' ?> flex items-center gap-3 px-3 h-11 rounded-lg hover:bg-bg-soft transition" href="rules.php">
+        <i data-lucide="scroll-text" class="w-4 h-4"></i> Правила обмена
       </a>
       <a class="<?= $current_page === 'aml.php' ? 'text-cy bg-cy-soft' : 'text-txt-secondary' ?> flex items-center gap-3 px-3 h-11 rounded-lg hover:bg-bg-soft transition" href="aml.php">
         <i data-lucide="shield-check" class="w-4 h-4"></i> AML политика

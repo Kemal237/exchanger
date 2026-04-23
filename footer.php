@@ -23,6 +23,7 @@ if (!defined('SITE_NAME')) require_once __DIR__ . '/config.php';
     <div>
       <div class="text-txt-primary font-semibold mb-3">Правила</div>
       <ul class="space-y-2 text-txt-muted">
+        <li><a href="rules.php" class="hover:text-cy transition">Правила обмена</a></li>
         <li><a href="aml.php" class="hover:text-cy transition">AML политика</a></li>
         <li><a href="kyc.php" class="hover:text-cy transition">KYC процедура</a></li>
       </ul>
