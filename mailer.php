@@ -10,32 +10,48 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 
+function createMailer(): PHPMailer {
+    $mail = new PHPMailer(true);
+    $mail->isSMTP();
+    $mail->Host       = MAIL_HOST;
+    $mail->SMTPAuth   = true;
+    $mail->Username   = MAIL_USERNAME;
+    $mail->Password   = MAIL_PASSWORD;
+    $mail->SMTPSecure = MAIL_ENCRYPTION;
+    $mail->Port       = MAIL_PORT;
+    $mail->CharSet    = 'UTF-8';
+    $mail->Encoding   = 'base64';
+
+    // Sender = Return-Path должен совпадать с From — иначе SPF фейлится
+    $mail->Sender  = MAIL_FROM;
+    $mail->setFrom(MAIL_FROM, MAIL_FROM_NAME);
+    $mail->addReplyTo(MAIL_FROM, MAIL_FROM_NAME);
+
+    // Скрываем "PHPMailer" из заголовков — спам-фильтры его знают
+    $mail->XMailer = SITE_NAME . ' Mailer';
+
+    // Сигнализируем что письмо транзакционное, не маркетинговое
+    $mail->addCustomHeader('X-Priority', '3');
+    $mail->addCustomHeader('X-Mailer-Type', 'Transactional');
+
+    $mail->isHTML(true);
+    return $mail;
+}
+
 function sendVerificationEmail(string $toEmail, string $toName, string $token): bool {
     $verifyUrl = SITE_URL . '/verify-email.php?token=' . urlencode($token);
 
-    $mail = new PHPMailer(true);
+    $mail = createMailer();
     try {
-        $mail->isSMTP();
-        $mail->Host       = MAIL_HOST;
-        $mail->SMTPAuth   = true;
-        $mail->Username   = MAIL_USERNAME;
-        $mail->Password   = MAIL_PASSWORD;
-        $mail->SMTPSecure = MAIL_ENCRYPTION;
-        $mail->Port       = MAIL_PORT;
-        $mail->CharSet    = 'UTF-8';
-
-        $mail->setFrom(MAIL_FROM, MAIL_FROM_NAME);
         $mail->addAddress($toEmail, $toName);
-
-        $mail->isHTML(true);
-        $mail->Subject = 'Подтверждение email — ' . SITE_NAME;
+        $mail->Subject = '[' . SITE_NAME . '] Подтверждение адреса электронной почты';
         $mail->Body    = emailVerificationTemplate($toName, $verifyUrl);
-        $mail->AltBody = "Подтвердите email, перейдя по ссылке:\n$verifyUrl";
+        $mail->AltBody = "Здравствуйте, $toName!\n\nПодтвердите ваш email, перейдя по ссылке:\n$verifyUrl\n\nЕсли вы не регистрировались на " . SITE_NAME . " — проигнорируйте это письмо.";
 
         $mail->send();
         return true;
     } catch (Exception $e) {
-        error_log('[Mailer] Ошибка отправки: ' . $mail->ErrorInfo);
+        error_log('[Mailer] Ошибка отправки verification: ' . $mail->ErrorInfo);
         return false;
     }
 }
@@ -43,24 +59,12 @@ function sendVerificationEmail(string $toEmail, string $toName, string $token): 
 function sendPasswordResetEmail(string $toEmail, string $toName, string $token): bool {
     $resetUrl = SITE_URL . '/reset-password.php?token=' . urlencode($token);
 
-    $mail = new PHPMailer(true);
+    $mail = createMailer();
     try {
-        $mail->isSMTP();
-        $mail->Host       = MAIL_HOST;
-        $mail->SMTPAuth   = true;
-        $mail->Username   = MAIL_USERNAME;
-        $mail->Password   = MAIL_PASSWORD;
-        $mail->SMTPSecure = MAIL_ENCRYPTION;
-        $mail->Port       = MAIL_PORT;
-        $mail->CharSet    = 'UTF-8';
-
-        $mail->setFrom(MAIL_FROM, MAIL_FROM_NAME);
         $mail->addAddress($toEmail, $toName);
-
-        $mail->isHTML(true);
-        $mail->Subject = 'Сброс пароля — ' . SITE_NAME;
+        $mail->Subject = '[' . SITE_NAME . '] Восстановление доступа к аккаунту';
         $mail->Body    = emailPasswordResetTemplate($toName, $resetUrl);
-        $mail->AltBody = "Для сброса пароля перейдите по ссылке:\n$resetUrl\n\nСсылка действительна 1 час.";
+        $mail->AltBody = "Здравствуйте, $toName!\n\nВы запросили сброс пароля для аккаунта на " . SITE_NAME . ".\n\nДля установки нового пароля перейдите по ссылке:\n$resetUrl\n\nСсылка действительна 1 час.\n\nЕсли вы не запрашивали сброс пароля — проигнорируйте это письмо. Ваш пароль не изменится.";
 
         $mail->send();
         return true;

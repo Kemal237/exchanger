@@ -178,7 +178,7 @@ $currencyConfig = [
                 <span class="cur-label text-xs sm:text-sm font-medium"><?= htmlspecialchars($gc['short'] ?? $gc['label']) ?></span>
                 <i data-lucide="chevron-down" class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-txt-muted"></i>
               </button>
-              <div id="give-drop" class="cur-drop hidden fixed z-[9999] min-w-[155px] bg-bg-card border border-line rounded-xl shadow-card py-1">
+              <div id="give-drop" class="cur-drop hidden fixed z-[9999] min-w-[155px] max-w-[calc(100vw-16px)] bg-bg-card border border-line rounded-xl shadow-card py-1">
                 <?php foreach (array_keys($rates) as $cur):
                   $c = $currencyConfig[$cur] ?? ['symbol'=>'?','label'=>$cur,'icolor'=>'#888'];
                 ?>
@@ -224,7 +224,7 @@ $currencyConfig = [
                 <span class="cur-label text-xs sm:text-sm font-medium"><?= htmlspecialchars($gc2['short'] ?? $gc2['label']) ?></span>
                 <i data-lucide="chevron-down" class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-txt-muted"></i>
               </button>
-              <div id="get-drop" class="cur-drop hidden fixed z-[9999] min-w-[155px] bg-bg-card border border-line rounded-xl shadow-card py-1">
+              <div id="get-drop" class="cur-drop hidden fixed z-[9999] min-w-[155px] max-w-[calc(100vw-16px)] bg-bg-card border border-line rounded-xl shadow-card py-1">
                 <?php
                 $all_currencies = array_unique(array_merge(
                     array_keys($rates),
