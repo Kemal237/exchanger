@@ -2,6 +2,7 @@
 require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
+require_once 'mailer.php';
 
 $error = $success = '';
 
@@ -27,8 +28,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Пароли не совпадают';
     } else {
         if (register($username, $email, $password)) {
+            // Генерируем токен верификации и сохраняем в БД
+            $token = bin2hex(random_bytes(32));
+            $stmt = $pdo->prepare("
+                UPDATE users
+                SET email_verification_token = ?, email_verification_sent_at = NOW()
+                WHERE email = ?
+            ");
+            $stmt->execute([$token, $email]);
+
+            // Отправляем письмо (не блокируем вход при ошибке отправки)
+            sendVerificationEmail($email, $username, $token);
+
             if (login($username, $password)) {
-                header('Location: profile.php');
+                $_SESSION['toast'] = [
+                    'type'    => 'success',
+                    'message' => 'Аккаунт создан! Проверьте почту — отправили письмо для подтверждения email.'
+                ];
+                header('Location: index.php');
                 exit;
             } else {
                 $error = 'Регистрация прошла, но автоматический вход не удался. Попробуйте войти вручную.';

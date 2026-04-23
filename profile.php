@@ -86,11 +86,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$stmt = $pdo->prepare("SELECT telegram, created_at FROM users WHERE id = ?");
+$stmt = $pdo->prepare("SELECT telegram, created_at, email_verified, email_verification_sent_at FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
 $userRow = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
-$current_telegram = $userRow['telegram'] ?? '';
-$user_created = $userRow['created_at'] ?? null;
+$current_telegram       = $userRow['telegram'] ?? '';
+$user_created           = $userRow['created_at'] ?? null;
+$email_verified         = (bool)($userRow['email_verified'] ?? false);
+$email_verification_sent_at = $userRow['email_verification_sent_at'] ?? null;
+// Защита от спама: кнопка «Отправить повторно» доступна раз в 2 мин
+$can_resend = !$email_verified && (
+    !$email_verification_sent_at ||
+    (time() - strtotime($email_verification_sent_at)) >= 120
+);
 
 // Статистика
 $total_orders = count($orders);
@@ -214,6 +221,27 @@ $current_page = 'profile.php';
             <input type="email" name="email" required
                    value="<?= htmlspecialchars($_SESSION['email'] ?? '') ?>"
                    class="input-d w-full h-10 px-3 rounded-lg text-sm">
+            <?php if ($email_verified): ?>
+              <div class="mt-1.5 flex items-center gap-1.5 text-[11px] text-emr">
+                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 flex-shrink-0"></i>
+                Email подтверждён
+              </div>
+            <?php else: ?>
+              <div class="mt-1.5 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5 text-[11px] text-warn">
+                  <i data-lucide="alert-circle" class="w-3.5 h-3.5 flex-shrink-0"></i>
+                  Email не подтверждён
+                </div>
+                <?php if ($can_resend): ?>
+                  <a href="resend-verification.php"
+                     class="text-[11px] text-cy hover:underline flex items-center gap-1 whitespace-nowrap">
+                    <i data-lucide="send" class="w-3 h-3"></i> Отправить письмо
+                  </a>
+                <?php else: ?>
+                  <span class="text-[11px] text-txt-muted whitespace-nowrap">Письмо отправлено</span>
+                <?php endif; ?>
+              </div>
+            <?php endif; ?>
           </div>
 
           <div>

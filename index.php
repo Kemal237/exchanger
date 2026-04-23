@@ -132,15 +132,15 @@ $currencyConfig = [
       </div>
 
       <!-- Feature tags -->
-      <div class="mt-4 sm:mt-6 flex flex-wrap gap-1.5 sm:gap-2">
-        <span class="tag-h inline-flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-txt-secondary px-2.5 sm:px-3 h-8 sm:h-9 rounded-lg border border-line bg-bg-card">
-          <i data-lucide="shield-check" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cy flex-shrink-0"></i> AML проверка
+      <div class="mt-4 sm:mt-6 flex flex-wrap gap-1 sm:gap-2">
+        <span class="tag-h inline-flex items-center gap-1 sm:gap-2 text-[10.5px] sm:text-sm text-txt-secondary px-1.5 sm:px-3 h-7 sm:h-9 rounded-lg border border-line bg-bg-card whitespace-nowrap">
+          <i data-lucide="shield-check" class="w-3 h-3 sm:w-4 sm:h-4 text-cy flex-shrink-0"></i> AML проверка
         </span>
-        <span class="tag-h inline-flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-txt-secondary px-2.5 sm:px-3 h-8 sm:h-9 rounded-lg border border-line bg-bg-card">
-          <i data-lucide="zap" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-warn flex-shrink-0"></i> Быстрые выплаты
+        <span class="tag-h inline-flex items-center gap-1 sm:gap-2 text-[10.5px] sm:text-sm text-txt-secondary px-1.5 sm:px-3 h-7 sm:h-9 rounded-lg border border-line bg-bg-card whitespace-nowrap">
+          <i data-lucide="zap" class="w-3 h-3 sm:w-4 sm:h-4 text-warn flex-shrink-0"></i> Быстрые выплаты
         </span>
-        <span class="tag-h inline-flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-txt-secondary px-2.5 sm:px-3 h-8 sm:h-9 rounded-lg border border-line bg-bg-card">
-          <i data-lucide="headphones" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-vi flex-shrink-0"></i> Поддержка 24/7
+        <span class="tag-h inline-flex items-center gap-1 sm:gap-2 text-[10.5px] sm:text-sm text-txt-secondary px-1.5 sm:px-3 h-7 sm:h-9 rounded-lg border border-line bg-bg-card whitespace-nowrap">
+          <i data-lucide="headphones" class="w-3 h-3 sm:w-4 sm:h-4 text-vi flex-shrink-0"></i> Поддержка 24/7
         </span>
       </div>
     </div>
@@ -338,39 +338,43 @@ $currencyConfig = [
     <div class="grid sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
 
       <div class="reveal spot bg-bg-card border border-line rounded-xl p-4 sm:p-5 hover:border-cy-border transition" data-d="1">
-        <div class="step-num">1</div>
-        <div class="w-10 h-10 rounded-lg bg-cy-soft border border-cy-border text-cy flex items-center justify-center mb-3">
-          <i data-lucide="wallet" class="w-5 h-5"></i>
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-10 h-10 rounded-lg bg-cy-soft border border-cy-border text-cy flex items-center justify-center flex-shrink-0">
+            <i data-lucide="wallet" class="w-5 h-5"></i>
+          </div>
+          <div class="font-semibold">Выберите направление</div>
         </div>
-        <div class="font-semibold mb-1">Выберите направление</div>
-        <div class="text-sm text-txt-secondary">Укажите, что отдаёте и что хотите получить</div>
+        <div class="text-sm text-txt-secondary text-center">Укажите, что отдаёте и что хотите получить</div>
       </div>
 
       <div class="reveal spot bg-bg-card border border-line rounded-xl p-4 sm:p-5 hover:border-cy-border transition" data-d="2">
-        <div class="step-num">2</div>
-        <div class="w-10 h-10 rounded-lg bg-cy-soft border border-cy-border text-cy flex items-center justify-center mb-3">
-          <i data-lucide="user-check" class="w-5 h-5"></i>
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-10 h-10 rounded-lg bg-cy-soft border border-cy-border text-cy flex items-center justify-center flex-shrink-0">
+            <i data-lucide="user-check" class="w-5 h-5"></i>
+          </div>
+          <div class="font-semibold">Оставьте заявку</div>
         </div>
-        <div class="font-semibold mb-1">Оставьте заявку</div>
-        <div class="text-sm text-txt-secondary">Введите реквизиты и Telegram для связи</div>
+        <div class="text-sm text-txt-secondary text-center">Введите реквизиты и Telegram для связи</div>
       </div>
 
       <div class="reveal spot bg-bg-card border border-line rounded-xl p-4 sm:p-5 hover:border-cy-border transition" data-d="3">
-        <div class="step-num">3</div>
-        <div class="w-10 h-10 rounded-lg bg-vi-soft border border-vi/20 text-vi flex items-center justify-center mb-3">
-          <i data-lucide="send" class="w-5 h-5"></i>
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-10 h-10 rounded-lg bg-vi-soft border border-vi/20 text-vi flex items-center justify-center flex-shrink-0">
+            <i data-lucide="send" class="w-5 h-5"></i>
+          </div>
+          <div class="font-semibold">Переведите средства</div>
         </div>
-        <div class="font-semibold mb-1">Переведите средства</div>
-        <div class="text-sm text-txt-secondary">Отправьте оплату на указанный адрес</div>
+        <div class="text-sm text-txt-secondary text-center">Отправьте оплату на указанный адрес</div>
       </div>
 
       <div class="reveal spot bg-bg-card border border-line rounded-xl p-4 sm:p-5 hover:border-cy-border transition" data-d="4">
-        <div class="step-num">4</div>
-        <div class="w-10 h-10 rounded-lg bg-vi-soft border border-vi/20 text-vi flex items-center justify-center mb-3">
-          <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-10 h-10 rounded-lg bg-vi-soft border border-vi/20 text-vi flex items-center justify-center flex-shrink-0">
+            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+          </div>
+          <div class="font-semibold">Получите обмен</div>
         </div>
-        <div class="font-semibold mb-1">Получите обмен</div>
-        <div class="text-sm text-txt-secondary">Оператор подтвердит и отправит средства</div>
+        <div class="text-sm text-txt-secondary text-center">Оператор подтвердит и отправит средства</div>
       </div>
 
     </div>

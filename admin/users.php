@@ -83,7 +83,7 @@ if (isset($_GET['edit']) && !$edit_user) {
 }
 
 $stmt = $pdo->prepare("
-    SELECT id, username, email, telegram, role, created_at
+    SELECT id, username, email, telegram, role, created_at, email_verified
     FROM users
     ORDER BY $sort_column $sort_order
 ");
@@ -210,6 +210,7 @@ $admin_page = 'users.php';
                 ['telegram',   'Telegram'],
                 ['role',       'Роль'],
                 ['created_at', 'Регистрация'],
+                ['email_verified', 'Email верифицирован'],
               ];
               foreach ($cols as [$key, $label]):
                 $newOrder = ($sort_column === $key && $sort_order === 'ASC') ? 'desc' : 'asc';
@@ -245,6 +246,17 @@ $admin_page = 'users.php';
                   <?php endif; ?>
                 </td>
                 <td class="px-5 py-4 text-xs text-txt-muted whitespace-nowrap"><?= date('d.m.Y H:i', strtotime($user['created_at'])) ?></td>
+                <td class="px-5 py-4 whitespace-nowrap">
+                  <?php if ($user['email_verified']): ?>
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-emr/10 border border-emr/30 text-emr">
+                      <i data-lucide="check-circle-2" class="w-3 h-3"></i> Подтверждён
+                    </span>
+                  <?php else: ?>
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-warn/10 border border-warn/30 text-warn">
+                      <i data-lucide="alert-circle" class="w-3 h-3"></i> Не подтверждён
+                    </span>
+                  <?php endif; ?>
+                </td>
                 <td class="px-5 py-4 text-right whitespace-nowrap">
                   <div class="inline-flex items-center gap-1.5">
                     <a href="?edit=<?= $user['id'] ?>" class="btn-ghost h-8 px-2.5 rounded-md text-xs inline-flex items-center gap-1" title="Редактировать">
@@ -289,6 +301,17 @@ $admin_page = 'users.php';
                 <div class="flex items-center gap-2 text-cy"><i data-lucide="send" class="w-3.5 h-3.5 flex-shrink-0"></i><span class="truncate font-mono"><?= htmlspecialchars($user['telegram']) ?></span></div>
               <?php endif; ?>
               <div class="flex items-center gap-2 text-txt-muted"><i data-lucide="calendar" class="w-3.5 h-3.5 flex-shrink-0"></i><span><?= date('d.m.Y H:i', strtotime($user['created_at'])) ?></span></div>
+              <div class="flex items-center gap-2">
+                <?php if ($user['email_verified']): ?>
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-emr/10 border border-emr/30 text-emr">
+                    <i data-lucide="check-circle-2" class="w-3 h-3"></i> Email подтверждён
+                  </span>
+                <?php else: ?>
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-warn/10 border border-warn/30 text-warn">
+                    <i data-lucide="alert-circle" class="w-3 h-3"></i> Email не подтверждён
+                  </span>
+                <?php endif; ?>
+              </div>
             </div>
             <div class="flex items-center gap-1.5">
               <a href="?edit=<?= $user['id'] ?>" class="btn-ghost flex-1 h-9 rounded-md text-xs inline-flex items-center justify-center gap-1">
