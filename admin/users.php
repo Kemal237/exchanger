@@ -41,6 +41,24 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     exit;
 }
 
+if (isset($_GET['toggle_verify']) && is_numeric($_GET['toggle_verify'])) {
+    $uid = (int)$_GET['toggle_verify'];
+    $stmt = $pdo->prepare("SELECT email_verified FROM users WHERE id = ?");
+    $stmt->execute([$uid]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($row) {
+        if ($row['email_verified']) {
+            $pdo->prepare("UPDATE users SET email_verified = 0 WHERE id = ?")->execute([$uid]);
+            $_SESSION['toast'] = ['type' => 'info', 'message' => 'Верификация email снята'];
+        } else {
+            $pdo->prepare("UPDATE users SET email_verified = 1, email_verification_token = NULL, email_verification_sent_at = NULL WHERE id = ?")->execute([$uid]);
+            $_SESSION['toast'] = ['type' => 'success', 'message' => 'Email подтверждён вручную'];
+        }
+    }
+    header('Location: users.php');
+    exit;
+}
+
 $edit_error = $edit_success = '';
 $edit_user = null;
 
@@ -265,6 +283,11 @@ $admin_page = 'users.php';
                     <button onclick="showUserHistory(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>')" class="btn-ghost h-8 px-2.5 rounded-md text-xs inline-flex items-center gap-1" title="История">
                       <i data-lucide="history" class="w-3.5 h-3.5"></i>
                     </button>
+                    <a href="?toggle_verify=<?= $user['id'] ?>" onclick="return confirm('<?= $user['email_verified'] ? 'Снять верификацию email у' : 'Верифицировать email' ?> <?= htmlspecialchars($user['username'], ENT_QUOTES) ?>?')"
+                       class="btn-ghost h-8 px-2.5 rounded-md text-xs inline-flex items-center gap-1 <?= $user['email_verified'] ? 'text-emr' : 'text-warn' ?>"
+                       title="<?= $user['email_verified'] ? 'Снять верификацию' : 'Верифицировать email' ?>">
+                      <i data-lucide="<?= $user['email_verified'] ? 'mail-x' : 'mail-check' ?>" class="w-3.5 h-3.5"></i>
+                    </a>
                     <a href="?delete=<?= $user['id'] ?>" onclick="return confirm('Удалить пользователя <?= htmlspecialchars($user['username']) ?>?')" class="btn-danger h-8 px-2.5 rounded-md text-xs inline-flex items-center gap-1" title="Удалить">
                       <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                     </a>
@@ -320,6 +343,11 @@ $admin_page = 'users.php';
               <button onclick="showUserHistory(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>')" class="btn-ghost flex-1 h-9 rounded-md text-xs inline-flex items-center justify-center gap-1">
                 <i data-lucide="history" class="w-3.5 h-3.5"></i> История
               </button>
+              <a href="?toggle_verify=<?= $user['id'] ?>" onclick="return confirm('<?= $user['email_verified'] ? 'Снять верификацию email у' : 'Верифицировать email' ?> <?= htmlspecialchars($user['username'], ENT_QUOTES) ?>?')"
+                 class="btn-ghost h-9 px-3 rounded-md text-xs inline-flex items-center gap-1 <?= $user['email_verified'] ? 'text-emr' : 'text-warn' ?>"
+                 title="<?= $user['email_verified'] ? 'Снять верификацию' : 'Верифицировать' ?>">
+                <i data-lucide="<?= $user['email_verified'] ? 'mail-x' : 'mail-check' ?>" class="w-3.5 h-3.5"></i>
+              </a>
               <a href="?delete=<?= $user['id'] ?>" onclick="return confirm('Удалить пользователя <?= htmlspecialchars($user['username']) ?>?')" class="btn-danger h-9 px-3 rounded-md text-xs inline-flex items-center gap-1">
                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               </a>

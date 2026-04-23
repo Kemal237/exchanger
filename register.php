@@ -227,8 +227,13 @@ $page_title = 'Регистрация — ' . SITE_NAME;
     reqs.forEach(r => {
       const ok = checks[r.dataset.req];
       if (ok) score++;
-      const i = r.querySelector('i');
-      i.setAttribute('data-lucide', ok ? 'check-circle-2' : 'circle');
+      const el = r.querySelector('i, svg');
+      if (el) {
+        const newI = document.createElement('i');
+        newI.setAttribute('data-lucide', ok ? 'check-circle-2' : 'circle');
+        newI.className = 'w-3 h-3';
+        el.replaceWith(newI);
+      }
       r.classList.toggle('text-emr', ok);
       r.classList.toggle('text-txt-muted', !ok);
     });
