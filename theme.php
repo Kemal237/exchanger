@@ -187,5 +187,13 @@ tailwind.config = {
   }
 
   /* Never let anything force horizontal page scroll */
-  html, body { max-width: 100%; overflow-x: hidden; }
+  html { overflow-x: hidden; }
+  body { max-width: 100%; overflow-x: hidden; }
+
+  /* Prevent grid/flex children from overflowing their containers */
+  @media (max-width: 1023px) {
+    main > section { min-width: 0; max-width: 100%; }
+    .gborder.spot form { max-width: 100%; box-sizing: border-box; }
+    .field { min-width: 0; }
+  }
 </style>

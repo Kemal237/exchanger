@@ -189,19 +189,19 @@ $page_title = 'Подтвердите заявку — ' . SITE_NAME;
     <input type="hidden" name="amount_get" value="<?= $amount_get ?>">
     <input type="hidden" name="telegram" value="<?= htmlspecialchars($telegram) ?>">
 
-    <div class="flex flex-col sm:flex-row gap-3">
-      <a href="index.php" class="btn-ghost flex-1 h-12 rounded-xl text-sm font-medium flex items-center justify-center gap-2">
+    <div class="flex flex-col gap-3">
+      <button type="submit" class="btn-cy w-full h-14 sm:h-12 rounded-xl text-base sm:text-sm font-semibold flex items-center justify-center gap-2">
+        <i data-lucide="check-circle-2" class="w-5 h-5 sm:w-4 sm:h-4"></i>
+        Подтвердить и создать заявку
+      </button>
+      <a href="index.php" class="btn-ghost w-full h-12 sm:h-12 rounded-xl text-sm font-medium flex items-center justify-center gap-2">
         <i data-lucide="arrow-left" class="w-4 h-4"></i>
         Назад
       </a>
-      <button type="submit" class="btn-cy flex-1 h-12 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
-        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
-        Подтвердить и создать заявку
-      </button>
     </div>
   </form>
 
-  <p class="text-center text-xs text-txt-muted mt-6">
+  <p class="text-center text-[11px] sm:text-xs text-txt-muted mt-4 sm:mt-6 leading-relaxed">
     Нажимая кнопку, вы соглашаетесь с
     <a href="aml.php" class="text-cy hover:underline">AML политикой</a> и
     <a href="kyc.php" class="text-cy hover:underline">KYC процедурой</a>

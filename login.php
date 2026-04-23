@@ -14,11 +14,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($username) || empty($password)) {
         $error = 'Заполните все поля';
     } elseif (login($username, $password)) {
-        $allowed = ['profile.php', 'index.php', 'rates.php', 'aml.php', 'kyc.php'];
-        $redirect = $_GET['redirect'] ?? 'profile.php';
-        if (!in_array($redirect, $allowed)) $redirect = 'profile.php';
-        if (isset($_SESSION['pending_exchange'])) $redirect = 'index.php';
-        header("Location: $redirect");
+        $username_display = htmlspecialchars($_SESSION['username'] ?? 'пользователь');
+
+        if (isset($_SESSION['pending_exchange'])) {
+            $_SESSION['toast'] = [
+                'type'    => 'info',
+                'message' => 'Добро пожаловать! Продолжите оформление заявки.',
+            ];
+            $_SESSION['auto_exchange'] = true;
+        } else {
+            $_SESSION['toast'] = [
+                'type'    => 'success',
+                'message' => 'Добро пожаловать, ' . $username_display . '!',
+            ];
+        }
+
+        header('Location: index.php');
         exit;
     } else {
         $error = 'Неверный логин или пароль';

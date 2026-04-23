@@ -14,6 +14,10 @@ if (isset($_SESSION['pending_exchange'])) {
     $amount_give = floatval($_GET['amount'] ?? 100);
 }
 
+// Флаг авто-запуска обмена после логина
+$auto_exchange = isset($_SESSION['auto_exchange']);
+unset($_SESSION['auto_exchange']);
+
 if (!isset($rates) || !is_array($rates)) {
     $rates = [
         'USDT_TRC20' => ['RUB' => 95.00, 'BTC' => 0.000012],
@@ -81,25 +85,32 @@ $currencyConfig = [
 
 <?php require_once 'header.php'; ?>
 
+<?php if (isset($_SESSION['toast'])): ?>
+  <div id="toast" class="toast-w <?= htmlspecialchars($_SESSION['toast']['type']) ?>">
+    <?= htmlspecialchars($_SESSION['toast']['message']) ?>
+  </div>
+  <?php unset($_SESSION['toast']); ?>
+<?php endif; ?>
+
 <main class="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
 
   <!-- Hero -->
-  <section class="grid lg:grid-cols-[1fr,540px] gap-6 lg:gap-10 items-start">
+  <section class="grid lg:grid-cols-[1fr,540px] gap-6 lg:gap-10 items-start min-w-0 overflow-hidden">
 
     <!-- Left intro -->
-    <div class="fade-in">
+    <div class="fade-in min-w-0">
       <div class="inline-flex items-center gap-2 px-3 h-7 rounded-full bg-cy-soft border border-cy-border text-cy text-[11px] sm:text-xs font-medium mb-4 sm:mb-5">
         <span class="pdot"></span>
         <span class="hidden sm:inline">Онлайн · Курс обновляется каждые 15 секунд</span>
         <span class="sm:hidden">Онлайн · обновление 15с</span>
       </div>
 
-      <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.1] mb-3 sm:mb-4">
+      <h1 class="text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.1] mb-3 sm:mb-4">
         Обмен криптовалют<br>
         <span class="shimmer-text">быстро и безопасно</span>
       </h1>
 
-      <p class="text-txt-secondary text-sm sm:text-base md:text-lg max-w-xl mb-6 sm:mb-8 leading-relaxed">
+      <p class="text-txt-secondary text-xs sm:text-base md:text-lg mb-5 sm:mb-8 leading-relaxed">
         USDT · BTC · RUB — моментальный обмен по актуальному курсу.
         Верифицированный сервис в реестре BestChange.
       </p>
@@ -121,15 +132,15 @@ $currencyConfig = [
       </div>
 
       <!-- Feature tags -->
-      <div class="mt-6 flex flex-wrap gap-2">
-        <span class="tag-h inline-flex items-center gap-2 text-sm text-txt-secondary px-3 h-9 rounded-lg border border-line bg-bg-card">
-          <i data-lucide="shield-check" class="w-4 h-4 text-cy"></i> AML проверка
+      <div class="mt-4 sm:mt-6 flex flex-wrap gap-1.5 sm:gap-2">
+        <span class="tag-h inline-flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-txt-secondary px-2.5 sm:px-3 h-8 sm:h-9 rounded-lg border border-line bg-bg-card">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cy flex-shrink-0"></i> AML проверка
         </span>
-        <span class="tag-h inline-flex items-center gap-2 text-sm text-txt-secondary px-3 h-9 rounded-lg border border-line bg-bg-card">
-          <i data-lucide="zap" class="w-4 h-4 text-warn"></i> Быстрые выплаты
+        <span class="tag-h inline-flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-txt-secondary px-2.5 sm:px-3 h-8 sm:h-9 rounded-lg border border-line bg-bg-card">
+          <i data-lucide="zap" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-warn flex-shrink-0"></i> Быстрые выплаты
         </span>
-        <span class="tag-h inline-flex items-center gap-2 text-sm text-txt-secondary px-3 h-9 rounded-lg border border-line bg-bg-card">
-          <i data-lucide="headphones" class="w-4 h-4 text-vi"></i> Поддержка 24/7
+        <span class="tag-h inline-flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-txt-secondary px-2.5 sm:px-3 h-8 sm:h-9 rounded-lg border border-line bg-bg-card">
+          <i data-lucide="headphones" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-vi flex-shrink-0"></i> Поддержка 24/7
         </span>
       </div>
     </div>
@@ -273,48 +284,48 @@ $currencyConfig = [
 
     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
 
-      <div class="reveal spot bg-bg-card border border-line hover:border-cy-border rounded-xl p-5 transition" data-d="1">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-emr/10 border border-emr/20 flex items-center justify-center text-emr font-bold text-sm">₮</div>
-            <div>
+      <div class="reveal spot bg-bg-card border border-line hover:border-cy-border rounded-xl p-4 sm:p-5 transition" data-d="1">
+        <div class="flex items-center justify-between mb-3 gap-2">
+          <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emr/10 border border-emr/20 flex items-center justify-center text-emr font-bold text-sm flex-shrink-0">₮</div>
+            <div class="min-w-0">
               <div class="font-semibold">USDT</div>
               <div class="text-xs text-txt-muted">Tether · TRC20</div>
             </div>
           </div>
-          <span class="text-xs text-cy bg-cy-soft border border-cy-border px-2 h-6 rounded-md flex items-center">В наличии</span>
+          <span class="text-xs text-cy bg-cy-soft border border-cy-border px-2 h-6 rounded-md flex items-center whitespace-nowrap">В наличии</span>
         </div>
-        <div class="text-2xl font-bold"><?= number_format($reserves['USDT_TRC20'] ?? 0, 2, '.', ' ') ?></div>
+        <div class="text-lg sm:text-2xl font-bold truncate"><?= number_format($reserves['USDT_TRC20'] ?? 0, 2, '.', ' ') ?></div>
         <div class="mt-2 text-xs text-txt-muted">Лимит <?= number_format($limits['USDT_TRC20']['min'] ?? 0, 0, '.', ' ') ?> – <?= number_format($limits['USDT_TRC20']['max'] ?? 0, 0, '.', ' ') ?></div>
       </div>
 
-      <div class="reveal spot bg-bg-card border border-line hover:border-cy-border rounded-xl p-5 transition" data-d="2">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-[#F7931A]/10 border border-[#F7931A]/20 flex items-center justify-center text-[#F7931A] font-bold text-sm">₿</div>
-            <div>
+      <div class="reveal spot bg-bg-card border border-line hover:border-cy-border rounded-xl p-4 sm:p-5 transition" data-d="2">
+        <div class="flex items-center justify-between mb-3 gap-2">
+          <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#F7931A]/10 border border-[#F7931A]/20 flex items-center justify-center text-[#F7931A] font-bold text-sm flex-shrink-0">₿</div>
+            <div class="min-w-0">
               <div class="font-semibold">BTC</div>
               <div class="text-xs text-txt-muted">Bitcoin</div>
             </div>
           </div>
-          <span class="text-xs text-cy bg-cy-soft border border-cy-border px-2 h-6 rounded-md flex items-center">В наличии</span>
+          <span class="text-xs text-cy bg-cy-soft border border-cy-border px-2 h-6 rounded-md flex items-center whitespace-nowrap">В наличии</span>
         </div>
-        <div class="text-2xl font-bold"><?= number_format($reserves['BTC'] ?? 0, 8, '.', ' ') ?></div>
-        <div class="mt-2 text-xs text-txt-muted">Лимит <?= number_format($limits['BTC']['min'] ?? 0, 4, '.', ' ') ?> – <?= number_format($limits['BTC']['max'] ?? 0, 4, '.', ' ') ?></div>
+        <div class="text-lg sm:text-2xl font-bold truncate"><?= number_format($reserves['BTC'] ?? 0, 8, '.', ' ') ?></div>
+        <div class="mt-2 text-xs text-txt-muted truncate">Лимит <?= number_format($limits['BTC']['min'] ?? 0, 4, '.', ' ') ?> – <?= number_format($limits['BTC']['max'] ?? 0, 4, '.', ' ') ?></div>
       </div>
 
-      <div class="reveal spot bg-bg-card border border-line hover:border-cy-border rounded-xl p-5 transition" data-d="3">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-vi-soft border border-vi/20 flex items-center justify-center text-vi font-bold text-sm">₽</div>
-            <div>
+      <div class="reveal spot bg-bg-card border border-line hover:border-cy-border rounded-xl p-4 sm:p-5 transition" data-d="3">
+        <div class="flex items-center justify-between mb-3 gap-2">
+          <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-vi-soft border border-vi/20 flex items-center justify-center text-vi font-bold text-sm flex-shrink-0">₽</div>
+            <div class="min-w-0">
               <div class="font-semibold">RUB</div>
               <div class="text-xs text-txt-muted">Карта / СБП</div>
             </div>
           </div>
-          <span class="text-xs text-cy bg-cy-soft border border-cy-border px-2 h-6 rounded-md flex items-center">В наличии</span>
+          <span class="text-xs text-cy bg-cy-soft border border-cy-border px-2 h-6 rounded-md flex items-center whitespace-nowrap">В наличии</span>
         </div>
-        <div class="text-2xl font-bold"><?= number_format($reserves['RUB'] ?? 0, 0, '.', ' ') ?></div>
+        <div class="text-lg sm:text-2xl font-bold truncate"><?= number_format($reserves['RUB'] ?? 0, 0, '.', ' ') ?></div>
         <div class="mt-2 text-xs text-txt-muted">Лимит <?= number_format($limits['RUB']['min'] ?? 0, 0, '.', ' ') ?> – <?= number_format($limits['RUB']['max'] ?? 0, 0, '.', ' ') ?></div>
       </div>
 
@@ -326,7 +337,7 @@ $currencyConfig = [
     <h3 class="text-xl sm:text-2xl font-bold tracking-tight mb-5 sm:mb-6 reveal">Как это работает</h3>
     <div class="grid sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
 
-      <div class="reveal spot bg-bg-card border border-line rounded-xl p-5 hover:border-cy-border transition" data-d="1">
+      <div class="reveal spot bg-bg-card border border-line rounded-xl p-4 sm:p-5 hover:border-cy-border transition" data-d="1">
         <div class="step-num">1</div>
         <div class="w-10 h-10 rounded-lg bg-cy-soft border border-cy-border text-cy flex items-center justify-center mb-3">
           <i data-lucide="wallet" class="w-5 h-5"></i>
@@ -335,7 +346,7 @@ $currencyConfig = [
         <div class="text-sm text-txt-secondary">Укажите, что отдаёте и что хотите получить</div>
       </div>
 
-      <div class="reveal spot bg-bg-card border border-line rounded-xl p-5 hover:border-cy-border transition" data-d="2">
+      <div class="reveal spot bg-bg-card border border-line rounded-xl p-4 sm:p-5 hover:border-cy-border transition" data-d="2">
         <div class="step-num">2</div>
         <div class="w-10 h-10 rounded-lg bg-cy-soft border border-cy-border text-cy flex items-center justify-center mb-3">
           <i data-lucide="user-check" class="w-5 h-5"></i>
@@ -344,7 +355,7 @@ $currencyConfig = [
         <div class="text-sm text-txt-secondary">Введите реквизиты и Telegram для связи</div>
       </div>
 
-      <div class="reveal spot bg-bg-card border border-line rounded-xl p-5 hover:border-cy-border transition" data-d="3">
+      <div class="reveal spot bg-bg-card border border-line rounded-xl p-4 sm:p-5 hover:border-cy-border transition" data-d="3">
         <div class="step-num">3</div>
         <div class="w-10 h-10 rounded-lg bg-vi-soft border border-vi/20 text-vi flex items-center justify-center mb-3">
           <i data-lucide="send" class="w-5 h-5"></i>
@@ -353,7 +364,7 @@ $currencyConfig = [
         <div class="text-sm text-txt-secondary">Отправьте оплату на указанный адрес</div>
       </div>
 
-      <div class="reveal spot bg-bg-card border border-line rounded-xl p-5 hover:border-cy-border transition" data-d="4">
+      <div class="reveal spot bg-bg-card border border-line rounded-xl p-4 sm:p-5 hover:border-cy-border transition" data-d="4">
         <div class="step-num">4</div>
         <div class="w-10 h-10 rounded-lg bg-vi-soft border border-vi/20 text-vi flex items-center justify-center mb-3">
           <i data-lucide="check-circle-2" class="w-5 h-5"></i>
@@ -368,20 +379,20 @@ $currencyConfig = [
 </main>
 
 <!-- Telegram modal -->
-<div id="telegram-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-  <div class="gborder bg-bg-card border border-line rounded-2xl p-8 max-w-md w-full mx-4 shadow-card relative">
-    <button type="button" id="close-telegram" class="absolute top-4 right-4 text-txt-muted hover:text-txt-primary transition">
+<div id="telegram-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
+  <div class="gborder bg-bg-card border border-line rounded-2xl p-5 sm:p-8 max-w-md w-full shadow-card relative">
+    <button type="button" id="close-telegram" class="absolute top-3 right-3 sm:top-4 sm:right-4 text-txt-muted hover:text-txt-primary transition w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bg-soft">
       <i data-lucide="x" class="w-5 h-5"></i>
     </button>
-    <div class="w-12 h-12 rounded-xl bg-cy-soft border border-cy-border flex items-center justify-center mb-4">
-      <i data-lucide="send" class="w-6 h-6 text-cy"></i>
+    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-cy-soft border border-cy-border flex items-center justify-center mb-3 sm:mb-4">
+      <i data-lucide="send" class="w-5 h-5 sm:w-6 sm:h-6 text-cy"></i>
     </div>
-    <h3 class="text-xl font-bold mb-2">Укажите Telegram</h3>
-    <p class="text-txt-secondary text-sm mb-6">Чтобы оператор мог оперативно связаться с вами по заявке</p>
-    <form id="telegram-form" class="space-y-4">
+    <h3 class="text-lg sm:text-xl font-bold mb-1.5 sm:mb-2">Укажите Telegram</h3>
+    <p class="text-txt-secondary text-xs sm:text-sm mb-4 sm:mb-6">Чтобы оператор мог оперативно связаться с вами по заявке</p>
+    <form id="telegram-form" class="space-y-3 sm:space-y-4">
       <input type="text" id="telegram-input" name="telegram" placeholder="@username"
-             class="input-d w-full px-4 py-3 rounded-lg text-base" required>
-      <button type="submit" class="btn-cy w-full h-12 rounded-lg font-semibold flex items-center justify-center gap-2">
+             class="input-d w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base" required>
+      <button type="submit" class="btn-cy w-full h-11 sm:h-12 rounded-lg font-semibold flex items-center justify-center gap-2 text-sm sm:text-base">
         Подтвердить <i data-lucide="check" class="w-4 h-4"></i>
       </button>
     </form>
@@ -648,6 +659,26 @@ $currencyConfig = [
   recalculate('give');
   updateGetReserve();
   updateRateLine();
+
+  // Авто-запуск обмена после редиректа с логина (если была сохранена заявка)
+  <?php if ($auto_exchange && isLoggedIn()): ?>
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      fetch('telegram-handler.php?t=' + Date.now())
+        .then(r => r.json())
+        .then(data => {
+          if (data.hasTelegram === true) {
+            document.getElementById('exchange-form').submit();
+          } else {
+            telegramModal.classList.remove('hidden');
+          }
+        })
+        .catch(function () {
+          telegramModal.classList.remove('hidden');
+        });
+    }, 800); // небольшая пауза, чтобы toast успел отобразиться
+  });
+  <?php endif; ?>
 </script>
 
 </body>
