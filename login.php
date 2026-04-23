@@ -115,6 +115,13 @@ $page_title = 'Вход — ' . SITE_NAME;
           <i data-lucide="log-in" class="w-4 h-4"></i>
           Войти
         </button>
+
+        <div class="text-center mt-4">
+          <a href="forgot-password.php" class="text-xs text-txt-muted hover:text-cy transition inline-flex items-center gap-1">
+            <i data-lucide="key-round" class="w-3 h-3"></i>
+            Забыли пароль?
+          </a>
+        </div>
       </form>
 
       <div class="flex items-center gap-3 my-6">
