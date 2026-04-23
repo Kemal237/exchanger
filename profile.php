@@ -337,7 +337,7 @@ $current_page = 'profile.php';
                   ];
                   $s = $statuses[$status] ?? $statuses['new'];
                 ?>
-                  <tr id="order-<?= htmlspecialchars($order['id']) ?>" class="row-h transition <?= $isNew ? 'highlight-row' : '' ?>">
+                  <tr id="order-<?= htmlspecialchars($order['id']) ?>" class="row-h transition">
                     <td class="px-6 py-4 font-mono text-xs text-txt-secondary">#<?= htmlspecialchars($order['id']) ?></td>
                     <td class="px-4 py-4 text-txt-secondary whitespace-nowrap"><?= date('d.m.Y H:i', strtotime($order['created_at'])) ?></td>
                     <td class="px-4 py-4 font-medium whitespace-nowrap">
@@ -385,7 +385,7 @@ $current_page = 'profile.php';
               ];
               $s = $statuses[$status] ?? $statuses['new'];
             ?>
-              <div id="order-m-<?= htmlspecialchars($order['id']) ?>" class="p-4 <?= $isNew ? 'highlight-row' : '' ?>">
+              <div id="order-m-<?= htmlspecialchars($order['id']) ?>" class="p-4">
                 <div class="flex items-start justify-between gap-2 mb-3">
                   <div class="min-w-0">
                     <div class="font-mono text-[11px] text-txt-secondary truncate">#<?= htmlspecialchars($order['id']) ?></div>
@@ -434,10 +434,17 @@ $current_page = 'profile.php';
 <?php require_once 'footer.php'; ?>
 
 <script>
-  <?php if (isset($highlight_order) && $highlight_order): ?>
+  <?php if ($highlight_order): ?>
   window.addEventListener('load', function() {
-    const row = document.getElementById('order-<?= htmlspecialchars($highlight_order) ?>');
-    if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    var id = <?= json_encode($highlight_order) ?>;
+    var desktop = document.getElementById('order-' + id);
+    var mobile  = document.getElementById('order-m-' + id);
+    var el = (desktop && desktop.offsetParent !== null) ? desktop : mobile;
+    if (!el) return;
+    setTimeout(function() {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(function() { el.classList.add('highlight-row'); }, 400);
+    }, 200);
   });
   <?php endif; ?>
 </script>

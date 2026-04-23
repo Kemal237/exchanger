@@ -164,8 +164,13 @@ tailwind.config = {
   .toast-w.info    { background: rgba(34,211,238,0.15); border-color: rgba(34,211,238,0.4); color: #22D3EE; }
 
   /* Highlight row */
-  @keyframes rowHighlight { 0%{background:rgba(34,211,238,0.18);} 100%{background:transparent;} }
-  .highlight-row { animation: rowHighlight 3s ease; }
+  @keyframes rowHighlight {
+    0%   { background: rgba(34,211,238,0);    box-shadow: inset 3px 0 0 rgba(34,211,238,0); }
+    12%  { background: rgba(34,211,238,0.18); box-shadow: inset 3px 0 0 rgba(34,211,238,0.9); }
+    60%  { background: rgba(34,211,238,0.13); box-shadow: inset 3px 0 0 rgba(34,211,238,0.6); }
+    100% { background: transparent;           box-shadow: inset 3px 0 0 rgba(34,211,238,0); }
+  }
+  .highlight-row { animation: rowHighlight 4.5s ease forwards; }
 
   /* === Mobile-first responsive adjustments === */
   @media (max-width: 768px) {
