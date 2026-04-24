@@ -11,6 +11,34 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db.php';
 
+// AJAX: обновление статуса заявки из модалки истории
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status'])) {
+    header('Content-Type: application/json');
+    $order_id   = trim($_POST['order_id'] ?? '');
+    $new_status = $_POST['new_status'] ?? '';
+    $valid      = ['new', 'in_process', 'success', 'canceled'];
+    if ($order_id && in_array($new_status, $valid)) {
+        $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?")->execute([$new_status, $order_id]);
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['error' => 'Invalid']);
+    }
+    exit;
+}
+
+// AJAX: удаление заявки из модалки истории
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_order_ajax'])) {
+    header('Content-Type: application/json');
+    $order_id = trim($_POST['order_id'] ?? '');
+    if ($order_id) {
+        $pdo->prepare("DELETE FROM orders WHERE id = ?")->execute([$order_id]);
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['error' => 'Invalid']);
+    }
+    exit;
+}
+
 // AJAX-запрос истории пользователя
 if (isset($_GET['get_history'])) {
     $user_id = (int)$_GET['get_history'];
@@ -369,41 +397,39 @@ $admin_page = 'users.php';
 </main>
 
 <!-- History modal -->
-<div id="history-modal" class="hidden fixed inset-0 z-[60]">
-  <div class="absolute inset-0 bg-black/75 backdrop-blur-sm" onclick="closeHistoryModal()"></div>
-  <div class="relative z-10 flex items-center justify-center min-h-screen p-2 sm:p-4">
-    <div class="gborder rounded-2xl bg-bg-card shadow-card w-full max-w-5xl max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden">
-      <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-line">
-        <div class="flex items-center gap-2 min-w-0">
-          <div class="w-8 h-8 rounded-lg bg-cy-soft border border-cy-border flex items-center justify-center flex-shrink-0">
-            <i data-lucide="history" class="w-4 h-4 text-cy"></i>
-          </div>
-          <h2 class="text-sm sm:text-lg font-bold truncate" id="modal-user-name">История обменов</h2>
+<div id="history-modal" class="hidden fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onclick="closeHistoryModal()">
+  <div class="gborder rounded-2xl bg-bg-card shadow-card w-full max-w-5xl max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-line">
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-8 h-8 rounded-lg bg-cy-soft border border-cy-border flex items-center justify-center flex-shrink-0">
+          <i data-lucide="history" class="w-4 h-4 text-cy"></i>
         </div>
-        <button onclick="closeHistoryModal()" class="w-8 h-8 rounded-md hover:bg-bg-soft text-txt-secondary hover:text-danger transition flex items-center justify-center flex-shrink-0 ml-2">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
+        <h2 class="text-sm sm:text-lg font-bold truncate" id="modal-user-name">История обменов</h2>
       </div>
-      <div class="flex-1 overflow-auto">
-        <table class="w-full text-sm" id="history-table">
-          <thead class="sticky top-0 z-10 bg-bg-card">
-            <tr class="text-left text-xs text-txt-muted uppercase tracking-wider bg-bg-soft/40">
-              <th class="px-5 py-3 font-medium">№ заявки</th>
-              <th class="px-4 py-3 font-medium">Дата</th>
-              <th class="px-4 py-3 font-medium">Отдаёт</th>
-              <th class="px-4 py-3 font-medium">Получает</th>
-              <th class="px-4 py-3 font-medium">Статус</th>
-            </tr>
-          </thead>
-          <tbody id="history-body" class="divide-y divide-line"></tbody>
-        </table>
-      </div>
-      <div class="px-4 sm:px-6 py-3 sm:py-4 border-t border-line flex justify-end">
-        <button onclick="closeHistoryModal()" class="btn-ghost h-10 px-4 sm:px-5 rounded-lg text-sm font-medium flex items-center gap-2">
-          <i data-lucide="x" class="w-4 h-4"></i>
-          Закрыть
-        </button>
-      </div>
+      <button onclick="closeHistoryModal()" class="w-8 h-8 rounded-md hover:bg-bg-soft text-txt-secondary hover:text-danger transition flex items-center justify-center flex-shrink-0 ml-2">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <div class="flex-1 overflow-auto">
+      <table class="w-full text-sm" id="history-table">
+        <thead class="sticky top-0 z-[1] bg-bg-card">
+          <tr class="text-left text-xs text-txt-muted uppercase tracking-wider bg-bg-soft/40">
+            <th class="px-5 py-3 font-medium">№ заявки</th>
+            <th class="px-4 py-3 font-medium">Дата</th>
+            <th class="px-4 py-3 font-medium">Отдаёт</th>
+            <th class="px-4 py-3 font-medium">Получает</th>
+            <th class="px-4 py-3 font-medium">Статус</th>
+            <th class="px-4 py-3 font-medium text-right">Действие</th>
+          </tr>
+        </thead>
+        <tbody id="history-body" class="divide-y divide-line"></tbody>
+      </table>
+    </div>
+    <div class="px-4 sm:px-6 py-3 sm:py-4 border-t border-line flex justify-end">
+      <button onclick="closeHistoryModal()" class="btn-ghost h-10 px-4 sm:px-5 rounded-lg text-sm font-medium flex items-center gap-2">
+        <i data-lucide="x" class="w-4 h-4"></i>
+        Закрыть
+      </button>
     </div>
   </div>
 </div>
@@ -419,46 +445,101 @@ $admin_page = 'users.php';
     document.getElementById('email-verified-label').textContent = this.checked ? 'Подтверждён' : 'Не подтверждён';
   });
 
+  const statusMap = {
+    'new':        { cls: 'st-new',    text: 'Новая',       icon: 'clock' },
+    'in_process': { cls: 'st-proc',   text: 'В обработке', icon: 'loader' },
+    'success':    { cls: 'st-ok',     text: 'Успешно',     icon: 'check-circle-2' },
+    'canceled':   { cls: 'st-cancel', text: 'Отменено',    icon: 'x-circle' }
+  };
+
   async function showUserHistory(userId, username) {
     const modal = document.getElementById('history-modal');
     const tbody = document.getElementById('history-body');
 
     document.getElementById('modal-user-name').textContent = 'История обменов: ' + username;
-    tbody.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-txt-muted">Загрузка...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center text-txt-muted">Загрузка...</td></tr>';
     modal.classList.remove('hidden');
 
     try {
-      const res = await fetch('users.php?get_history=' + userId);
+      const res    = await fetch('users.php?get_history=' + userId);
       const orders = await res.json();
-      const statusMap = {
-        'new':        { cls: 'st-new',    text: 'Новая',       icon: 'clock' },
-        'in_process': { cls: 'st-proc',   text: 'В обработке', icon: 'loader' },
-        'success':    { cls: 'st-ok',     text: 'Успешно',     icon: 'check-circle-2' },
-        'canceled':   { cls: 'st-cancel', text: 'Отменено',    icon: 'x-circle' }
-      };
 
       if (!orders.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-txt-muted">Заявок пока нет</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center text-txt-muted">Заявок пока нет</td></tr>';
       } else {
         let html = '';
         orders.forEach(o => {
           const s = statusMap[o.status] || statusMap['new'];
           const d = new Date(o.created_at).toLocaleString('ru-RU');
           html += `
-            <tr class="row-h transition">
-              <td class="px-5 py-3 font-mono text-xs text-txt-secondary">#${o.id}</td>
+            <tr class="row-h transition" id="hrow-${o.id}">
+              <td class="px-5 py-3 font-mono text-xs text-txt-secondary">${o.id}</td>
               <td class="px-4 py-3 text-txt-secondary whitespace-nowrap">${d}</td>
               <td class="px-4 py-3 whitespace-nowrap"><span class="font-medium">${parseFloat(o.amount_give).toLocaleString('ru-RU')}</span> <span class="text-xs text-txt-muted">${o.give_currency}</span></td>
               <td class="px-4 py-3 whitespace-nowrap"><span class="font-medium text-emr">${parseFloat(o.amount_get).toLocaleString('ru-RU')}</span> <span class="text-xs text-txt-muted">${o.get_currency}</span></td>
-              <td class="px-4 py-3"><span class="st ${s.cls}"><i data-lucide="${s.icon}" class="w-3 h-3"></i>${s.text}</span></td>
+              <td class="px-4 py-3"><span class="st ${s.cls}" id="hbadge-${o.id}"><i data-lucide="${s.icon}" class="w-3 h-3"></i>${s.text}</span></td>
+              <td class="px-4 py-3 text-right whitespace-nowrap">
+                <div class="inline-flex items-center gap-1.5">
+                  <select id="hsel-${o.id}" class="input-d h-8 px-2 pr-7 rounded-md text-xs">
+                    <option value="new"        ${o.status==='new'?'selected':''}>Новая</option>
+                    <option value="in_process" ${o.status==='in_process'?'selected':''}>В обработке</option>
+                    <option value="success"    ${o.status==='success'?'selected':''}>Успешно</option>
+                    <option value="canceled"   ${o.status==='canceled'?'selected':''}>Отменено</option>
+                  </select>
+                  <button onclick="saveOrderStatus('${o.id}')" class="btn-cy h-8 px-2.5 rounded-md text-xs flex items-center gap-1" title="Сохранить статус">
+                    <i data-lucide="check" class="w-3 h-3"></i>
+                  </button>
+                  <button onclick="showNotes('order','${o.id}','${o.id}')" class="btn-ghost h-8 px-2.5 rounded-md text-xs flex items-center gap-1 text-vi" title="Заметки">
+                    <i data-lucide="notebook-pen" class="w-3 h-3"></i>
+                  </button>
+                  <button onclick="deleteHistoryOrder('${o.id}')" class="btn-danger h-8 px-2.5 rounded-md text-xs flex items-center gap-1" title="Удалить заявку">
+                    <i data-lucide="trash-2" class="w-3 h-3"></i>
+                  </button>
+                </div>
+              </td>
             </tr>`;
         });
         tbody.innerHTML = html;
       }
       lucide.createIcons();
     } catch (e) {
-      tbody.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-danger">Ошибка загрузки</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center text-danger">Ошибка загрузки</td></tr>';
     }
+  }
+
+  async function deleteHistoryOrder(orderId) {
+    if (!confirm('Удалить заявку ' + orderId + '? Это действие необратимо.')) return;
+    const fd = new FormData();
+    fd.append('delete_order_ajax', '1');
+    fd.append('order_id', orderId);
+    try {
+      const res  = await fetch('users.php', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.success) {
+        const row = document.getElementById('hrow-' + orderId);
+        if (row) row.remove();
+      }
+    } catch(e) {}
+  }
+
+  async function saveOrderStatus(orderId) {
+    const sel    = document.getElementById('hsel-' + orderId);
+    const badge  = document.getElementById('hbadge-' + orderId);
+    const newSt  = sel.value;
+    const fd     = new FormData();
+    fd.append('update_order_status', '1');
+    fd.append('order_id', orderId);
+    fd.append('new_status', newSt);
+    try {
+      const res  = await fetch('users.php', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.success) {
+        const s = statusMap[newSt];
+        badge.className = 'st ' + s.cls;
+        badge.innerHTML = `<i data-lucide="${s.icon}" class="w-3 h-3"></i>${s.text}`;
+        lucide.createIcons({ elements: [badge] });
+      }
+    } catch(e) {}
   }
 
   function closeHistoryModal() {
@@ -466,7 +547,10 @@ $admin_page = 'users.php';
   }
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeHistoryModal();
+    if (e.key === 'Escape') {
+      closeHistoryModal();
+      closeNotesModal();
+    }
   });
 </script>
 

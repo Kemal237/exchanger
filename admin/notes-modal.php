@@ -1,8 +1,6 @@
 <!-- Notes Modal (shared: users + orders) -->
-<div id="notes-modal" class="hidden fixed inset-0 z-[60]">
-  <div class="absolute inset-0 bg-black/75 backdrop-blur-sm" onclick="closeNotesModal()"></div>
-  <div class="relative z-10 flex items-center justify-center min-h-screen p-2 sm:p-4">
-    <div class="gborder rounded-2xl bg-bg-card shadow-card w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+<div id="notes-modal" class="hidden fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onclick="closeNotesModal()">
+  <div class="gborder rounded-2xl bg-bg-card shadow-card w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden" onclick="event.stopPropagation()">
 
       <!-- Header -->
       <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-line flex-shrink-0">
@@ -47,7 +45,6 @@
         </div>
       </div>
     </div>
-  </div>
 </div>
 
 <script>
