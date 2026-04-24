@@ -41,23 +41,6 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     exit;
 }
 
-if (isset($_GET['toggle_verify']) && is_numeric($_GET['toggle_verify'])) {
-    $uid = (int)$_GET['toggle_verify'];
-    $stmt = $pdo->prepare("SELECT email_verified FROM users WHERE id = ?");
-    $stmt->execute([$uid]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if ($row) {
-        if ($row['email_verified']) {
-            $pdo->prepare("UPDATE users SET email_verified = 0 WHERE id = ?")->execute([$uid]);
-            $_SESSION['toast'] = ['type' => 'info', 'message' => 'Верификация email снята'];
-        } else {
-            $pdo->prepare("UPDATE users SET email_verified = 1, email_verification_token = NULL, email_verification_sent_at = NULL WHERE id = ?")->execute([$uid]);
-            $_SESSION['toast'] = ['type' => 'success', 'message' => 'Email подтверждён вручную'];
-        }
-    }
-    header('Location: users.php');
-    exit;
-}
 
 $edit_error = $edit_success = '';
 $edit_user = null;
@@ -67,8 +50,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $new_username = trim($_POST['username'] ?? '');
     $new_email    = trim($_POST['email'] ?? '');
     $new_telegram = trim($_POST['telegram'] ?? '');
-    $new_role     = $_POST['role'] ?? 'user';
-    $new_password = $_POST['new_password'] ?? '';
+    $new_role         = $_POST['role'] ?? 'user';
+    $new_password     = $_POST['new_password'] ?? '';
+    $email_verified   = isset($_POST['email_verified']) ? 1 : 0;
 
     if (empty($new_username) || empty($new_email)) {
         $edit_error = 'Заполните имя и email';
@@ -76,11 +60,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         try {
             if ($new_password) {
                 $hash = password_hash($new_password, PASSWORD_DEFAULT);
-                $stmt = $pdo->prepare("UPDATE users SET username = ?, email = ?, telegram = ?, role = ?, password = ? WHERE id = ?");
-                $stmt->execute([$new_username, $new_email, $new_telegram, $new_role, $hash, $user_id]);
+                $stmt = $pdo->prepare("UPDATE users SET username = ?, email = ?, telegram = ?, role = ?, password = ?, email_verified = ?, email_verification_token = IF(? = 1, NULL, email_verification_token) WHERE id = ?");
+                $stmt->execute([$new_username, $new_email, $new_telegram, $new_role, $hash, $email_verified, $email_verified, $user_id]);
             } else {
-                $stmt = $pdo->prepare("UPDATE users SET username = ?, email = ?, telegram = ?, role = ? WHERE id = ?");
-                $stmt->execute([$new_username, $new_email, $new_telegram, $new_role, $user_id]);
+                $stmt = $pdo->prepare("UPDATE users SET username = ?, email = ?, telegram = ?, role = ?, email_verified = ?, email_verification_token = IF(? = 1, NULL, email_verification_token) WHERE id = ?");
+                $stmt->execute([$new_username, $new_email, $new_telegram, $new_role, $email_verified, $email_verified, $user_id]);
             }
             $edit_success = 'Пользователь успешно обновлён';
             // Reload edit user after update
@@ -175,29 +159,57 @@ $admin_page = 'users.php';
         <input type="hidden" name="action" value="edit">
         <input type="hidden" name="user_id" value="<?= $edit_user['id'] ?>">
         <div class="grid md:grid-cols-2 gap-4">
+          <!-- Логин -->
           <div>
             <label class="block text-xs font-medium text-txt-secondary mb-1.5 uppercase tracking-wider">Логин</label>
             <input type="text" name="username" required value="<?= htmlspecialchars($edit_user['username']) ?>" class="input-d w-full h-10 px-3 rounded-lg text-sm">
           </div>
+          <!-- Email -->
           <div>
             <label class="block text-xs font-medium text-txt-secondary mb-1.5 uppercase tracking-wider">Email</label>
             <input type="email" name="email" required value="<?= htmlspecialchars($edit_user['email']) ?>" class="input-d w-full h-10 px-3 rounded-lg text-sm">
           </div>
+          <!-- Telegram -->
           <div>
             <label class="block text-xs font-medium text-txt-secondary mb-1.5 uppercase tracking-wider">Telegram</label>
             <input type="text" name="telegram" placeholder="@username" value="<?= htmlspecialchars($edit_user['telegram'] ?? '') ?>" class="input-d w-full h-10 px-3 rounded-lg text-sm">
           </div>
+          <!-- Новый пароль -->
           <div>
-            <label class="block text-xs font-medium text-txt-secondary mb-1.5 uppercase tracking-wider">Роль</label>
-            <select name="role" class="input-d w-full h-10 px-3 rounded-lg text-sm">
-              <option value="user"  <?= $edit_user['role'] === 'user'  ? 'selected' : '' ?>>Пользователь</option>
-              <option value="admin" <?= $edit_user['role'] === 'admin' ? 'selected' : '' ?>>Администратор</option>
-            </select>
+            <label class="block text-xs font-medium text-txt-secondary mb-1.5 uppercase tracking-wider">Новый пароль</label>
+            <input type="password" name="new_password" placeholder="Оставьте пустым, если не меняете" class="input-d w-full h-10 px-3 rounded-lg text-sm">
           </div>
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-txt-secondary mb-1.5 uppercase tracking-wider">Новый пароль</label>
-          <input type="password" name="new_password" placeholder="Оставьте пустым, если не меняете" class="input-d w-full h-10 px-3 rounded-lg text-sm">
+          <!-- Роль (тумблер) -->
+          <div class="flex items-end pb-0.5">
+            <label class="flex items-center justify-between gap-3 cursor-pointer select-none w-full h-10 px-3 rounded-lg bg-bg-soft border border-line">
+              <div class="flex items-center gap-2">
+                <div class="text-xs font-medium text-txt-secondary uppercase tracking-wider">Роль:</div>
+                <div class="text-sm font-medium" id="role-label"><?= $edit_user['role'] === 'admin' ? 'Администратор' : 'Пользователь' ?></div>
+              </div>
+              <div class="relative flex-shrink-0">
+                <input type="checkbox" name="role_admin" id="role_toggle" class="sr-only peer"
+                       <?= $edit_user['role'] === 'admin' ? 'checked' : '' ?>>
+                <div class="w-11 h-6 rounded-full bg-line peer-checked:bg-vi transition-colors duration-200"></div>
+                <div class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 peer-checked:translate-x-5"></div>
+              </div>
+            </label>
+            <input type="hidden" name="role" id="role_hidden" value="<?= $edit_user['role'] === 'admin' ? 'admin' : 'user' ?>">
+          </div>
+          <!-- Email верифицирован (тумблер) -->
+          <div class="flex items-end pb-0.5">
+            <label class="flex items-center justify-between gap-3 cursor-pointer select-none w-full h-10 px-3 rounded-lg bg-bg-soft border border-line">
+              <div class="flex items-center gap-2">
+                <div class="text-xs font-medium text-txt-secondary uppercase tracking-wider">Email:</div>
+                <div class="text-sm font-medium" id="email-verified-label"><?= !empty($edit_user['email_verified']) ? 'Подтверждён' : 'Не подтверждён' ?></div>
+              </div>
+              <div class="relative flex-shrink-0">
+                <input type="checkbox" name="email_verified" id="email_verified_toggle" class="sr-only peer"
+                       <?= !empty($edit_user['email_verified']) ? 'checked' : '' ?>>
+                <div class="w-11 h-6 rounded-full bg-line peer-checked:bg-emr transition-colors duration-200"></div>
+                <div class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 peer-checked:translate-x-5"></div>
+              </div>
+            </label>
+          </div>
         </div>
         <div class="flex gap-2 pt-2">
           <button type="submit" class="btn-cy h-11 px-6 rounded-lg text-sm font-semibold flex items-center gap-2">
@@ -286,11 +298,6 @@ $admin_page = 'users.php';
                     <button onclick="showNotes('user', <?= $user['id'] ?>, '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>')" class="btn-ghost h-8 px-2.5 rounded-md text-xs inline-flex items-center gap-1 text-vi" title="Заметки">
                       <i data-lucide="notebook-pen" class="w-3.5 h-3.5"></i>
                     </button>
-                    <a href="?toggle_verify=<?= $user['id'] ?>" onclick="return confirm('<?= $user['email_verified'] ? 'Снять верификацию email у' : 'Верифицировать email' ?> <?= htmlspecialchars($user['username'], ENT_QUOTES) ?>?')"
-                       class="btn-ghost h-8 px-2.5 rounded-md text-xs inline-flex items-center gap-1 <?= $user['email_verified'] ? 'text-emr' : 'text-warn' ?>"
-                       title="<?= $user['email_verified'] ? 'Снять верификацию' : 'Верифицировать email' ?>">
-                      <i data-lucide="<?= $user['email_verified'] ? 'mail-x' : 'mail-check' ?>" class="w-3.5 h-3.5"></i>
-                    </a>
                     <a href="?delete=<?= $user['id'] ?>" onclick="return confirm('Удалить пользователя <?= htmlspecialchars($user['username']) ?>?')" class="btn-danger h-8 px-2.5 rounded-md text-xs inline-flex items-center gap-1" title="Удалить">
                       <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                     </a>
@@ -349,11 +356,6 @@ $admin_page = 'users.php';
               <button onclick="showNotes('user', <?= $user['id'] ?>, '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>')" class="btn-ghost h-9 px-3 rounded-md text-xs inline-flex items-center gap-1 text-vi" title="Заметки">
                 <i data-lucide="notebook-pen" class="w-3.5 h-3.5"></i>
               </button>
-              <a href="?toggle_verify=<?= $user['id'] ?>" onclick="return confirm('<?= $user['email_verified'] ? 'Снять верификацию email у' : 'Верифицировать email' ?> <?= htmlspecialchars($user['username'], ENT_QUOTES) ?>?')"
-                 class="btn-ghost h-9 px-3 rounded-md text-xs inline-flex items-center gap-1 <?= $user['email_verified'] ? 'text-emr' : 'text-warn' ?>"
-                 title="<?= $user['email_verified'] ? 'Снять верификацию' : 'Верифицировать' ?>">
-                <i data-lucide="<?= $user['email_verified'] ? 'mail-x' : 'mail-check' ?>" class="w-3.5 h-3.5"></i>
-              </a>
               <a href="?delete=<?= $user['id'] ?>" onclick="return confirm('Удалить пользователя <?= htmlspecialchars($user['username']) ?>?')" class="btn-danger h-9 px-3 rounded-md text-xs inline-flex items-center gap-1">
                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               </a>
@@ -407,6 +409,16 @@ $admin_page = 'users.php';
 </div>
 
 <script>
+  document.getElementById('role_toggle')?.addEventListener('change', function() {
+    const isAdmin = this.checked;
+    document.getElementById('role_hidden').value = isAdmin ? 'admin' : 'user';
+    document.getElementById('role-label').textContent = isAdmin ? 'Администратор' : 'Пользователь';
+  });
+
+  document.getElementById('email_verified_toggle')?.addEventListener('change', function() {
+    document.getElementById('email-verified-label').textContent = this.checked ? 'Подтверждён' : 'Не подтверждён';
+  });
+
   async function showUserHistory(userId, username) {
     const modal = document.getElementById('history-modal');
     const tbody = document.getElementById('history-body');
