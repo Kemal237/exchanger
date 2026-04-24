@@ -27,7 +27,7 @@ $current_page = $current_page ?? basename($_SERVER['SCRIPT_NAME']);
         BestChange XML
       </a>
       <?php if (isLoggedIn()): ?>
-        <a href="profile.php" class="<?= $current_page === 'profile.php' ? 'text-cy bg-bg-soft' : 'text-txt-primary' ?> hidden sm:flex items-center gap-2 px-3 h-9 rounded-lg text-sm hover:bg-bg-soft transition">
+        <a href="profile.php" class="<?= $current_page === 'profile.php' ? 'text-cy bg-bg-soft' : 'text-txt-primary' ?> flex items-center gap-2 px-3 h-9 rounded-lg text-sm hover:bg-bg-soft transition">
           <i data-lucide="user-round" class="w-4 h-4"></i>
           <span class="hidden md:inline">Профиль</span>
         </a>

@@ -202,7 +202,7 @@ $current_page = 'profile.php';
   <div class="grid lg:grid-cols-[380px,1fr] gap-4 sm:gap-6">
 
     <!-- Settings card -->
-    <aside class="reveal" data-d="1">
+    <aside class="reveal order-2 lg:order-1" data-d="1">
       <div id="settings-card" class="gborder spot rounded-2xl bg-bg-card p-4 sm:p-6 shadow-card lg:sticky lg:top-24">
         <div class="flex items-center gap-2 mb-5">
           <div class="w-8 h-8 rounded-lg bg-cy-soft border border-cy-border flex items-center justify-center">
@@ -297,7 +297,7 @@ $current_page = 'profile.php';
     </aside>
 
     <!-- Orders: two blocks -->
-    <section class="reveal flex flex-col gap-4" data-d="2" id="orders-section">
+    <section class="reveal flex flex-col gap-4 order-1 lg:order-2" data-d="2" id="orders-section">
 
       <!-- Активные заявки -->
       <div id="block-active" class="gborder spot rounded-2xl bg-bg-card shadow-card border border-line flex flex-col overflow-hidden">
