@@ -5,6 +5,19 @@ require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
 
+function generateOrderId(PDO $pdo): string {
+    $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    do {
+        $id = 'SW-';
+        for ($i = 0; $i < 5; $i++) {
+            $id .= $chars[random_int(0, 35)];
+        }
+        $exists = $pdo->prepare("SELECT 1 FROM orders WHERE id = ?");
+        $exists->execute([$id]);
+    } while ($exists->fetchColumn());
+    return $id;
+}
+
 session_start();
 
 if (!isLoggedIn() || $_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -27,7 +40,7 @@ if ($amount_give <= 0 || $amount_get <= 0 || empty($telegram)) {
 $user_id = $_SESSION['user_id'];
 
 // Генерируем номер заявки
-$order_id = 'ORD-' . time() . '-' . rand(1000, 9999);
+$order_id = generateOrderId($pdo);
 
 // Создаём заявку с явным статусом 'new'
 $stmt = $pdo->prepare("

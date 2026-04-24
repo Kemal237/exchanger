@@ -5,6 +5,19 @@ require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
 
+function generateOrderId(PDO $pdo): string {
+    $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    do {
+        $id = 'SW-';
+        for ($i = 0; $i < 5; $i++) {
+            $id .= $chars[random_int(0, 35)];
+        }
+        $exists = $pdo->prepare("SELECT 1 FROM orders WHERE id = ?");
+        $exists->execute([$id]);
+    } while ($exists->fetchColumn());
+    return $id;
+}
+
 session_start();
 
 if (!isLoggedIn() || $_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -52,7 +65,7 @@ if (!hasEnoughReserve($get_currency, $amount_get)) {
 
 $user_id  = $_SESSION['user_id'];
 $rate     = $amount_give > 0 ? round($amount_get / $amount_give, 8) : 0;
-$order_id = 'ORD-' . time() . '-' . rand(1000, 9999);
+$order_id = generateOrderId($pdo);
 
 $pdo->beginTransaction();
 try {
