@@ -283,6 +283,9 @@ $admin_page = 'users.php';
                     <button onclick="showUserHistory(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>')" class="btn-ghost h-8 px-2.5 rounded-md text-xs inline-flex items-center gap-1" title="История">
                       <i data-lucide="history" class="w-3.5 h-3.5"></i>
                     </button>
+                    <button onclick="showNotes('user', <?= $user['id'] ?>, '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>')" class="btn-ghost h-8 px-2.5 rounded-md text-xs inline-flex items-center gap-1 text-vi" title="Заметки">
+                      <i data-lucide="notebook-pen" class="w-3.5 h-3.5"></i>
+                    </button>
                     <a href="?toggle_verify=<?= $user['id'] ?>" onclick="return confirm('<?= $user['email_verified'] ? 'Снять верификацию email у' : 'Верифицировать email' ?> <?= htmlspecialchars($user['username'], ENT_QUOTES) ?>?')"
                        class="btn-ghost h-8 px-2.5 rounded-md text-xs inline-flex items-center gap-1 <?= $user['email_verified'] ? 'text-emr' : 'text-warn' ?>"
                        title="<?= $user['email_verified'] ? 'Снять верификацию' : 'Верифицировать email' ?>">
@@ -342,6 +345,9 @@ $admin_page = 'users.php';
               </a>
               <button onclick="showUserHistory(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>')" class="btn-ghost flex-1 h-9 rounded-md text-xs inline-flex items-center justify-center gap-1">
                 <i data-lucide="history" class="w-3.5 h-3.5"></i> История
+              </button>
+              <button onclick="showNotes('user', <?= $user['id'] ?>, '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>')" class="btn-ghost h-9 px-3 rounded-md text-xs inline-flex items-center gap-1 text-vi" title="Заметки">
+                <i data-lucide="notebook-pen" class="w-3.5 h-3.5"></i>
               </button>
               <a href="?toggle_verify=<?= $user['id'] ?>" onclick="return confirm('<?= $user['email_verified'] ? 'Снять верификацию email у' : 'Верифицировать email' ?> <?= htmlspecialchars($user['username'], ENT_QUOTES) ?>?')"
                  class="btn-ghost h-9 px-3 rounded-md text-xs inline-flex items-center gap-1 <?= $user['email_verified'] ? 'text-emr' : 'text-warn' ?>"
@@ -451,6 +457,8 @@ $admin_page = 'users.php';
     if (e.key === 'Escape') closeHistoryModal();
   });
 </script>
+
+<?php require_once __DIR__ . '/notes-modal.php'; ?>
 
 <?php require_once __DIR__ . '/footer.php'; ?>
 

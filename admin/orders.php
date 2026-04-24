@@ -201,6 +201,10 @@ $admin_page = 'orders.php';
                         <i data-lucide="check" class="w-3 h-3"></i>
                       </button>
                     </form>
+                    <button onclick="showNotes('order', '<?= htmlspecialchars($order['id'], ENT_QUOTES) ?>', '#<?= htmlspecialchars($order['id'], ENT_QUOTES) ?>')"
+                            class="btn-ghost h-8 px-2.5 rounded-md text-xs flex items-center gap-1 text-vi" title="Заметки">
+                      <i data-lucide="notebook-pen" class="w-3 h-3"></i>
+                    </button>
                     <form method="POST" onsubmit="return confirm('Удалить заявку #<?= htmlspecialchars($order['id']) ?>? Это действие необратимо.');">
                       <input type="hidden" name="order_id" value="<?= htmlspecialchars($order['id']) ?>">
                       <button type="submit" name="delete_order" class="btn-danger h-8 px-2.5 rounded-md text-xs flex items-center gap-1">
@@ -278,6 +282,10 @@ $admin_page = 'orders.php';
                   <i data-lucide="check" class="w-3.5 h-3.5"></i>
                 </button>
               </form>
+              <button onclick="showNotes('order', '<?= htmlspecialchars($order['id'], ENT_QUOTES) ?>', '#<?= htmlspecialchars($order['id'], ENT_QUOTES) ?>')"
+                      class="btn-ghost h-9 px-2.5 rounded-md text-xs flex items-center gap-1 text-vi" title="Заметки">
+                <i data-lucide="notebook-pen" class="w-3.5 h-3.5"></i>
+              </button>
               <form method="POST" onsubmit="return confirm('Удалить заявку #<?= htmlspecialchars($order['id']) ?>? Это действие необратимо.');">
                 <input type="hidden" name="order_id" value="<?= htmlspecialchars($order['id']) ?>">
                 <button type="submit" name="delete_order" class="btn-danger h-9 px-2.5 rounded-md text-xs flex items-center gap-1">
@@ -292,6 +300,8 @@ $admin_page = 'orders.php';
   </section>
 
 </main>
+
+<?php require_once __DIR__ . '/notes-modal.php'; ?>
 
 <?php require_once __DIR__ . '/footer.php'; ?>
 
