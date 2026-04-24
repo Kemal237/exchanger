@@ -104,6 +104,16 @@ $total_orders = count($orders);
 $success_orders = count(array_filter($orders, fn($o) => ($o['status'] ?? '') === 'success'));
 $active_orders = count(array_filter($orders, fn($o) => in_array($o['status'] ?? '', ['new', 'in_process'])));
 
+// Группировка заявок
+$orders_active  = array_values(array_filter($orders, fn($o) => in_array($o['status'] ?? '', ['new', 'in_process'])));
+$orders_history = array_values(array_filter($orders, fn($o) => in_array($o['status'] ?? '', ['success', 'canceled'])));
+$order_statuses = [
+    'new'        => ['text' => 'Новая',       'cls' => 'st-new',    'icon' => 'clock'],
+    'in_process' => ['text' => 'В обработке', 'cls' => 'st-proc',   'icon' => 'loader'],
+    'success'    => ['text' => 'Успешно',     'cls' => 'st-ok',     'icon' => 'check-circle-2'],
+    'canceled'   => ['text' => 'Отменено',    'cls' => 'st-cancel', 'icon' => 'x-circle'],
+];
+
 $page_title = 'Личный кабинет — ' . SITE_NAME;
 $current_page = 'profile.php';
 ?>
@@ -193,7 +203,7 @@ $current_page = 'profile.php';
 
     <!-- Settings card -->
     <aside class="reveal" data-d="1">
-      <div class="gborder spot rounded-2xl bg-bg-card p-4 sm:p-6 shadow-card lg:sticky lg:top-24">
+      <div id="settings-card" class="gborder spot rounded-2xl bg-bg-card p-4 sm:p-6 shadow-card lg:sticky lg:top-24">
         <div class="flex items-center gap-2 mb-5">
           <div class="w-8 h-8 rounded-lg bg-cy-soft border border-cy-border flex items-center justify-center">
             <i data-lucide="settings" class="w-4 h-4 text-cy"></i>
@@ -286,81 +296,74 @@ $current_page = 'profile.php';
       </div>
     </aside>
 
-    <!-- Orders -->
-    <section class="reveal" data-d="2">
-      <div class="gborder rounded-2xl bg-bg-card shadow-card overflow-hidden">
-        <div class="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-line">
+    <!-- Orders: two blocks -->
+    <section class="reveal flex flex-col gap-4" data-d="2" id="orders-section">
+
+      <!-- Активные заявки -->
+      <div id="block-active" class="gborder spot rounded-2xl bg-bg-card shadow-card border border-line flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-line flex-shrink-0">
           <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-vi-soft border border-vi/30 flex items-center justify-center">
-              <i data-lucide="list-ordered" class="w-4 h-4 text-vi"></i>
+            <div class="w-7 h-7 rounded-lg bg-warn/10 border border-warn/30 flex items-center justify-center">
+              <i data-lucide="loader" class="w-3.5 h-3.5 text-warn"></i>
             </div>
-            <h2 class="text-base sm:text-lg font-bold">История обмена</h2>
+            <h2 class="text-sm sm:text-base font-bold">Активные заявки</h2>
           </div>
-          <span class="text-xs text-txt-muted"><?= $total_orders ?> <?= $total_orders === 1 ? 'заявка' : ($total_orders >= 2 && $total_orders <= 4 ? 'заявки' : 'заявок') ?></span>
+          <?php $ac = count($orders_active); ?>
+          <span class="text-xs text-txt-muted"><?= $ac ?> <?= $ac===1?'заявка':($ac>=2&&$ac<=4?'заявки':'заявок') ?></span>
         </div>
 
-        <?php if (empty($orders)): ?>
-          <div class="p-8 sm:p-12 text-center">
-            <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-bg-soft border border-line mx-auto mb-4 flex items-center justify-center">
-              <i data-lucide="inbox" class="w-6 h-6 sm:w-7 sm:h-7 text-txt-muted"></i>
-            </div>
-            <p class="text-txt-secondary mb-1">У вас пока нет заявок</p>
-            <p class="text-xs text-txt-muted mb-5">Создайте первую прямо сейчас</p>
-            <a href="index.php" class="btn-cy inline-flex items-center gap-2 px-5 h-11 rounded-lg text-sm font-semibold">
-              <i data-lucide="plus" class="w-4 h-4"></i>
-              Создать обмен
+        <?php if (empty($orders_active)): ?>
+          <div class="flex flex-col items-center justify-center gap-2 py-6">
+            <i data-lucide="clock" class="w-8 h-8 text-txt-muted opacity-40"></i>
+            <p class="text-sm text-txt-muted">Нет активных заявок</p>
+            <a href="index.php" class="btn-cy inline-flex items-center gap-1.5 px-4 h-8 rounded-lg text-xs font-medium mt-1">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Создать обмен
             </a>
           </div>
         <?php else: ?>
-          <!-- Desktop / tablet: table -->
-          <div class="hidden md:block overflow-x-auto">
-            <table class="w-full text-sm" id="orders-table">
-              <thead>
-                <tr class="text-left text-xs text-txt-muted uppercase tracking-wider bg-bg-soft/40">
-                  <th class="px-6 py-3 font-medium">№</th>
-                  <th class="px-4 py-3 font-medium">Дата</th>
-                  <th class="px-4 py-3 font-medium">Отдаёте</th>
-                  <th class="px-4 py-3 font-medium">Получаете</th>
-                  <th class="px-4 py-3 font-medium">Статус</th>
-                  <th class="px-4 py-3 font-medium text-right">Действия</th>
+          <!-- Desktop -->
+          <div class="hidden md:block flex-1 min-h-0 overflow-y-auto">
+            <table class="w-full text-sm min-w-[520px]">
+              <thead class="sticky top-0 z-[1] bg-bg-card border-b border-line">
+                <tr class="text-left text-[11px] text-txt-muted uppercase tracking-wider bg-bg-soft/40">
+                  <th class="px-4 py-2 font-medium">№</th>
+                  <th class="px-3 py-2 font-medium">Дата</th>
+                  <th class="px-3 py-2 font-medium">Отдаёте</th>
+                  <th class="px-3 py-2 font-medium">Получаете</th>
+                  <th class="px-3 py-2 font-medium">Статус</th>
+                  <th class="px-3 py-2 font-medium text-right">Действие</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-line">
-                <?php foreach ($orders as $order):
-                  $isNew = $highlight_order && $order['id'] === $highlight_order;
+                <?php foreach ($orders_active as $order):
                   $status = $order['status'] ?? 'new';
-                  $statuses = [
-                      'new'        => ['text' => 'Новая',       'cls' => 'st-new',    'icon' => 'clock'],
-                      'in_process' => ['text' => 'В обработке', 'cls' => 'st-proc',   'icon' => 'loader'],
-                      'success'    => ['text' => 'Успешно',     'cls' => 'st-ok',     'icon' => 'check-circle-2'],
-                      'canceled'   => ['text' => 'Отменено',    'cls' => 'st-cancel', 'icon' => 'x-circle'],
-                  ];
-                  $s = $statuses[$status] ?? $statuses['new'];
+                  $s = $order_statuses[$status] ?? $order_statuses['new'];
                 ?>
                   <tr id="order-<?= htmlspecialchars($order['id']) ?>" class="row-h transition">
-                    <td class="px-6 py-4 font-mono text-xs text-txt-secondary">#<?= htmlspecialchars($order['id']) ?></td>
-                    <td class="px-4 py-4 text-txt-secondary whitespace-nowrap"><?= date('d.m.Y H:i', strtotime($order['created_at'])) ?></td>
-                    <td class="px-4 py-4 font-medium whitespace-nowrap">
-                      <?= number_format($order['amount_give'] ?? 0, 2, '.', ' ') ?>
-                      <span class="text-xs text-txt-muted ml-1"><?= htmlspecialchars($order['give_currency']) ?></span>
+                    <td class="px-4 py-2 max-w-[100px]">
+                      <div class="font-mono text-xs text-txt-secondary truncate" title="#<?= htmlspecialchars($order['id']) ?>">#<?= htmlspecialchars($order['id']) ?></div>
                     </td>
-                    <td class="px-4 py-4 font-medium text-emr whitespace-nowrap">
-                      <?= number_format($order['amount_get'] ?? 0, 2, '.', ' ') ?>
-                      <span class="text-xs text-txt-muted ml-1"><?= htmlspecialchars($order['get_currency']) ?></span>
+                    <td class="px-3 py-2 text-xs text-txt-secondary whitespace-nowrap"><?= date('d.m.Y H:i', strtotime($order['created_at'])) ?></td>
+                    <td class="px-3 py-2 whitespace-nowrap">
+                      <span class="font-medium"><?= number_format($order['amount_give'] ?? 0, 2, '.', ' ') ?></span>
+                      <span class="text-xs text-txt-muted ml-0.5"><?= htmlspecialchars($order['give_currency']) ?></span>
                     </td>
-                    <td class="px-4 py-4">
+                    <td class="px-3 py-2 whitespace-nowrap">
+                      <span class="font-medium text-emr"><?= number_format($order['amount_get'] ?? 0, 2, '.', ' ') ?></span>
+                      <span class="text-xs text-txt-muted ml-0.5"><?= htmlspecialchars($order['get_currency']) ?></span>
+                    </td>
+                    <td class="px-3 py-2">
                       <span class="st <?= $s['cls'] ?>">
                         <i data-lucide="<?= $s['icon'] ?>" class="w-3 h-3"></i>
                         <?= $s['text'] ?>
                       </span>
                     </td>
-                    <td class="px-4 py-4 text-right">
+                    <td class="px-3 py-2 text-right">
                       <?php if ($status === 'new'): ?>
                         <a href="?cancel_order=<?= htmlspecialchars($order['id']) ?>"
                            onclick="return confirm('Отменить заявку #<?= htmlspecialchars($order['id']) ?>?');"
-                           class="btn-danger inline-flex items-center gap-1 px-3 h-8 rounded-md text-xs">
-                          <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                          Отменить
+                           class="btn-danger inline-flex items-center gap-1 px-2.5 h-7 rounded-md text-xs">
+                          <i data-lucide="x" class="w-3 h-3"></i> Отменить
                         </a>
                       <?php else: ?>
                         <span class="text-xs text-txt-muted">—</span>
@@ -371,54 +374,39 @@ $current_page = 'profile.php';
               </tbody>
             </table>
           </div>
-
-          <!-- Mobile: card list -->
-          <div class="md:hidden divide-y divide-line" id="orders-table">
-            <?php foreach ($orders as $order):
-              $isNew = $highlight_order && $order['id'] === $highlight_order;
+          <!-- Mobile -->
+          <div class="md:hidden overflow-y-auto max-h-[360px] divide-y divide-line">
+            <?php foreach ($orders_active as $order):
               $status = $order['status'] ?? 'new';
-              $statuses = [
-                  'new'        => ['text' => 'Новая',       'cls' => 'st-new',    'icon' => 'clock'],
-                  'in_process' => ['text' => 'В обработке', 'cls' => 'st-proc',   'icon' => 'loader'],
-                  'success'    => ['text' => 'Успешно',     'cls' => 'st-ok',     'icon' => 'check-circle-2'],
-                  'canceled'   => ['text' => 'Отменено',    'cls' => 'st-cancel', 'icon' => 'x-circle'],
-              ];
-              $s = $statuses[$status] ?? $statuses['new'];
+              $s = $order_statuses[$status] ?? $order_statuses['new'];
             ?>
-              <div id="order-m-<?= htmlspecialchars($order['id']) ?>" class="p-4">
-                <div class="flex items-start justify-between gap-2 mb-3">
+              <div id="order-m-<?= htmlspecialchars($order['id']) ?>" class="p-3">
+                <div class="flex items-start justify-between gap-2 mb-2">
                   <div class="min-w-0">
                     <div class="font-mono text-[11px] text-txt-secondary truncate">#<?= htmlspecialchars($order['id']) ?></div>
-                    <div class="text-[11px] text-txt-muted mt-0.5"><?= date('d.m.Y H:i', strtotime($order['created_at'])) ?></div>
+                    <div class="text-[11px] text-txt-muted"><?= date('d.m.Y H:i', strtotime($order['created_at'])) ?></div>
                   </div>
                   <span class="st <?= $s['cls'] ?> flex-shrink-0">
                     <i data-lucide="<?= $s['icon'] ?>" class="w-3 h-3"></i>
                     <?= $s['text'] ?>
                   </span>
                 </div>
-                <div class="flex items-center justify-between gap-3 mb-3">
-                  <div class="flex-1 min-w-0">
-                    <div class="text-[10px] text-txt-muted uppercase tracking-wider mb-0.5">Отдаёте</div>
-                    <div class="font-medium text-sm truncate">
-                      <?= number_format($order['amount_give'] ?? 0, 2, '.', ' ') ?>
-                      <span class="text-[11px] text-txt-muted"><?= htmlspecialchars($order['give_currency']) ?></span>
-                    </div>
+                <div class="flex items-center justify-between gap-2 mb-2">
+                  <div class="min-w-0">
+                    <div class="text-[10px] text-txt-muted uppercase mb-0.5">Отдаёте</div>
+                    <div class="font-medium text-xs truncate"><?= number_format($order['amount_give'] ?? 0, 2, '.', ' ') ?> <span class="text-txt-muted"><?= htmlspecialchars($order['give_currency']) ?></span></div>
                   </div>
-                  <i data-lucide="arrow-right" class="w-4 h-4 text-txt-muted flex-shrink-0"></i>
-                  <div class="flex-1 min-w-0 text-right">
-                    <div class="text-[10px] text-txt-muted uppercase tracking-wider mb-0.5">Получаете</div>
-                    <div class="font-medium text-emr text-sm truncate">
-                      <?= number_format($order['amount_get'] ?? 0, 2, '.', ' ') ?>
-                      <span class="text-[11px] text-txt-muted"><?= htmlspecialchars($order['get_currency']) ?></span>
-                    </div>
+                  <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-txt-muted flex-shrink-0"></i>
+                  <div class="min-w-0 text-right">
+                    <div class="text-[10px] text-txt-muted uppercase mb-0.5">Получаете</div>
+                    <div class="font-medium text-xs text-emr truncate"><?= number_format($order['amount_get'] ?? 0, 2, '.', ' ') ?> <span class="text-txt-muted"><?= htmlspecialchars($order['get_currency']) ?></span></div>
                   </div>
                 </div>
                 <?php if ($status === 'new'): ?>
                   <a href="?cancel_order=<?= htmlspecialchars($order['id']) ?>"
                      onclick="return confirm('Отменить заявку #<?= htmlspecialchars($order['id']) ?>?');"
-                     class="btn-danger w-full inline-flex items-center justify-center gap-1 px-3 h-9 rounded-md text-xs">
-                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                    Отменить заявку
+                     class="btn-danger w-full inline-flex items-center justify-center gap-1 h-8 rounded-md text-xs">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i> Отменить
                   </a>
                 <?php endif; ?>
               </div>
@@ -426,6 +414,101 @@ $current_page = 'profile.php';
           </div>
         <?php endif; ?>
       </div>
+
+      <!-- История обмена -->
+      <div id="block-history" class="gborder spot rounded-2xl bg-bg-card shadow-card border border-line flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-line flex-shrink-0">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-vi-soft border border-vi/30 flex items-center justify-center">
+              <i data-lucide="history" class="w-3.5 h-3.5 text-vi"></i>
+            </div>
+            <h2 class="text-sm sm:text-base font-bold">История обмена</h2>
+          </div>
+          <?php $hc = count($orders_history); ?>
+          <span class="text-xs text-txt-muted"><?= $hc ?> <?= $hc===1?'заявка':($hc>=2&&$hc<=4?'заявки':'заявок') ?></span>
+        </div>
+
+        <?php if (empty($orders_history)): ?>
+          <div class="flex flex-col items-center justify-center gap-2 py-6">
+            <i data-lucide="history" class="w-8 h-8 text-txt-muted opacity-40"></i>
+            <p class="text-sm text-txt-muted">История пуста</p>
+          </div>
+        <?php else: ?>
+          <!-- Desktop -->
+          <div class="hidden md:block flex-1 min-h-0 overflow-y-auto">
+            <table class="w-full text-sm min-w-[480px]">
+              <thead class="sticky top-0 z-[1] bg-bg-card border-b border-line">
+                <tr class="text-left text-[11px] text-txt-muted uppercase tracking-wider bg-bg-soft/40">
+                  <th class="px-4 py-2 font-medium">№</th>
+                  <th class="px-3 py-2 font-medium">Дата</th>
+                  <th class="px-3 py-2 font-medium">Отдали</th>
+                  <th class="px-3 py-2 font-medium">Получили</th>
+                  <th class="px-3 py-2 font-medium">Статус</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-line">
+                <?php foreach ($orders_history as $order):
+                  $status = $order['status'] ?? 'success';
+                  $s = $order_statuses[$status] ?? $order_statuses['success'];
+                ?>
+                  <tr class="row-h transition">
+                    <td class="px-4 py-2 max-w-[100px]">
+                      <div class="font-mono text-xs text-txt-secondary truncate" title="#<?= htmlspecialchars($order['id']) ?>">#<?= htmlspecialchars($order['id']) ?></div>
+                    </td>
+                    <td class="px-3 py-2 text-xs text-txt-secondary whitespace-nowrap"><?= date('d.m.Y H:i', strtotime($order['created_at'])) ?></td>
+                    <td class="px-3 py-2 whitespace-nowrap">
+                      <span class="font-medium"><?= number_format($order['amount_give'] ?? 0, 2, '.', ' ') ?></span>
+                      <span class="text-xs text-txt-muted ml-0.5"><?= htmlspecialchars($order['give_currency']) ?></span>
+                    </td>
+                    <td class="px-3 py-2 whitespace-nowrap">
+                      <span class="font-medium text-emr"><?= number_format($order['amount_get'] ?? 0, 2, '.', ' ') ?></span>
+                      <span class="text-xs text-txt-muted ml-0.5"><?= htmlspecialchars($order['get_currency']) ?></span>
+                    </td>
+                    <td class="px-3 py-2">
+                      <span class="st <?= $s['cls'] ?>">
+                        <i data-lucide="<?= $s['icon'] ?>" class="w-3 h-3"></i>
+                        <?= $s['text'] ?>
+                      </span>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+          <!-- Mobile -->
+          <div class="md:hidden overflow-y-auto max-h-[360px] divide-y divide-line">
+            <?php foreach ($orders_history as $order):
+              $status = $order['status'] ?? 'success';
+              $s = $order_statuses[$status] ?? $order_statuses['success'];
+            ?>
+              <div class="p-3">
+                <div class="flex items-start justify-between gap-2 mb-2">
+                  <div class="min-w-0">
+                    <div class="font-mono text-[11px] text-txt-secondary truncate">#<?= htmlspecialchars($order['id']) ?></div>
+                    <div class="text-[11px] text-txt-muted"><?= date('d.m.Y H:i', strtotime($order['created_at'])) ?></div>
+                  </div>
+                  <span class="st <?= $s['cls'] ?> flex-shrink-0">
+                    <i data-lucide="<?= $s['icon'] ?>" class="w-3 h-3"></i>
+                    <?= $s['text'] ?>
+                  </span>
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                  <div class="min-w-0">
+                    <div class="text-[10px] text-txt-muted uppercase mb-0.5">Отдали</div>
+                    <div class="font-medium text-xs truncate"><?= number_format($order['amount_give'] ?? 0, 2, '.', ' ') ?> <span class="text-txt-muted"><?= htmlspecialchars($order['give_currency']) ?></span></div>
+                  </div>
+                  <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-txt-muted flex-shrink-0"></i>
+                  <div class="min-w-0 text-right">
+                    <div class="text-[10px] text-txt-muted uppercase mb-0.5">Получили</div>
+                    <div class="font-medium text-xs text-emr truncate"><?= number_format($order['amount_get'] ?? 0, 2, '.', ' ') ?> <span class="text-txt-muted"><?= htmlspecialchars($order['get_currency']) ?></span></div>
+                  </div>
+                </div>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      </div>
+
     </section>
 
   </div>
@@ -447,6 +530,28 @@ $current_page = 'profile.php';
     }, 200);
   });
   <?php endif; ?>
+</script>
+
+<script>
+  function syncOrdersHeight() {
+    var card    = document.getElementById('settings-card');
+    var active  = document.getElementById('block-active');
+    var history = document.getElementById('block-history');
+    if (!card || !active || !history) return;
+
+    if (window.innerWidth >= 1024) {
+      var gap  = 16; // gap-4 = 1rem = 16px
+      var half = Math.floor((card.offsetHeight - gap) / 2);
+      active.style.maxHeight  = half + 'px';
+      history.style.maxHeight = half + 'px';
+    } else {
+      active.style.maxHeight  = '';
+      history.style.maxHeight = '';
+    }
+  }
+
+  window.addEventListener('load', syncOrdersHeight);
+  window.addEventListener('resize', syncOrdersHeight);
 </script>
 
 </body>
