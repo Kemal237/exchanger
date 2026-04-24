@@ -95,7 +95,7 @@ $currencyConfig = [
 <main class="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
 
   <!-- Hero -->
-  <section class="grid lg:grid-cols-[1fr,540px] gap-6 lg:gap-10 items-start min-w-0 overflow-hidden">
+  <section class="grid lg:grid-cols-[1fr,540px] gap-6 lg:gap-10 items-center min-w-0 overflow-hidden">
 
     <!-- Left intro -->
     <div class="fade-in min-w-0">
