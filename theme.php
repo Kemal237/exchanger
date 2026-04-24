@@ -77,6 +77,8 @@ tailwind.config = {
   }
   .spot:hover::after { opacity: 1; }
   .spot > * { position: relative; z-index: 1; }
+  /* Gradient border must render above spot children */
+  .spot.gborder::before { z-index: 2; }
 
   /* Shimmer text */
   .shimmer-text {
