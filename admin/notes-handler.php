@@ -19,9 +19,9 @@ if (!is_dir($upload_dir)) {
 // GET: load notes for entity
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $entity_type = $_GET['entity_type'] ?? '';
-    $entity_id   = (int)($_GET['entity_id'] ?? 0);
+    $entity_id   = trim($_GET['entity_id'] ?? '');
 
-    if (!in_array($entity_type, ['user', 'order']) || !$entity_id) {
+    if (!in_array($entity_type, ['user', 'order']) || $entity_id === '') {
         echo json_encode(['error' => 'Invalid params']); exit;
     }
 
@@ -58,11 +58,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'add') {
         $entity_type = $_POST['entity_type'] ?? '';
-        $entity_id   = (int)($_POST['entity_id'] ?? 0);
+        $entity_id   = trim($_POST['entity_id'] ?? '');
         $note_text   = trim($_POST['note_text'] ?? '');
         $admin_name  = $_SESSION['username'] ?? 'Администратор';
 
-        if (!in_array($entity_type, ['user', 'order']) || !$entity_id) {
+        if (!in_array($entity_type, ['user', 'order']) || $entity_id === '') {
             echo json_encode(['error' => 'Invalid params']); exit;
         }
 
