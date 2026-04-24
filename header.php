@@ -3,6 +3,21 @@
 if (!defined('SITE_NAME')) require_once __DIR__ . '/config.php';
 if (!function_exists('isLoggedIn')) require_once __DIR__ . '/auth.php';
 $current_page = $current_page ?? basename($_SERVER['SCRIPT_NAME']);
+
+$_header_badge = 0;
+if (isLoggedIn() && isset($pdo)) {
+    try {
+        $_uid = $_SESSION['user_id'] ?? 0;
+        if ($_uid) {
+            $_hstmt = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE user_id = ? AND status IN ('new','in_process')");
+            $_hstmt->execute([$_uid]);
+            $_header_badge = (int)$_hstmt->fetchColumn();
+            unset($_hstmt, $_uid);
+        }
+    } catch (\Throwable $e) {
+        // не ломаем страницу если запрос не удался
+    }
+}
 ?>
 <header class="sticky top-0 z-40 backdrop-blur-md bg-bg-base/80 border-b border-line relative">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
@@ -28,7 +43,12 @@ $current_page = $current_page ?? basename($_SERVER['SCRIPT_NAME']);
       </a>
       <?php if (isLoggedIn()): ?>
         <a href="profile.php" class="<?= $current_page === 'profile.php' ? 'text-cy bg-bg-soft' : 'text-txt-primary' ?> flex items-center gap-2 px-3 h-9 rounded-lg text-sm hover:bg-bg-soft transition">
-          <i data-lucide="user-round" class="w-4 h-4"></i>
+          <span class="relative inline-flex">
+            <i data-lucide="user-round" class="w-4 h-4"></i>
+            <?php if ($_header_badge > 0): ?>
+              <span class="absolute -top-1 -right-1 min-w-[10px] h-[10px] rounded-full bg-danger text-white text-[7px] font-bold flex items-center justify-center px-[1px] leading-none pointer-events-none"><?= $_header_badge > 9 ? '9+' : $_header_badge ?></span>
+            <?php endif; ?>
+          </span>
           <span class="hidden md:inline">Профиль</span>
         </a>
         <?php if (isAdmin()): ?>
