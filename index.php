@@ -99,11 +99,6 @@ $currencyConfig = [
 
     <!-- Left intro -->
     <div class="fade-in min-w-0">
-      <div class="inline-flex items-center gap-2 px-3 h-7 rounded-full bg-cy-soft border border-cy-border text-cy text-[11px] sm:text-xs font-medium mb-4 sm:mb-5">
-        <span class="pdot"></span>
-        <span>Онлайн</span>
-      </div>
-
       <h1 class="text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.1] mb-3 sm:mb-4">
         Обмен криптовалют<br>
         <span class="shimmer-text">быстро и безопасно</span>
@@ -132,13 +127,13 @@ $currencyConfig = [
 
       <!-- Feature tags -->
       <div class="mt-4 sm:mt-6 flex flex-wrap gap-1 sm:gap-2">
-        <span class="tag-h spot inline-flex items-center gap-1 sm:gap-2 text-[10.5px] sm:text-sm text-txt-secondary px-1.5 sm:px-3 h-7 sm:h-9 rounded-lg border border-line bg-bg-card whitespace-nowrap">
+        <span class="spot inline-flex items-center gap-1 sm:gap-2 text-[10.5px] sm:text-sm text-txt-secondary px-1.5 sm:px-3 h-7 sm:h-9 rounded-lg border border-line bg-bg-card whitespace-nowrap">
           <i data-lucide="shield-check" class="w-3 h-3 sm:w-4 sm:h-4 text-cy flex-shrink-0"></i> AML проверка
         </span>
-        <span class="tag-h spot inline-flex items-center gap-1 sm:gap-2 text-[10.5px] sm:text-sm text-txt-secondary px-1.5 sm:px-3 h-7 sm:h-9 rounded-lg border border-line bg-bg-card whitespace-nowrap">
+        <span class="spot inline-flex items-center gap-1 sm:gap-2 text-[10.5px] sm:text-sm text-txt-secondary px-1.5 sm:px-3 h-7 sm:h-9 rounded-lg border border-line bg-bg-card whitespace-nowrap">
           <i data-lucide="zap" class="w-3 h-3 sm:w-4 sm:h-4 text-warn flex-shrink-0"></i> Быстрые выплаты
         </span>
-        <span class="tag-h spot inline-flex items-center gap-1 sm:gap-2 text-[10.5px] sm:text-sm text-txt-secondary px-1.5 sm:px-3 h-7 sm:h-9 rounded-lg border border-line bg-bg-card whitespace-nowrap">
+        <span class="spot inline-flex items-center gap-1 sm:gap-2 text-[10.5px] sm:text-sm text-txt-secondary px-1.5 sm:px-3 h-7 sm:h-9 rounded-lg border border-line bg-bg-card whitespace-nowrap">
           <i data-lucide="headphones" class="w-3 h-3 sm:w-4 sm:h-4 text-vi flex-shrink-0"></i> Поддержка 24/7
         </span>
       </div>
