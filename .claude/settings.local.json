@@ -1,7 +1,20 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -r '$_GET\\\\|$_POST\\\\|$_REQUEST' /d/exchanger '--include=*.php')"
+      "Bash(grep -r '$_GET\\\\|$_POST\\\\|$_REQUEST' /d/exchanger '--include=*.php')",
+      "WebSearch",
+      "WebFetch(domain:rapira.net)",
+      "WebFetch(domain:rapira.readme.io)",
+      "WebFetch(domain:rapira.apidog.io)",
+      "WebFetch(domain:api.rapira.net)",
+      "WebFetch(domain:vc.ru)",
+      "WebFetch(domain:github.com)",
+      "Bash(curl -s \"https://api.rapira.net/open/rates\")",
+      "Bash(curl -s \"https://api.rapira.net/open/pairs\")",
+      "Bash(curl -s \"https://api.rapira.net/\")",
+      "Bash(curl -s \"https://api.rapira.net/auth\" -X POST -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(curl -s \"https://api.rapira.net/auth/token\" -X POST -H \"Content-Type: application/json\")",
+      "Bash(curl -s \"https://api.rapira.net/market/rates\" -H \"Authorization: Bearer dummy\")"
     ]
   }
 }

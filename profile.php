@@ -204,12 +204,15 @@ $current_page = 'profile.php';
     <!-- Settings card -->
     <aside class="reveal order-2 lg:order-1" data-d="1">
       <div id="settings-card" class="gborder spot rounded-2xl bg-bg-card p-4 sm:p-6 shadow-card lg:sticky lg:top-24">
-        <div class="flex items-center gap-2 mb-5">
+        <div id="profile-toggle" class="flex items-center gap-2 mb-0 lg:mb-5 cursor-pointer lg:cursor-default select-none" onclick="toggleProfileSettings()">
           <div class="w-8 h-8 rounded-lg bg-cy-soft border border-cy-border flex items-center justify-center">
             <i data-lucide="settings" class="w-4 h-4 text-cy"></i>
           </div>
           <h2 class="text-lg font-bold">Настройки профиля</h2>
+          <i data-lucide="chevron-down" class="w-4 h-4 text-txt-muted ml-auto lg:hidden transition-transform duration-200" id="profile-chevron"></i>
         </div>
+
+        <div id="profile-content" class="hidden lg:block mt-5 lg:mt-0">
 
         <?php if ($error): ?>
           <div class="mb-4 px-3.5 py-2.5 rounded-lg bg-danger/10 border border-danger/30 text-xs text-danger flex items-start gap-2">
@@ -293,6 +296,8 @@ $current_page = 'profile.php';
             Админ-панель
           </a>
         <?php endif; ?>
+
+        </div><!-- /profile-content -->
       </div>
     </aside>
 
@@ -515,6 +520,34 @@ $current_page = 'profile.php';
 </main>
 
 <?php require_once 'footer.php'; ?>
+
+<script>
+  function toggleProfileSettings() {
+    if (window.innerWidth >= 1024) return;
+    var content = document.getElementById('profile-content');
+    var chevron = document.getElementById('profile-chevron');
+    var isHidden = content.classList.contains('hidden');
+    if (isHidden) {
+      content.classList.remove('hidden');
+      chevron.style.transform = 'rotate(180deg)';
+    } else {
+      content.classList.add('hidden');
+      chevron.style.transform = '';
+    }
+  }
+
+  // Если была ошибка валидации — автоматически раскрыть настройки на мобиле
+  <?php if ($error): ?>
+  window.addEventListener('DOMContentLoaded', function() {
+    if (window.innerWidth < 1024) {
+      var content = document.getElementById('profile-content');
+      var chevron = document.getElementById('profile-chevron');
+      content.classList.remove('hidden');
+      chevron.style.transform = 'rotate(180deg)';
+    }
+  });
+  <?php endif; ?>
+</script>
 
 <script>
   <?php if ($highlight_order): ?>
