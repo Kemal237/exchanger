@@ -304,7 +304,7 @@ $currencyConfig = [
           $lmin = $limits[$cur]['min'] ?? 0;
           $lmax = $limits[$cur]['max'] ?? 0;
       ?>
-      <div class="reveal spot bg-bg-card border border-line hover:border-cy-border rounded-xl p-3 sm:p-5 transition" data-d="<?= $di++ ?>">
+      <div class="reveal spot bg-bg-card border border-line hover:border-cy-border rounded-xl p-3 sm:p-5 transition" data-d="<?= $di++ ?>" data-res-cur="<?= $cur ?>">
         <div class="flex items-center justify-between mb-2 sm:mb-3 gap-2">
           <div class="flex items-center gap-2 min-w-0">
             <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
@@ -316,14 +316,12 @@ $currencyConfig = [
               <div class="text-[10px] text-txt-muted truncate"><?= $card['sub'] ?></div>
             </div>
           </div>
-          <?php if ($res > 0): ?>
-            <span class="text-[10px] text-cy bg-cy-soft border border-cy-border px-1.5 h-5 rounded flex items-center whitespace-nowrap flex-shrink-0">В наличии</span>
-          <?php else: ?>
-            <span class="text-[10px] text-txt-muted bg-bg-soft border border-line px-1.5 h-5 rounded flex items-center whitespace-nowrap flex-shrink-0">Нет</span>
-          <?php endif; ?>
+          <span data-res-badge="<?= $cur ?>" class="text-[10px] <?= $res > 0 ? 'text-cy bg-cy-soft border-cy-border' : 'text-txt-muted bg-bg-soft border-line' ?> border px-1.5 h-5 rounded flex items-center whitespace-nowrap flex-shrink-0">
+            <?= $res > 0 ? 'В наличии' : 'Нет' ?>
+          </span>
         </div>
-        <div class="text-base sm:text-xl font-bold truncate <?= $res <= 0 ? 'text-txt-muted' : '' ?>"><?= number_format($res, $card['dec'], '.', ' ') ?></div>
-        <div class="mt-1 text-[10px] sm:text-xs text-txt-muted truncate">
+        <div data-res-amount="<?= $cur ?>" class="text-base sm:text-xl font-bold truncate <?= $res <= 0 ? 'text-txt-muted' : '' ?>"><?= number_format($res, $card['dec'], '.', ' ') ?></div>
+        <div data-res-limit="<?= $cur ?>" class="mt-1 text-[10px] sm:text-xs text-txt-muted truncate">
           Лимит <?= number_format($lmin, $card['ldec'], '.', ' ') ?> – <?= number_format($lmax, $card['ldec'], '.', ' ') ?>
         </div>
       </div>
@@ -419,19 +417,72 @@ $currencyConfig = [
   const limitText    = document.getElementById('limit-text');
   const rateLine     = document.getElementById('rate-line');
 
-  const timerText    = document.getElementById('timer-text');
-  const refreshIcon  = document.querySelector('.refresh-icon');
+  const timerText   = document.getElementById('timer-text');
+  const refreshIcon = document.querySelector('.refresh-icon');
+
+  // Конфиг десятичных знаков для каждой валюты
+  const resCardCfg = <?= json_encode(array_map(fn($c) => ['dec' => $c['dec'], 'ldec' => $c['ldec']], $reserveCards)) ?>;
+
+  function fmtReserve(val, cur) {
+    const d = resCardCfg[cur]?.dec ?? 2;
+    return Number(val).toLocaleString('ru-RU', { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+  function fmtLimit(val, cur) {
+    const d = resCardCfg[cur]?.ldec ?? 0;
+    return Number(val).toLocaleString('ru-RU', { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+
+  function applyReserveUpdates(newReserves, newLimits) {
+    Object.entries(newReserves).forEach(([cur, amount]) => {
+      reserves[cur] = amount;
+
+      const amtEl   = document.querySelector('[data-res-amount="' + cur + '"]');
+      const badgeEl = document.querySelector('[data-res-badge="' + cur + '"]');
+      const limitEl = document.querySelector('[data-res-limit="' + cur + '"]');
+
+      if (amtEl) {
+        amtEl.textContent = fmtReserve(amount, cur);
+        amtEl.classList.toggle('text-txt-muted', amount <= 0);
+      }
+      if (badgeEl) {
+        if (amount > 0) {
+          badgeEl.textContent = 'В наличии';
+          badgeEl.className = 'text-[10px] text-cy bg-cy-soft border border-cy-border px-1.5 h-5 rounded flex items-center whitespace-nowrap flex-shrink-0';
+        } else {
+          badgeEl.textContent = 'Нет';
+          badgeEl.className = 'text-[10px] text-txt-muted bg-bg-soft border border-line px-1.5 h-5 rounded flex items-center whitespace-nowrap flex-shrink-0';
+        }
+      }
+      if (limitEl && newLimits?.[cur]) {
+        limits[cur] = newLimits[cur];
+        limitEl.textContent = 'Лимит ' + fmtLimit(newLimits[cur].min, cur) + ' – ' + fmtLimit(newLimits[cur].max, cur);
+      }
+    });
+    updateGetReserve();
+    updateLimitText();
+    validateButton();
+  }
+
+  function fetchLiveRates() {
+    if (refreshIcon) {
+      refreshIcon.style.transition = 'transform .6s';
+      refreshIcon.style.transform  = 'rotate(360deg)';
+      setTimeout(() => { refreshIcon.style.transition = 'none'; refreshIcon.style.transform = 'rotate(0)'; }, 650);
+    }
+    fetch('get_rates.php')
+      .then(r => r.json())
+      .then(data => {
+        if (data.reserves) applyReserveUpdates(data.reserves, data.limits);
+      })
+      .catch(() => {});
+  }
 
   let countdown = 15;
   setInterval(() => {
     countdown--;
     if (countdown <= 0) {
       countdown = 15;
-      if (refreshIcon) {
-        refreshIcon.style.transition = 'transform .6s';
-        refreshIcon.style.transform = 'rotate(360deg)';
-        setTimeout(() => { refreshIcon.style.transition = 'none'; refreshIcon.style.transform = 'rotate(0)'; }, 650);
-      }
+      fetchLiveRates();
     }
     if (timerText) timerText.textContent = countdown + 'с';
   }, 1000);
