@@ -14,7 +14,9 @@
       "Bash(curl -s \"https://api.rapira.net/\")",
       "Bash(curl -s \"https://api.rapira.net/auth\" -X POST -H \"Content-Type: application/json\" -d '{}')",
       "Bash(curl -s \"https://api.rapira.net/auth/token\" -X POST -H \"Content-Type: application/json\")",
-      "Bash(curl -s \"https://api.rapira.net/market/rates\" -H \"Authorization: Bearer dummy\")"
+      "Bash(curl -s \"https://api.rapira.net/market/rates\" -H \"Authorization: Bearer dummy\")",
+      "WebFetch(domain:p2p.army)",
+      "Bash(del \"d:\\\\exchanger\\\\cache_rates.json\")"
     ]
   }
 }

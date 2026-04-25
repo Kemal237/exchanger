@@ -60,11 +60,12 @@ foreach ($reservesList as $r) {
 
 $currencyMeta = [
     'USDT_TRC20' => ['icon' => 'circle-dollar-sign', 'color' => '#10B981'],
-    'USDT_BEP20' => ['icon' => 'circle-dollar-sign', 'color' => '#10B981'],
+    'USDC'       => ['icon' => 'circle-dollar-sign', 'color' => '#2775CA'],
+    'ETH'        => ['icon' => 'hexagon',            'color' => '#627EEA'],
+    'SOL'        => ['icon' => 'zap',                'color' => '#9945FF'],
     'BTC'        => ['icon' => 'bitcoin',            'color' => '#F7931A'],
-    'RUB'        => ['icon' => 'banknote',          'color' => '#22D3EE'],
-    'RUB_SBER'   => ['icon' => 'banknote',          'color' => '#22D3EE'],
-    'RUB_TINK'   => ['icon' => 'banknote',          'color' => '#22D3EE'],
+    'RUB'        => ['icon' => 'banknote',           'color' => '#A78BFA'],
+    'USD'        => ['icon' => 'dollar-sign',        'color' => '#22D3EE'],
 ];
 
 $page_title = 'Резервы — Админ-панель';
@@ -120,8 +121,12 @@ $admin_page = 'reserves.php';
           <select name="currency" required class="input-d w-full h-10 px-3 rounded-lg text-sm">
             <option value="">Выберите валюту</option>
             <option value="USDT_TRC20">USDT TRC20</option>
-            <option value="RUB">RUB</option>
+            <option value="USDC">USDC</option>
+            <option value="ETH">ETH</option>
+            <option value="SOL">SOL</option>
             <option value="BTC">BTC</option>
+            <option value="RUB">RUB</option>
+            <option value="USD">USD</option>
           </select>
         </div>
         <div class="grid grid-cols-2 gap-3">
@@ -158,8 +163,12 @@ $admin_page = 'reserves.php';
           <select name="currency" id="limit-currency" required class="input-d w-full h-10 px-3 rounded-lg text-sm">
             <option value="">Выберите валюту</option>
             <option value="USDT_TRC20">USDT TRC20</option>
-            <option value="RUB">RUB</option>
+            <option value="USDC">USDC</option>
+            <option value="ETH">ETH</option>
+            <option value="SOL">SOL</option>
             <option value="BTC">BTC</option>
+            <option value="RUB">RUB</option>
+            <option value="USD">USD</option>
           </select>
         </div>
         <div class="grid grid-cols-2 gap-3">

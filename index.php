@@ -20,15 +20,26 @@ unset($_SESSION['auto_exchange']);
 
 if (!isset($rates) || !is_array($rates)) {
     $rates = [
-        'USDT_TRC20' => ['RUB' => 95.00, 'BTC' => 0.000012],
-        'RUB'        => ['USDT_TRC20' => 0.0105, 'BTC' => 0.00000012],
-        'BTC'        => ['USDT_TRC20' => 82000, 'RUB' => 7800000],
+        'USDT_TRC20' => ['RUB' => 95.00, 'USD' => 0.975, 'BTC' => 0.0000105, 'ETH' => 0.000398, 'SOL' => 0.622, 'USDC' => 0.975],
+        'USDC'       => ['RUB' => 95.00, 'USD' => 0.975, 'BTC' => 0.0000105, 'ETH' => 0.000398, 'SOL' => 0.622, 'USDT_TRC20' => 0.975],
+        'ETH'        => ['RUB' => 238000, 'USD' => 2437, 'BTC' => 0.0256, 'USDT_TRC20' => 2437, 'USDC' => 2437, 'SOL' => 15.2],
+        'SOL'        => ['RUB' => 15600, 'USD' => 160, 'BTC' => 0.00168, 'USDT_TRC20' => 160, 'USDC' => 160, 'ETH' => 0.064],
+        'BTC'        => ['RUB' => 9000000, 'USD' => 92000, 'USDT_TRC20' => 92000, 'USDC' => 92000, 'ETH' => 38.5, 'SOL' => 580],
+        'RUB'        => ['USDT_TRC20' => 0.0102, 'USDC' => 0.0102, 'ETH' => 0.0000041, 'SOL' => 0.000063, 'BTC' => 0.00000011, 'USD' => 0.0102],
+        'USD'        => ['USDT_TRC20' => 0.975, 'USDC' => 0.975, 'ETH' => 0.000398, 'SOL' => 0.00610, 'BTC' => 0.0000105, 'RUB' => 95.00],
     ];
-    $reserves = [ 'USDT_TRC20' => 1500000, 'RUB' => 50000000, 'BTC' => 15.5 ];
+    $reserves = [
+        'USDT_TRC20' => 1500000, 'USDC' => 500000, 'ETH' => 150,
+        'SOL' => 5000, 'BTC' => 15.5, 'RUB' => 50000000, 'USD' => 500000,
+    ];
     $limits = [
-        'USDT_TRC20' => ['min' => 50, 'max' => 50000],
-        'RUB'        => ['min' => 5000, 'max' => 2000000],
+        'USDT_TRC20' => ['min' => 50,    'max' => 55000],
+        'USDC'       => ['min' => 50,    'max' => 55000],
+        'ETH'        => ['min' => 0.01,  'max' => 100],
+        'SOL'        => ['min' => 0.5,   'max' => 10000],
         'BTC'        => ['min' => 0.001, 'max' => 10],
+        'RUB'        => ['min' => 5000,  'max' => 2000000],
+        'USD'        => ['min' => 50,    'max' => 50000],
     ];
 }
 
@@ -52,18 +63,27 @@ try {
 } catch (Exception $e) { $total_orders_count = 0; }
 if ($total_orders_count < 100) $total_orders_count = 12840;
 
-$page_title = SITE_NAME . ' — Обмен USDT, BTC, RUB';
+$page_title = SITE_NAME . ' — Обмен USDT, USDC, ETH, SOL, BTC, RUB, USD';
 
 // Лейблы валют
 function currency_label($cur) {
     return str_replace('_', ' ', $cur);
 }
-function currency_digits($cur) { return $cur === 'BTC' ? 8 : 2; }
+function currency_digits($cur) {
+    if ($cur === 'BTC') return 8;
+    if ($cur === 'ETH') return 6;
+    if ($cur === 'SOL') return 4;
+    return 2;
+}
 
 $currencyConfig = [
     'USDT_TRC20' => ['symbol' => '₮', 'label' => 'USDT TRC20', 'short' => 'USDT', 'icolor' => '#10B981'],
-    'BTC'        => ['symbol' => '₿', 'label' => 'BTC',        'short' => 'BTC',  'icolor' => '#F7931A'],
-    'RUB'        => ['symbol' => '₽', 'label' => 'RUB',        'short' => 'RUB',  'icolor' => '#A78BFA'],
+    'USDC'       => ['symbol' => '$', 'label' => 'USDC',        'short' => 'USDC', 'icolor' => '#2775CA'],
+    'ETH'        => ['symbol' => 'Ξ', 'label' => 'ETH',         'short' => 'ETH',  'icolor' => '#627EEA'],
+    'SOL'        => ['symbol' => '◎', 'label' => 'SOL',         'short' => 'SOL',  'icolor' => '#9945FF'],
+    'BTC'        => ['symbol' => '₿', 'label' => 'BTC',         'short' => 'BTC',  'icolor' => '#F7931A'],
+    'RUB'        => ['symbol' => '₽', 'label' => 'RUB',         'short' => 'RUB',  'icolor' => '#A78BFA'],
+    'USD'        => ['symbol' => '$', 'label' => 'USD',         'short' => 'USD',  'icolor' => '#22D3EE'],
 ];
 ?>
 <!DOCTYPE html>
@@ -173,9 +193,7 @@ $currencyConfig = [
                 <i data-lucide="chevron-down" class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-txt-muted"></i>
               </button>
               <div id="give-drop" class="cur-drop hidden fixed z-[9999] min-w-[155px] max-w-[calc(100vw-16px)] bg-bg-card border border-line rounded-xl shadow-card py-1">
-                <?php foreach (array_keys($rates) as $cur):
-                  $c = $currencyConfig[$cur] ?? ['symbol'=>'?','label'=>$cur,'icolor'=>'#888'];
-                ?>
+                <?php foreach ($currencyConfig as $cur => $c): ?>
                 <button type="button" data-value="<?= $cur ?>" onclick="setCurrency('give','<?= $cur ?>')"
                         class="cur-opt w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-bg-soft transition text-sm <?= $cur===$give?'bg-bg-soft':'' ?>">
                   <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
@@ -219,14 +237,7 @@ $currencyConfig = [
                 <i data-lucide="chevron-down" class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-txt-muted"></i>
               </button>
               <div id="get-drop" class="cur-drop hidden fixed z-[9999] min-w-[155px] max-w-[calc(100vw-16px)] bg-bg-card border border-line rounded-xl shadow-card py-1">
-                <?php
-                $all_currencies = array_unique(array_merge(
-                    array_keys($rates),
-                    ...array_values(array_map('array_keys', $rates))
-                ));
-                foreach ($all_currencies as $cur):
-                  $c = $currencyConfig[$cur] ?? ['symbol'=>'?','label'=>$cur,'icolor'=>'#888'];
-                ?>
+                <?php foreach ($currencyConfig as $cur => $c): ?>
                 <button type="button" data-value="<?= $cur ?>" onclick="setCurrency('get','<?= $cur ?>')"
                         class="cur-opt w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-bg-soft transition text-sm <?= $cur===$get?'bg-bg-soft':'' ?>">
                   <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
@@ -276,53 +287,47 @@ $currencyConfig = [
       </a>
     </div>
 
-    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-
-      <div class="reveal spot bg-bg-card border border-line hover:border-cy-border rounded-xl p-4 sm:p-5 transition" data-d="1">
-        <div class="flex items-center justify-between mb-3 gap-2">
-          <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emr/10 border border-emr/20 flex items-center justify-center text-emr font-bold text-sm flex-shrink-0">₮</div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+      <?php
+      $reserveCards = [
+          'USDT_TRC20' => ['sym' => '₮', 'name' => 'USDT',  'sub' => 'Tether · TRC20',    'color' => '#10B981', 'dec' => 2, 'ldec' => 0],
+          'USDC'       => ['sym' => '$', 'name' => 'USDC',  'sub' => 'USD Coin',            'color' => '#2775CA', 'dec' => 2, 'ldec' => 0],
+          'ETH'        => ['sym' => 'Ξ', 'name' => 'ETH',   'sub' => 'Ethereum',            'color' => '#627EEA', 'dec' => 4, 'ldec' => 2],
+          'SOL'        => ['sym' => '◎', 'name' => 'SOL',   'sub' => 'Solana',              'color' => '#9945FF', 'dec' => 2, 'ldec' => 1],
+          'BTC'        => ['sym' => '₿', 'name' => 'BTC',   'sub' => 'Bitcoin',             'color' => '#F7931A', 'dec' => 6, 'ldec' => 3],
+          'RUB'        => ['sym' => '₽', 'name' => 'RUB',   'sub' => 'Карта / СБП',         'color' => '#A78BFA', 'dec' => 0, 'ldec' => 0],
+          'USD'        => ['sym' => '$', 'name' => 'USD',   'sub' => 'Доллар США',          'color' => '#22D3EE', 'dec' => 2, 'ldec' => 0],
+      ];
+      $di = 1;
+      foreach ($reserveCards as $cur => $card):
+          $res = $reserves[$cur] ?? 0;
+          $lmin = $limits[$cur]['min'] ?? 0;
+          $lmax = $limits[$cur]['max'] ?? 0;
+      ?>
+      <div class="reveal spot bg-bg-card border border-line hover:border-cy-border rounded-xl p-3 sm:p-5 transition" data-d="<?= $di++ ?>">
+        <div class="flex items-center justify-between mb-2 sm:mb-3 gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
+                 style="background:<?= $card['color'] ?>1A;border:1px solid <?= $card['color'] ?>33;color:<?= $card['color'] ?>">
+              <?= $card['sym'] ?>
+            </div>
             <div class="min-w-0">
-              <div class="font-semibold">USDT</div>
-              <div class="text-xs text-txt-muted">Tether · TRC20</div>
+              <div class="font-semibold text-sm"><?= $card['name'] ?></div>
+              <div class="text-[10px] text-txt-muted truncate"><?= $card['sub'] ?></div>
             </div>
           </div>
-          <span class="text-xs text-cy bg-cy-soft border border-cy-border px-2 h-6 rounded-md flex items-center whitespace-nowrap">В наличии</span>
+          <?php if ($res > 0): ?>
+            <span class="text-[10px] text-cy bg-cy-soft border border-cy-border px-1.5 h-5 rounded flex items-center whitespace-nowrap flex-shrink-0">В наличии</span>
+          <?php else: ?>
+            <span class="text-[10px] text-txt-muted bg-bg-soft border border-line px-1.5 h-5 rounded flex items-center whitespace-nowrap flex-shrink-0">Нет</span>
+          <?php endif; ?>
         </div>
-        <div class="text-lg sm:text-2xl font-bold truncate"><?= number_format($reserves['USDT_TRC20'] ?? 0, 2, '.', ' ') ?></div>
-        <div class="mt-2 text-xs text-txt-muted">Лимит <?= number_format($limits['USDT_TRC20']['min'] ?? 0, 0, '.', ' ') ?> – <?= number_format($limits['USDT_TRC20']['max'] ?? 0, 0, '.', ' ') ?></div>
-      </div>
-
-      <div class="reveal spot bg-bg-card border border-line hover:border-cy-border rounded-xl p-4 sm:p-5 transition" data-d="2">
-        <div class="flex items-center justify-between mb-3 gap-2">
-          <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#F7931A]/10 border border-[#F7931A]/20 flex items-center justify-center text-[#F7931A] font-bold text-sm flex-shrink-0">₿</div>
-            <div class="min-w-0">
-              <div class="font-semibold">BTC</div>
-              <div class="text-xs text-txt-muted">Bitcoin</div>
-            </div>
-          </div>
-          <span class="text-xs text-cy bg-cy-soft border border-cy-border px-2 h-6 rounded-md flex items-center whitespace-nowrap">В наличии</span>
+        <div class="text-base sm:text-xl font-bold truncate <?= $res <= 0 ? 'text-txt-muted' : '' ?>"><?= number_format($res, $card['dec'], '.', ' ') ?></div>
+        <div class="mt-1 text-[10px] sm:text-xs text-txt-muted truncate">
+          Лимит <?= number_format($lmin, $card['ldec'], '.', ' ') ?> – <?= number_format($lmax, $card['ldec'], '.', ' ') ?>
         </div>
-        <div class="text-lg sm:text-2xl font-bold truncate"><?= number_format($reserves['BTC'] ?? 0, 8, '.', ' ') ?></div>
-        <div class="mt-2 text-xs text-txt-muted truncate">Лимит <?= number_format($limits['BTC']['min'] ?? 0, 4, '.', ' ') ?> – <?= number_format($limits['BTC']['max'] ?? 0, 4, '.', ' ') ?></div>
       </div>
-
-      <div class="reveal spot bg-bg-card border border-line hover:border-cy-border rounded-xl p-4 sm:p-5 transition" data-d="3">
-        <div class="flex items-center justify-between mb-3 gap-2">
-          <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-vi-soft border border-vi/20 flex items-center justify-center text-vi font-bold text-sm flex-shrink-0">₽</div>
-            <div class="min-w-0">
-              <div class="font-semibold">RUB</div>
-              <div class="text-xs text-txt-muted">Карта / СБП</div>
-            </div>
-          </div>
-          <span class="text-xs text-cy bg-cy-soft border border-cy-border px-2 h-6 rounded-md flex items-center whitespace-nowrap">В наличии</span>
-        </div>
-        <div class="text-lg sm:text-2xl font-bold truncate"><?= number_format($reserves['RUB'] ?? 0, 0, '.', ' ') ?></div>
-        <div class="mt-2 text-xs text-txt-muted">Лимит <?= number_format($limits['RUB']['min'] ?? 0, 0, '.', ' ') ?> – <?= number_format($limits['RUB']['max'] ?? 0, 0, '.', ' ') ?></div>
-      </div>
-
+      <?php endforeach; ?>
     </div>
   </section>
 
@@ -431,7 +436,12 @@ $currencyConfig = [
     if (timerText) timerText.textContent = countdown + 'с';
   }, 1000);
 
-  function fmtDigits(cur) { return cur === 'BTC' ? 8 : 2; }
+  function fmtDigits(cur) {
+    if (cur === 'BTC') return 8;
+    if (cur === 'ETH') return 6;
+    if (cur === 'SOL') return 4;
+    return 2;
+  }
   function fmtNum(v, cur) {
     return Number(v).toLocaleString('ru-RU', {
       minimumFractionDigits: fmtDigits(cur),
@@ -586,8 +596,12 @@ $currencyConfig = [
   // Currency dropdown helpers
   const currencyConfig = {
     'USDT_TRC20': { symbol: '₮', label: 'USDT TRC20', short: 'USDT', icolor: '#10B981' },
-    'BTC':        { symbol: '₿', label: 'BTC',        short: 'BTC',  icolor: '#F7931A' },
-    'RUB':        { symbol: '₽', label: 'RUB',        short: 'RUB',  icolor: '#A78BFA' },
+    'USDC':       { symbol: '$', label: 'USDC',        short: 'USDC', icolor: '#2775CA' },
+    'ETH':        { symbol: 'Ξ', label: 'ETH',         short: 'ETH',  icolor: '#627EEA' },
+    'SOL':        { symbol: '◎', label: 'SOL',         short: 'SOL',  icolor: '#9945FF' },
+    'BTC':        { symbol: '₿', label: 'BTC',         short: 'BTC',  icolor: '#F7931A' },
+    'RUB':        { symbol: '₽', label: 'RUB',         short: 'RUB',  icolor: '#A78BFA' },
+    'USD':        { symbol: '$', label: 'USD',          short: 'USD',  icolor: '#22D3EE' },
   };
 
   function toggleCurrencyDrop(wrapperId) {

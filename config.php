@@ -30,47 +30,39 @@ function saveCachedRates($rates, $reserves, $limits) {
     file_put_contents(CACHE_FILE, json_encode($data, JSON_PRETTY_PRINT));
 }
 
-// === Реальные курсы с CoinGecko + наценка 2.5% ===
+// === Реальные курсы с CoinGecko (USDT, USDC, ETH, SOL, BTC vs RUB и USD) ===
 function getRealRates() {
-    $url = 'https://api.coingecko.com/api/v3/simple/price?ids=tether,bitcoin&vs_currencies=rub,usd';
-    
+    $url = 'https://api.coingecko.com/api/v3/simple/price'
+         . '?ids=tether,usd-coin,ethereum,solana,bitcoin'
+         . '&vs_currencies=rub,usd';
+
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
     curl_setopt($ch, CURLOPT_USERAGENT, 'Swap/1.0 (compatible; +https://cr873507.tw1.ru)');
-    
+
     $json = curl_exec($ch);
-    $curl_error = curl_error($ch);
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err  = curl_error($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    
-    if ($curl_error || $json === false || $http_code !== 200) {
-        error_log("[" . date('Y-m-d H:i:s') . "] cURL CoinGecko error: $curl_error | HTTP $http_code");
+
+    if ($err || $json === false || $code !== 200) {
+        error_log("[" . date('Y-m-d H:i:s') . "] CoinGecko error: $err | HTTP $code");
         return null;
     }
-    
+
     $data = json_decode($json, true) ?? [];
-    
-    if (empty($data['tether']) || empty($data['bitcoin'])) {
-        return null;
+
+    foreach (['tether', 'usd-coin', 'ethereum', 'solana', 'bitcoin'] as $id) {
+        if (empty($data[$id]['rub']) || empty($data[$id]['usd'])) {
+            error_log("[" . date('Y-m-d H:i:s') . "] CoinGecko missing: $id");
+            return null;
+        }
     }
 
-    $tether  = $data['tether'];
-    $bitcoin = $data['bitcoin'];
-
-    $usd_rub = $tether['rub'] ?? null;
-
-    if ($usd_rub === null) {
-        return null;
-    }
-
-    return [
-        'tether'  => $tether,
-        'bitcoin' => $bitcoin,
-        'usd'     => ['rub' => $usd_rub],
-    ];
+    return $data;
 }
 
 // Загрузка курсов
@@ -80,60 +72,101 @@ if ($cached) {
     $reserves = $cached['reserves'];
     $limits   = $cached['limits'];
 } else {
-    $real_rates = getRealRates();
+    $real = getRealRates();
 
-    if ($real_rates) {
-        $market_usdt_rub = $real_rates['tether']['rub']   ?? 90.00;
-        $market_usdt_usd = $real_rates['tether']['usd']   ?? 1.00;
-        $market_btc_usd  = $real_rates['bitcoin']['usd']  ?? 80000.00;
-        $market_usd_rub  = $real_rates['usd']['rub']      ?? 90.00;
+    if ($real) {
+        $usdt_rub = $real['tether']['rub'];
+        $usdt_usd = $real['tether']['usd'];
+        $usdc_rub = $real['usd-coin']['rub'];
+        $usdc_usd = $real['usd-coin']['usd'];
+        $eth_rub  = $real['ethereum']['rub'];
+        $eth_usd  = $real['ethereum']['usd'];
+        $sol_rub  = $real['solana']['rub'];
+        $sol_usd  = $real['solana']['usd'];
+        $btc_rub  = $real['bitcoin']['rub'];
+        $btc_usd  = $real['bitcoin']['usd'];
+        $usd_rub  = $usdt_rub; // USDT ≈ USD
 
-        $markup_sell = 1.025;
-        $markup_buy  = 0.975;
+        $b = 0.975; // наценка покупки (пользователь отдаёт крипту — мы платим меньше)
+        $s = 1.025; // наценка продажи (пользователь получает крипту — он платит больше)
 
         $rates = [
             'USDT_TRC20' => [
-                'RUB' => round($market_usdt_rub * $markup_buy, 2),
-                'BTC' => $market_btc_usd > 0 ? round(1 / $market_btc_usd * $markup_buy, 8) : 0.0000122,
+                'RUB'  => round($usdt_rub * $b, 2),
+                'USD'  => round($usdt_usd * $b, 4),
+                'USDC' => $usdc_usd > 0 ? round($usdt_usd / ($usdc_usd * $s), 4) : 0,
+                'ETH'  => $eth_usd  > 0 ? round($usdt_usd / ($eth_usd  * $s), 6) : 0,
+                'SOL'  => $sol_usd  > 0 ? round($usdt_usd / ($sol_usd  * $s), 4) : 0,
+                'BTC'  => $btc_usd  > 0 ? round($usdt_usd / ($btc_usd  * $s), 8) : 0,
             ],
-            'RUB' => [
-                'USDT_TRC20' => $market_usdt_rub > 0 ? round(1 / ($market_usdt_rub * $markup_sell), 6) : 0.01083,
-                'BTC'        => ($market_btc_usd && $market_usd_rub) ? round(1 / ($market_btc_usd * $market_usd_rub * $markup_sell), 8) : 0.000000133,
+            'USDC' => [
+                'RUB'       => round($usdc_rub * $b, 2),
+                'USD'       => round($usdc_usd * $b, 4),
+                'USDT_TRC20'=> $usdt_usd > 0 ? round($usdc_usd / ($usdt_usd * $s), 4) : 0,
+                'ETH'       => $eth_usd  > 0 ? round($usdc_usd / ($eth_usd  * $s), 6) : 0,
+                'SOL'       => $sol_usd  > 0 ? round($usdc_usd / ($sol_usd  * $s), 4) : 0,
+                'BTC'       => $btc_usd  > 0 ? round($usdc_usd / ($btc_usd  * $s), 8) : 0,
+            ],
+            'ETH' => [
+                'RUB'       => round($eth_rub * $b, 0),
+                'USD'       => round($eth_usd * $b, 2),
+                'USDT_TRC20'=> round($eth_usd * $b, 2),
+                'USDC'      => round($eth_usd * $b, 2),
+                'SOL'       => $sol_usd > 0 ? round($eth_usd / ($sol_usd * $s), 2) : 0,
+                'BTC'       => $btc_usd > 0 ? round($eth_usd / ($btc_usd * $s), 6) : 0,
+            ],
+            'SOL' => [
+                'RUB'       => round($sol_rub * $b, 2),
+                'USD'       => round($sol_usd * $b, 2),
+                'USDT_TRC20'=> round($sol_usd * $b, 2),
+                'USDC'      => round($sol_usd * $b, 2),
+                'ETH'       => $eth_usd > 0 ? round($sol_usd / ($eth_usd * $s), 6) : 0,
+                'BTC'       => $btc_usd > 0 ? round($sol_usd / ($btc_usd * $s), 8) : 0,
             ],
             'BTC' => [
-                'USDT_TRC20' => round($market_btc_usd * $markup_buy, 0),
-                'RUB'        => round($market_btc_usd * $market_usd_rub * $markup_buy, 0),
+                'RUB'       => round($btc_rub * $b, 0),
+                'USD'       => round($btc_usd * $b, 2),
+                'USDT_TRC20'=> round($btc_usd * $b, 2),
+                'USDC'      => round($btc_usd * $b, 2),
+                'ETH'       => $eth_usd > 0 ? round($btc_usd / ($eth_usd * $s), 4) : 0,
+                'SOL'       => $sol_usd > 0 ? round($btc_usd / ($sol_usd * $s), 2) : 0,
+            ],
+            'RUB' => [
+                'USDT_TRC20'=> $usdt_rub > 0 ? round(1 / ($usdt_rub * $s), 6) : 0,
+                'USDC'      => $usdc_rub > 0 ? round(1 / ($usdc_rub * $s), 6) : 0,
+                'ETH'       => $eth_rub  > 0 ? round(1 / ($eth_rub  * $s), 8) : 0,
+                'SOL'       => $sol_rub  > 0 ? round(1 / ($sol_rub  * $s), 6) : 0,
+                'BTC'       => $btc_rub  > 0 ? round(1 / ($btc_rub  * $s), 10): 0,
+                'USD'       => $usd_rub  > 0 ? round(1 / ($usd_rub  * $s), 4) : 0,
+            ],
+            'USD' => [
+                'USDT_TRC20'=> $usdt_usd > 0 ? round(1 / ($usdt_usd * $s), 4) : 0,
+                'USDC'      => $usdc_usd > 0 ? round(1 / ($usdc_usd * $s), 4) : 0,
+                'ETH'       => $eth_usd  > 0 ? round(1 / ($eth_usd  * $s), 8) : 0,
+                'SOL'       => $sol_usd  > 0 ? round(1 / ($sol_usd  * $s), 6) : 0,
+                'BTC'       => $btc_usd  > 0 ? round(1 / ($btc_usd  * $s), 8) : 0,
+                'RUB'       => round($usd_rub * $b, 2),
             ],
         ];
 
-        $reverse_rates = [];
-        foreach ($rates as $from => $toArray) {
-            foreach ($toArray as $to => $value) {
-                if ($value > 0) {
-                    if (!isset($reverse_rates[$to])) $reverse_rates[$to] = [];
-                    $reverse_rates[$to][$from] = 1 / $value;
-                }
-            }
-        }
-        foreach ($reverse_rates as $from => $toArray) {
-            if (!isset($rates[$from])) $rates[$from] = [];
-            foreach ($toArray as $to => $value) {
-                if (!isset($rates[$from][$to]) || $rates[$from][$to] <= 0) {
-                    $rates[$from][$to] = $value;
-                }
-            }
-        }
-
         $limits = [
             'USDT_TRC20' => ['min' => 50,    'max' => 55000],
-            'RUB'        => ['min' => 5000,  'max' => 2000000],
+            'USDC'       => ['min' => 50,    'max' => 55000],
+            'ETH'        => ['min' => 0.01,  'max' => 100],
+            'SOL'        => ['min' => 0.5,   'max' => 10000],
             'BTC'        => ['min' => 0.001, 'max' => 10],
+            'RUB'        => ['min' => 5000,  'max' => 2000000],
+            'USD'        => ['min' => 50,    'max' => 50000],
         ];
 
         $reserves = [
             'USDT_TRC20' => 1245678.45,
-            'RUB'        => 45892000,
+            'USDC'       => 500000.00,
+            'ETH'        => 150.00,
+            'SOL'        => 5000.00,
             'BTC'        => 12.78451637,
+            'RUB'        => 45892000,
+            'USD'        => 500000.00,
         ];
 
         saveCachedRates($rates, $reserves, $limits);

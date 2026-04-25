@@ -2,15 +2,16 @@
 require_once 'config.php';
 require_once 'auth.php';
 
-$allowed = ['USDT_TRC20', 'RUB', 'BTC'];
+$allowed = ['USDT_TRC20', 'USDC', 'ETH', 'SOL', 'BTC', 'RUB', 'USD'];
 
 $currencyMeta = [
     'USDT_TRC20' => ['icon' => 'circle-dollar-sign', 'color' => '#10B981', 'name' => 'USDT TRC20', 'dec' => 2],
-    'BTC'        => ['icon' => 'bitcoin',            'color' => '#F7931A', 'name' => 'BTC',         'dec' => 8],
-    'RUB'        => ['icon' => 'banknote',          'color' => '#22D3EE', 'name' => 'RUB',         'dec' => 2],
-    'RUB_SBER'   => ['icon' => 'banknote',          'color' => '#22D3EE', 'name' => 'RUB Сбер',    'dec' => 2],
-    'RUB_TINK'   => ['icon' => 'banknote',          'color' => '#22D3EE', 'name' => 'RUB Тинь.',   'dec' => 2],
-    'USDT_BEP20' => ['icon' => 'circle-dollar-sign', 'color' => '#10B981', 'name' => 'USDT BEP20', 'dec' => 2],
+    'USDC'       => ['icon' => 'circle-dollar-sign', 'color' => '#2775CA', 'name' => 'USDC',        'dec' => 2],
+    'ETH'        => ['icon' => 'hexagon',            'color' => '#627EEA', 'name' => 'ETH',          'dec' => 6],
+    'SOL'        => ['icon' => 'zap',                'color' => '#9945FF', 'name' => 'SOL',          'dec' => 4],
+    'BTC'        => ['icon' => 'bitcoin',            'color' => '#F7931A', 'name' => 'BTC',          'dec' => 8],
+    'RUB'        => ['icon' => 'banknote',           'color' => '#A78BFA', 'name' => 'RUB',          'dec' => 2],
+    'USD'        => ['icon' => 'dollar-sign',        'color' => '#22D3EE', 'name' => 'USD',          'dec' => 2],
 ];
 
 $page_title = 'Резервы и курсы — ' . SITE_NAME;
@@ -54,30 +55,42 @@ $current_page = 'rates.php';
   </section>
 
   <!-- Reserve cards -->
-  <section class="grid sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-8 sm:mb-10">
+  <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-10">
     <?php foreach ($allowed as $idx => $cur):
       $meta = $currencyMeta[$cur];
       $reserve = $reserves[$cur] ?? 0;
+      $lmin = $limits[$cur]['min'] ?? 0;
+      $lmax = $limits[$cur]['max'] ?? 0;
     ?>
-      <div class="gborder spot rounded-xl bg-bg-card p-5 reveal" data-d="<?= $idx + 1 ?>">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: <?= $meta['color'] ?>1A; border: 1px solid <?= $meta['color'] ?>33;">
-              <i data-lucide="<?= $meta['icon'] ?>" class="w-5 h-5" style="color: <?= $meta['color'] ?>"></i>
+      <div class="gborder spot rounded-xl bg-bg-card p-4 sm:p-5 reveal" data-d="<?= $idx + 1 ?>">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background: <?= $meta['color'] ?>1A; border: 1px solid <?= $meta['color'] ?>33;">
+              <i data-lucide="<?= $meta['icon'] ?>" class="w-4 h-4 sm:w-5 sm:h-5" style="color: <?= $meta['color'] ?>"></i>
             </div>
-            <div>
-              <div class="font-semibold text-sm"><?= htmlspecialchars($meta['name']) ?></div>
-              <div class="text-xs text-txt-muted">Резерв</div>
+            <div class="min-w-0">
+              <div class="font-semibold text-sm truncate"><?= htmlspecialchars($meta['name']) ?></div>
+              <div class="text-[10px] text-txt-muted">Резерв</div>
             </div>
           </div>
-          <span class="st st-ok">
-            <i data-lucide="check" class="w-3 h-3"></i>
-            В наличии
-          </span>
+          <?php if ($reserve > 0): ?>
+            <span class="st st-ok flex-shrink-0">
+              <i data-lucide="check" class="w-3 h-3"></i>
+              <span class="hidden sm:inline">В наличии</span>
+            </span>
+          <?php else: ?>
+            <span class="st st-cancel flex-shrink-0">
+              <i data-lucide="x" class="w-3 h-3"></i>
+              <span class="hidden sm:inline">Нет</span>
+            </span>
+          <?php endif; ?>
         </div>
-        <div class="text-2xl font-bold tracking-tight mb-1">
+        <div class="text-lg sm:text-2xl font-bold tracking-tight mb-1 truncate">
           <?= number_format($reserve, $meta['dec'], '.', ' ') ?>
-          <span class="text-sm text-txt-muted font-normal ml-1"><?= htmlspecialchars($meta['name']) ?></span>
+        </div>
+        <div class="text-[10px] sm:text-xs text-txt-muted truncate">
+          Лимит <?= number_format($lmin, in_array($cur, ['BTC','ETH','SOL']) ? 3 : 0, '.', ' ') ?>
+          – <?= number_format($lmax, in_array($cur, ['BTC','ETH','SOL']) ? 3 : 0, '.', ' ') ?>
         </div>
       </div>
     <?php endforeach; ?>
@@ -137,7 +150,14 @@ $current_page = 'rates.php';
                   </div>
                 </td>
                 <td class="px-4 py-4 font-mono text-cy whitespace-nowrap">
-                  <?= number_format($rate, ($to === 'BTC' ? 8 : 4), '.', ' ') ?>
+                  <?php
+              $dec = 4;
+              if ($to === 'BTC') $dec = 8;
+              elseif ($to === 'ETH') $dec = 6;
+              elseif ($to === 'SOL') $dec = 4;
+              elseif (in_array($to, ['RUB', 'USD', 'USDT_TRC20', 'USDC'])) $dec = 2;
+              echo number_format($rate, $dec, '.', ' ');
+              ?>
                 </td>
                 <td class="px-4 py-4 text-right font-medium text-emr whitespace-nowrap">
                   <?= number_format($reserve, $toMeta['dec'], '.', ' ') ?>

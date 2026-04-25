@@ -42,10 +42,12 @@ if ($rate <= 0 && isset($rates[$get_currency][$give_currency]) && $rates[$get_cu
 
 $currencyIcons = [
     'USDT_TRC20' => ['icon' => 'circle-dollar-sign', 'color' => '#10B981'],
-    'USDT_BEP20' => ['icon' => 'circle-dollar-sign', 'color' => '#10B981'],
+    'USDC'       => ['icon' => 'circle-dollar-sign', 'color' => '#2775CA'],
+    'ETH'        => ['icon' => 'hexagon',            'color' => '#627EEA'],
+    'SOL'        => ['icon' => 'zap',                'color' => '#9945FF'],
     'BTC'        => ['icon' => 'bitcoin',            'color' => '#F7931A'],
-    'RUB_SBER'   => ['icon' => 'banknote',          'color' => '#22D3EE'],
-    'RUB_TINK'   => ['icon' => 'banknote',          'color' => '#22D3EE'],
+    'RUB'        => ['icon' => 'banknote',           'color' => '#A78BFA'],
+    'USD'        => ['icon' => 'dollar-sign',        'color' => '#22D3EE'],
 ];
 $giveIcon = $currencyIcons[$give_currency] ?? ['icon' => 'coins', 'color' => '#A1A1AA'];
 $getIcon  = $currencyIcons[$get_currency]  ?? ['icon' => 'coins', 'color' => '#A1A1AA'];
@@ -97,7 +99,13 @@ $page_title = 'Подтвердите заявку — ' . SITE_NAME;
           <i data-lucide="<?= $giveIcon['icon'] ?>" class="w-5 h-5 sm:w-7 sm:h-7" style="color: <?= $giveIcon['color'] ?>"></i>
         </div>
         <div class="text-lg sm:text-3xl md:text-4xl font-bold tracking-tight mb-1 break-all">
-          <?= number_format($amount_give, $give_currency === 'BTC' ? 8 : 2, '.', ' ') ?>
+          <?php
+          $give_dec = 2;
+          if ($give_currency === 'BTC') $give_dec = 8;
+          elseif ($give_currency === 'ETH') $give_dec = 6;
+          elseif ($give_currency === 'SOL') $give_dec = 4;
+          echo number_format($amount_give, $give_dec, '.', ' ');
+          ?>
         </div>
         <div class="text-[11px] sm:text-sm text-txt-secondary"><?= htmlspecialchars(str_replace('_', ' ', $give_currency)) ?></div>
       </div>
@@ -119,7 +127,13 @@ $page_title = 'Подтвердите заявку — ' . SITE_NAME;
           <i data-lucide="<?= $getIcon['icon'] ?>" class="w-5 h-5 sm:w-7 sm:h-7" style="color: <?= $getIcon['color'] ?>"></i>
         </div>
         <div class="text-lg sm:text-3xl md:text-4xl font-bold tracking-tight mb-1 text-emr break-all">
-          <?= number_format($amount_get, $get_currency === 'BTC' ? 8 : 2, '.', ' ') ?>
+          <?php
+          $get_dec = 2;
+          if ($get_currency === 'BTC') $get_dec = 8;
+          elseif ($get_currency === 'ETH') $get_dec = 6;
+          elseif ($get_currency === 'SOL') $get_dec = 4;
+          echo number_format($amount_get, $get_dec, '.', ' ');
+          ?>
         </div>
         <div class="text-[11px] sm:text-sm text-txt-secondary"><?= htmlspecialchars(str_replace('_', ' ', $get_currency)) ?></div>
       </div>
