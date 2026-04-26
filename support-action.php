@@ -33,11 +33,11 @@ if ($action === 'create') {
     $pdo->prepare("INSERT INTO support_messages (ticket_id, sender, message) VALUES (?, 'user', ?)")
         ->execute([$ticket_id, $message]);
 
-    $tgText = "<b>Новый тикет #{$ticket_id}</b>\n"
-            . "Пользователь: <b>" . htmlspecialchars($u['username']) . "</b> (ID: {$user_id})\n"
-            . "Email: " . htmlspecialchars($u['email']) . "\n"
-            . ($u['telegram'] ? "Telegram: " . htmlspecialchars($u['telegram']) . "\n" : "")
-            . "Тема: <b>" . htmlspecialchars($subject) . "</b>\n\n"
+    $tgText = "🎫 <b>Новый тикет #{$ticket_id}</b>\n"
+            . "👤 Пользователь: <b>" . htmlspecialchars($u['username']) . "</b> (ID: {$user_id})\n"
+            . "📧 Email: " . htmlspecialchars($u['email']) . "\n"
+            . ($u['telegram'] ? "💬 Telegram: " . htmlspecialchars($u['telegram']) . "\n" : "")
+            . "📌 Тема: <b>" . htmlspecialchars($subject) . "</b>\n\n"
             . htmlspecialchars($message) . "\n\n"
             . "<i>Ответить: /reply {$ticket_id} текст</i>";
 
@@ -82,8 +82,14 @@ if ($action === 'reply') {
     $uName->execute([$user_id]);
     $name = $uName->fetchColumn();
 
-    $tgText = "<b>Ответ пользователя — тикет #{$ticket_id}</b>\n"
-            . "Пользователь: " . htmlspecialchars($name) . "\n\n"
+    // Получаем тему тикета
+    $tSubject = $pdo->prepare("SELECT subject FROM support_tickets WHERE id = ?");
+    $tSubject->execute([$ticket_id]);
+    $ticketSubject = $tSubject->fetchColumn() ?: '';
+
+    $tgText = "↩️ <b>Ответ пользователя — тикет #{$ticket_id}</b>\n"
+            . "📌 Тема: " . htmlspecialchars($ticketSubject) . "\n"
+            . "👤 Пользователь: " . htmlspecialchars($name) . "\n\n"
             . htmlspecialchars($message);
 
     sendTelegramMessage($tgText, $ticket['tg_message_id'] ?: null);

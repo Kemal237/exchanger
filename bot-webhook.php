@@ -1,22 +1,32 @@
 <?php
-// bot-webhook.php — получение ответов администратора из Telegram
-// Зарегистрируйте webhook: https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://cr873507.tw1.ru/bot-webhook.php?token=<TOKEN>
+// Сразу отвечаем 200 Telegram'у чтобы не было повторных запросов
+http_response_code(200);
 
-require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/db.php';
+// Логируем для отладки
+$logFile = __DIR__ . '/webhook.log';
+$raw = file_get_contents('php://input');
+file_put_contents($logFile, date('[Y-m-d H:i:s]') . " RAW: " . substr($raw, 0, 500) . "\n", FILE_APPEND);
 
-// Защита: токен в URL должен совпадать с токеном бота
-$urlToken = $_GET['token'] ?? '';
-if (!TG_BOT_TOKEN || $urlToken !== TG_BOT_TOKEN) {
-    http_response_code(403);
+try {
+    require_once __DIR__ . '/config.php';
+    require_once __DIR__ . '/db.php';
+} catch (Throwable $e) {
+    file_put_contents($logFile, date('[Y-m-d H:i:s]') . " INCLUDE ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
     exit;
 }
 
-$input  = file_get_contents('php://input');
-$update = json_decode($input, true);
+file_put_contents($logFile, date('[Y-m-d H:i:s]') . " TOKEN_GET=" . ($_GET['token'] ?? 'none') . " TOKEN_CONST=" . TG_BOT_TOKEN . "\n", FILE_APPEND);
 
+// Проверка токена (более мягкая)
+$urlToken = $_GET['token'] ?? '';
+if (TG_BOT_TOKEN && trim($urlToken) !== trim(TG_BOT_TOKEN)) {
+    file_put_contents($logFile, date('[Y-m-d H:i:s]') . " TOKEN MISMATCH\n", FILE_APPEND);
+    exit;
+}
+
+$update = json_decode($raw, true);
 if (!$update || !isset($update['message'])) {
-    http_response_code(200);
+    file_put_contents($logFile, date('[Y-m-d H:i:s]') . " NO MESSAGE\n", FILE_APPEND);
     exit;
 }
 
@@ -24,29 +34,23 @@ $message = $update['message'];
 $text    = trim($message['text'] ?? '');
 $chatId  = (int)($message['chat']['id'] ?? 0);
 
-if (!$chatId) {
-    http_response_code(200);
-    exit;
-}
+file_put_contents($logFile, date('[Y-m-d H:i:s]') . " MSG from={$chatId} text=" . substr($text, 0, 100) . "\n", FILE_APPEND);
 
-// /start или /help — инструкция
+if (!$chatId) exit;
+
+// /start или /help
 if (in_array($text, ['/start', '/help'])) {
     sendTgDirect($chatId,
-        "<b>Бот поддержки " . SITE_NAME . "</b>\n\n"
-      . "<b>Как ответить на тикет:</b>\n\n"
-      . "Способ 1 — команда:\n"
-      . "<code>/reply 5 Ваш ответ здесь</code>\n"
-      . "(где 5 — номер тикета)\n\n"
-      . "Способ 2 — нажмите Reply на сообщение тикета в Telegram\n\n"
-      . "<b>Другие команды:</b>\n"
+        "👋 <b>Бот поддержки " . SITE_NAME . "</b>\n\n"
+      . "<b>Команды:</b>\n"
       . "/list — открытые тикеты\n"
-      . "/ticket 5 — посмотреть тикет #5"
+      . "/ticket 5 — посмотреть тикет #5\n"
+      . "<code>/reply 5 текст</code> — ответить на тикет #5"
     );
-    http_response_code(200);
     exit;
 }
 
-// /list — список открытых тикетов
+// /list
 if ($text === '/list') {
     try {
         $stmt = $pdo->query("
@@ -67,19 +71,18 @@ if ($text === '/list') {
             foreach ($rows as $r) {
                 $status = $r['status'] === 'open' ? '[Открыт]' : '[Отвечен]';
                 $out .= "{$status} <b>#{$r['id']}</b> — " . htmlspecialchars($r['subject']) . "\n"
-                      . "   Пользователь: {$r['username']} | {$r['msg_count']} сообщ.\n"
-                      . "   Ответ: <code>/reply {$r['id']} текст</code>\n\n";
+                      . "👤 {$r['username']} · {$r['msg_count']} сообщ.\n"
+                      . "<code>/reply {$r['id']} текст</code>\n\n";
             }
             sendTgDirect($chatId, $out);
         }
-    } catch (Exception $e) {
-        sendTgDirect($chatId, "Ошибка базы данных.");
+    } catch (Throwable $e) {
+        sendTgDirect($chatId, "Ошибка БД: " . $e->getMessage());
     }
-    http_response_code(200);
     exit;
 }
 
-// /ticket <id> — просмотр тикета
+// /ticket <id>
 if (preg_match('/^\/ticket\s+(\d+)$/u', $text, $m)) {
     $ticketId = (int)$m[1];
     try {
@@ -98,30 +101,27 @@ if (preg_match('/^\/ticket\s+(\d+)$/u', $text, $m)) {
             $msgList = $msgs->fetchAll(PDO::FETCH_ASSOC);
 
             $out = "<b>Тикет #{$ticketId}</b> — " . htmlspecialchars($ticket['subject']) . "\n"
-                 . "Пользователь: " . htmlspecialchars($ticket['username']) . "\n"
+                 . "👤 " . htmlspecialchars($ticket['username']) . "\n"
                  . "Статус: {$ticket['status']}\n\n";
-
             foreach ($msgList as $msg) {
-                $sender = $msg['sender'] === 'admin' ? '[Поддержка]' : '[Пользователь]';
-                $out .= "<b>{$sender}</b> " . htmlspecialchars(mb_substr($msg['message'], 0, 200)) . "\n";
+                $s = $msg['sender'] === 'admin' ? '[Поддержка]' : '[Пользователь]';
+                $out .= "<b>{$s}</b> " . htmlspecialchars(mb_substr($msg['message'], 0, 200)) . "\n";
             }
-            $out .= "\nОтветить: <code>/reply {$ticketId} текст</code>";
+            $out .= "\n<code>/reply {$ticketId} текст</code>";
             sendTgDirect($chatId, $out);
         }
-    } catch (Exception $e) {
-        sendTgDirect($chatId, "Ошибка базы данных.");
+    } catch (Throwable $e) {
+        sendTgDirect($chatId, "Ошибка БД: " . $e->getMessage());
     }
-    http_response_code(200);
     exit;
 }
 
-// /reply <id> <текст> — ответить на тикет
+// /reply <id> <текст>
 if (preg_match('/^\/reply\s+(\d+)\s+(.+)$/su', $text, $m)) {
     $ticketId = (int)$m[1];
     $reply    = trim($m[2]);
-
     try {
-        $stmt = $pdo->prepare("SELECT id, tg_message_id FROM support_tickets WHERE id = ? AND status != 'closed'");
+        $stmt = $pdo->prepare("SELECT id FROM support_tickets WHERE id = ? AND status != 'closed'");
         $stmt->execute([$ticketId]);
         $ticket = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -130,23 +130,19 @@ if (preg_match('/^\/reply\s+(\d+)\s+(.+)$/su', $text, $m)) {
         } else {
             $pdo->prepare("INSERT INTO support_messages (ticket_id, sender, message) VALUES (?, 'admin', ?)")
                 ->execute([$ticketId, $reply]);
-
             $pdo->prepare("UPDATE support_tickets SET status = 'answered', updated_at = NOW() WHERE id = ?")
                 ->execute([$ticketId]);
-
-            sendTgDirect($chatId, "Ответ на тикет <b>#{$ticketId}</b> сохранён.");
+            sendTgDirect($chatId, "✅ Ответ на тикет <b>#{$ticketId}</b> сохранён.");
         }
-    } catch (Exception $e) {
-        sendTgDirect($chatId, "Ошибка базы данных: " . $e->getMessage());
+    } catch (Throwable $e) {
+        sendTgDirect($chatId, "Ошибка БД: " . $e->getMessage());
     }
-    http_response_code(200);
     exit;
 }
 
-// Reply на сообщение бота в Telegram (по tg_message_id)
+// Reply на сообщение
 if (isset($message['reply_to_message']) && !empty($text)) {
     $repliedToMsgId = (int)$message['reply_to_message']['message_id'];
-
     try {
         $stmt = $pdo->prepare("SELECT id FROM support_tickets WHERE tg_message_id = ? AND status != 'closed'");
         $stmt->execute([$repliedToMsgId]);
@@ -154,43 +150,49 @@ if (isset($message['reply_to_message']) && !empty($text)) {
 
         if ($ticket) {
             $ticketId = (int)$ticket['id'];
-
             $pdo->prepare("INSERT INTO support_messages (ticket_id, sender, message) VALUES (?, 'admin', ?)")
                 ->execute([$ticketId, $text]);
-
             $pdo->prepare("UPDATE support_tickets SET status = 'answered', updated_at = NOW() WHERE id = ?")
                 ->execute([$ticketId]);
-
-            sendTgDirect($chatId, "Ответ на тикет <b>#{$ticketId}</b> сохранён.");
+            sendTgDirect($chatId, "✅ Ответ на тикет <b>#{$ticketId}</b> сохранён.");
         } else {
-            sendTgDirect($chatId, "Тикет не найден. Используйте:\n<code>/reply 5 Текст ответа</code>\nили /list для списка тикетов.");
+            sendTgDirect($chatId, "Тикет не найден. Используйте: <code>/reply 5 текст</code>");
         }
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         sendTgDirect($chatId, "Ошибка: " . $e->getMessage());
     }
-    http_response_code(200);
     exit;
 }
 
-// Неизвестный текст
-if ($text && $text[0] !== '/') {
-    sendTgDirect($chatId, "Для работы с тикетами:\n/list — список тикетов\n<code>/reply 5 Текст</code> — ответ на тикет #5\n/help — справка");
+// Неизвестное сообщение
+if ($text) {
+    sendTgDirect($chatId, "Команды:\n/list — тикеты\n<code>/reply 5 текст</code> — ответ\n/help — справка");
 }
 
-http_response_code(200);
 exit;
 
 function sendTgDirect(int $chatId, string $text): void {
     $token = TG_BOT_TOKEN;
-    if (!$token) return;
+    if (!$token || !$chatId) return;
+
+    global $logFile;
+    file_put_contents($logFile, date('[Y-m-d H:i:s]') . " SEND to={$chatId} text=" . substr($text, 0, 100) . "\n", FILE_APPEND);
+
     $ch = curl_init("https://api.telegram.org/bot{$token}/sendMessage");
     curl_setopt_array($ch, [
         CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => http_build_query(['chat_id' => $chatId, 'text' => $text, 'parse_mode' => 'HTML']),
+        CURLOPT_POSTFIELDS     => http_build_query([
+            'chat_id'    => $chatId,
+            'text'       => $text,
+            'parse_mode' => 'HTML',
+        ]),
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 5,
+        CURLOPT_TIMEOUT        => 8,
         CURLOPT_SSL_VERIFYPEER => false,
     ]);
-    curl_exec($ch);
+    $result = curl_exec($ch);
+    $err    = curl_error($ch);
     curl_close($ch);
+
+    file_put_contents($logFile, date('[Y-m-d H:i:s]') . " SEND RESULT: " . substr($result ?: $err, 0, 200) . "\n", FILE_APPEND);
 }

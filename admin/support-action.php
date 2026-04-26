@@ -40,8 +40,18 @@ if ($action === 'reply') {
     $pdo->prepare("UPDATE support_tickets SET status = 'answered', updated_at = NOW() WHERE id = ?")
         ->execute([$ticket_id]);
 
+    // Имя администратора из сессии
+    $adminName = 'Администратор';
+    if (!empty($_SESSION['user_id'])) {
+        $aStmt = $pdo->prepare("SELECT username FROM users WHERE id = ?");
+        $aStmt->execute([$_SESSION['user_id']]);
+        $adminName = $aStmt->fetchColumn() ?: 'Администратор';
+    }
+
     // Уведомление в Telegram (ответ в цепочку тикета)
-    $tgText = "<b>Ответ поддержки на тикет #{$ticket_id}</b>\n\n"
+    $tgText = "🛡 <b>Ответ поддержки на тикет #{$ticket_id}</b>\n"
+            . "📌 Тема: " . htmlspecialchars($ticket['subject']) . "\n"
+            . "👤 Администратор: <b>" . htmlspecialchars($adminName) . "</b>\n\n"
             . htmlspecialchars($message);
     sendTelegramMessage($tgText, $ticket['tg_message_id'] ?: null);
 
