@@ -51,17 +51,32 @@ function pollOnce(): void {
 }
 
 // ===================================================================
+function isAllowed(int $chatId): bool {
+    $raw     = defined('TG_ALLOWED_CHATS') ? TG_ALLOWED_CHATS : '';
+    $allowed = array_filter(array_map('trim', explode(',', $raw)));
+    return empty($allowed) || in_array((string)$chatId, $allowed);
+}
+
+// ===================================================================
 function handleMessage(int $chatId, string $text, array $message): void {
     global $pdo;
+
+    // Проверка доступа
+    if (!isAllowed($chatId)) {
+        tgSend($chatId, "Доступ запрещён.\n\nВаш chat_id: <code>{$chatId}</code>\nПередайте его администратору для получения доступа.");
+        return;
+    }
 
     // /start, /help
     if (in_array($text, ['/start', '/help'])) {
         tgSend($chatId,
             "👋 <b>Бот поддержки " . SITE_NAME . "</b>\n\n"
-          . "<b>Команды:</b>\n"
+          . "<b>Тикеты:</b>\n"
           . "/list — открытые тикеты\n"
           . "/ticket 5 — посмотреть тикет #5\n"
-          . "<code>/reply 5 текст</code> — ответить на тикет #5"
+          . "<code>/reply 5 текст</code> — ответить\n"
+          . "<code>/close 5</code> — закрыть тикет\n"
+          . "<code>/open 5</code> — открыть заново"
         );
         return;
     }
@@ -151,6 +166,48 @@ function handleMessage(int $chatId, string $text, array $message): void {
             }
         } catch (Throwable $e) {
             tgSend($chatId, "Ошибка БД: " . $e->getMessage());
+        }
+        return;
+    }
+
+    // /close <id>
+    if (preg_match('/^\/close\s+(\d+)$/u', $text, $m)) {
+        $tid = (int)$m[1];
+        try {
+            $stmt = $pdo->prepare("SELECT id, subject FROM support_tickets WHERE id = ? AND status != 'closed'");
+            $stmt->execute([$tid]);
+            $ticket = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$ticket) {
+                tgSend($chatId, "Тикет #<b>{$tid}</b> не найден или уже закрыт.");
+            } else {
+                $pdo->prepare("UPDATE support_tickets SET status = 'closed', updated_at = NOW() WHERE id = ?")
+                    ->execute([$tid]);
+                tgSend($chatId, "🔒 Тикет <b>#{$tid}</b> закрыт.\n📌 " . htmlspecialchars($ticket['subject']));
+            }
+        } catch (Throwable $e) {
+            tgSend($chatId, "Ошибка: " . $e->getMessage());
+        }
+        return;
+    }
+
+    // /open <id>
+    if (preg_match('/^\/open\s+(\d+)$/u', $text, $m)) {
+        $tid = (int)$m[1];
+        try {
+            $stmt = $pdo->prepare("SELECT id, subject FROM support_tickets WHERE id = ?");
+            $stmt->execute([$tid]);
+            $ticket = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$ticket) {
+                tgSend($chatId, "Тикет #<b>{$tid}</b> не найден.");
+            } else {
+                $pdo->prepare("UPDATE support_tickets SET status = 'open', updated_at = NOW() WHERE id = ?")
+                    ->execute([$tid]);
+                tgSend($chatId, "🔓 Тикет <b>#{$tid}</b> открыт заново.\n📌 " . htmlspecialchars($ticket['subject']));
+            }
+        } catch (Throwable $e) {
+            tgSend($chatId, "Ошибка: " . $e->getMessage());
         }
         return;
     }

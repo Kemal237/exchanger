@@ -5,8 +5,12 @@ define('SITE_URL', 'https://cr873507.tw1.ru');
 define('ADMIN_EMAIL', 'admin@your-domain.com');
 
 // === Telegram Bot (поддержка) ===
-define('TG_BOT_TOKEN',    '8734870076:AAEjnn-fpOPBXbjnaCMcOOmHgqe82SJ-A7U');  // Токен от @BotFather
-define('TG_ADMIN_CHAT_ID', '827051490'); // Ваш Telegram chat_id (получите у @userinfobot)
+define('TG_BOT_TOKEN',     '8734870076:AAEjnn-fpOPBXbjnaCMcOOmHgqe82SJ-A7U'); // Токен от @BotFather
+define('TG_ADMIN_CHAT_ID', '827051490'); // Ваш Telegram chat_id
+
+// Белый список: chat_id через запятую. Только эти люди могут использовать бота.
+// Чтобы добавить человека — узнайте его chat_id и вставьте сюда.
+define('TG_ALLOWED_CHATS', '827051490, 427658003');
 
 function sendTelegramMessage(string $text, ?int $replyToMessageId = null): ?int {
     $token  = TG_BOT_TOKEN;
