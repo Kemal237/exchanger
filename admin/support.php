@@ -71,7 +71,7 @@ $admin_page = 'support.php';
   <title><?= htmlspecialchars($page_title) ?></title>
   <?php require_once __DIR__ . '/../theme.php'; ?>
 </head>
-<body class="bg-bg-base text-txt-primary min-h-screen relative overflow-x-hidden">
+<body class="bg-bg-base text-txt-primary min-h-screen relative overflow-x-hidden flex flex-col">
 
 <div class="aurora"><div class="ab ab-1"></div><div class="ab ab-2"></div><div class="ab ab-3"></div></div>
 <div class="grid-bg"></div>
@@ -88,7 +88,7 @@ $admin_page = 'support.php';
 <script>setTimeout(()=>{ const t=document.getElementById('toast'); if(t) t.remove(); }, 4000);</script>
 <?php endif; ?>
 
-<main class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+<main class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex-1">
 
   <!-- Title -->
   <section class="mb-6 fade-in">

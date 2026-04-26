@@ -230,19 +230,21 @@ $current_page = 'support.php';
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
     </div>
-    <form method="POST" action="support-action.php" class="p-5 space-y-4">
+    <form method="POST" action="support-action.php" class="p-5">
       <input type="hidden" name="action" value="create">
-      <div>
-        <label class="block text-xs font-medium text-txt-secondary mb-1.5">Тема обращения</label>
-        <input type="text" name="subject" required maxlength="255" placeholder="Кратко опишите проблему"
-               class="w-full bg-bg-soft border border-line rounded-xl px-3.5 h-11 text-sm text-txt-primary placeholder-txt-muted focus:outline-none focus:border-cy-border transition">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-txt-secondary mb-1.5">Тема обращения</label>
+          <input type="text" name="subject" required maxlength="255" placeholder="Кратко опишите проблему"
+                 class="w-full bg-bg-soft border border-line rounded-xl px-3.5 h-11 text-sm text-txt-primary placeholder-txt-muted focus:outline-none focus:border-cy-border transition">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-txt-secondary mb-1.5">Сообщение</label>
+          <textarea name="message" required rows="7" placeholder="Подробно опишите вашу проблему или вопрос…"
+                    class="w-full bg-bg-soft border border-line rounded-xl px-3.5 py-3 text-sm text-txt-primary placeholder-txt-muted resize-none focus:outline-none focus:border-cy-border transition"></textarea>
+        </div>
       </div>
-      <div>
-        <label class="block text-xs font-medium text-txt-secondary mb-1.5">Сообщение</label>
-        <textarea name="message" required rows="5" placeholder="Подробно опишите вашу проблему или вопрос…"
-                  class="w-full bg-bg-soft border border-line rounded-xl px-3.5 py-3 text-sm text-txt-primary placeholder-txt-muted resize-none focus:outline-none focus:border-cy-border transition"></textarea>
-      </div>
-      <div class="flex gap-3 pt-1">
+      <div class="flex gap-3 mt-4">
         <button type="button" onclick="closeCreateModal()"
                 class="flex-1 h-11 rounded-xl border border-line text-sm font-medium text-txt-secondary hover:bg-bg-soft transition">
           Отмена
