@@ -174,12 +174,12 @@ $admin_page = 'orders.php';
                   <?php endif; ?>
                 </td>
                 <td class="px-3 py-4 align-top whitespace-nowrap">
-                  <div class="font-medium"><?= number_format($order['amount_give'], 2, '.', ' ') ?></div>
-                  <div class="text-[11px] text-txt-muted"><?= htmlspecialchars($order['give_currency']) ?></div>
+                  <div class="font-medium"><?= number_format($order['amount_give'], currencyDecimals($order['give_currency']), '.', ' ') ?></div>
+                  <div class="text-[11px] text-txt-muted"><?= htmlspecialchars(currencyLabel($order['give_currency'])) ?></div>
                 </td>
                 <td class="px-3 py-4 align-top whitespace-nowrap">
-                  <div class="font-medium text-emr"><?= number_format($order['amount_get'], 2, '.', ' ') ?></div>
-                  <div class="text-[11px] text-txt-muted"><?= htmlspecialchars($order['get_currency']) ?></div>
+                  <div class="font-medium text-emr"><?= number_format($order['amount_get'], currencyDecimals($order['get_currency']), '.', ' ') ?></div>
+                  <div class="text-[11px] text-txt-muted"><?= htmlspecialchars(currencyLabel($order['get_currency'])) ?></div>
                 </td>
                 <td class="px-3 py-4 align-top">
                   <span class="st <?= $s['cls'] ?>">
@@ -255,16 +255,16 @@ $admin_page = 'orders.php';
               <div class="flex-1 min-w-0">
                 <div class="text-[10px] text-txt-muted uppercase tracking-wider mb-0.5">Отдаёт</div>
                 <div class="font-medium text-sm truncate">
-                  <?= number_format($order['amount_give'], 2, '.', ' ') ?>
-                  <span class="text-[11px] text-txt-muted"><?= htmlspecialchars($order['give_currency']) ?></span>
+                  <?= number_format($order['amount_give'], currencyDecimals($order['give_currency']), '.', ' ') ?>
+                  <span class="text-[11px] text-txt-muted"><?= htmlspecialchars(currencyLabel($order['give_currency'])) ?></span>
                 </div>
               </div>
               <i data-lucide="arrow-right" class="w-4 h-4 text-txt-muted flex-shrink-0"></i>
               <div class="flex-1 min-w-0 text-right">
                 <div class="text-[10px] text-txt-muted uppercase tracking-wider mb-0.5">Получает</div>
                 <div class="font-medium text-emr text-sm truncate">
-                  <?= number_format($order['amount_get'], 2, '.', ' ') ?>
-                  <span class="text-[11px] text-txt-muted"><?= htmlspecialchars($order['get_currency']) ?></span>
+                  <?= number_format($order['amount_get'], currencyDecimals($order['get_currency']), '.', ' ') ?>
+                  <span class="text-[11px] text-txt-muted"><?= htmlspecialchars(currencyLabel($order['get_currency'])) ?></span>
                 </div>
               </div>
             </div>

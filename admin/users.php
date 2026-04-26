@@ -445,6 +445,15 @@ $admin_page = 'users.php';
     document.getElementById('email-verified-label').textContent = this.checked ? 'Подтверждён' : 'Не подтверждён';
   });
 
+  const currencyLabelMap = {
+    'USDT_TRC20':'USDT · TRC20','USDT_ERC20':'USDT · ERC20','USDT_BEP20':'USDT · BEP20',
+    'USDC_TRC20':'USDC · TRC20','USDC_ERC20':'USDC · ERC20',
+    'ETH':'ETH · ERC20','SOL':'SOL','BTC':'BTC',
+    'RUB_SBP':'RUB · СБП','RUB_CASH':'RUB · Нал.','RUB_CARD':'RUB · Карта',
+    'USD':'USD','RUB':'RUB','USDC':'USDC',
+  };
+  function curLabel(key) { return currencyLabelMap[key] || key.replace(/_/g,' · '); }
+
   const statusMap = {
     'new':        { cls: 'st-new',    text: 'Новая',       icon: 'clock' },
     'in_process': { cls: 'st-proc',   text: 'В обработке', icon: 'loader' },
@@ -475,8 +484,8 @@ $admin_page = 'users.php';
             <tr class="row-h transition" id="hrow-${o.id}">
               <td class="px-5 py-3 font-mono text-xs text-txt-secondary">${o.id}</td>
               <td class="px-4 py-3 text-txt-secondary whitespace-nowrap">${d}</td>
-              <td class="px-4 py-3 whitespace-nowrap"><span class="font-medium">${parseFloat(o.amount_give).toLocaleString('ru-RU')}</span> <span class="text-xs text-txt-muted">${o.give_currency}</span></td>
-              <td class="px-4 py-3 whitespace-nowrap"><span class="font-medium text-emr">${parseFloat(o.amount_get).toLocaleString('ru-RU')}</span> <span class="text-xs text-txt-muted">${o.get_currency}</span></td>
+              <td class="px-4 py-3 whitespace-nowrap"><span class="font-medium">${parseFloat(o.amount_give).toLocaleString('ru-RU')}</span> <span class="text-xs text-txt-muted">${curLabel(o.give_currency)}</span></td>
+              <td class="px-4 py-3 whitespace-nowrap"><span class="font-medium text-emr">${parseFloat(o.amount_get).toLocaleString('ru-RU')}</span> <span class="text-xs text-txt-muted">${curLabel(o.get_currency)}</span></td>
               <td class="px-4 py-3"><span class="st ${s.cls}" id="hbadge-${o.id}"><i data-lucide="${s.icon}" class="w-3 h-3"></i>${s.text}</span></td>
               <td class="px-4 py-3 text-right whitespace-nowrap">
                 <div class="inline-flex items-center gap-1.5">

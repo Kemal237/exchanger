@@ -35,19 +35,36 @@ if (empty($telegram)) {
     exit;
 }
 
-$rate = $rates[$give_currency][$get_currency] ?? 0;
-if ($rate <= 0 && isset($rates[$get_currency][$give_currency]) && $rates[$get_currency][$give_currency] > 0) {
-    $rate = 1 / $rates[$get_currency][$give_currency];
+// Нормализация сетевых ключей к базовым ключам таблицы курсов
+$netToBase = [
+    'USDT_TRC20' => 'USDT_TRC20', 'USDT_ERC20' => 'USDT_TRC20', 'USDT_BEP20' => 'USDT_TRC20',
+    'USDC_TRC20' => 'USDC',       'USDC_ERC20' => 'USDC',
+    'ETH'        => 'ETH',         'SOL'        => 'SOL',         'BTC'        => 'BTC',
+    'RUB_SBP'   => 'RUB',        'RUB_CASH'   => 'RUB',         'RUB_CARD'   => 'RUB',
+    'USD'        => 'USD',
+];
+$give_base = $netToBase[$give_currency] ?? $give_currency;
+$get_base  = $netToBase[$get_currency]  ?? $get_currency;
+
+$rate = $rates[$give_base][$get_base] ?? 0;
+if ($rate <= 0 && isset($rates[$get_base][$give_base]) && $rates[$get_base][$give_base] > 0) {
+    $rate = 1 / $rates[$get_base][$give_base];
 }
 
+// Маппинг: ключ → иконка/цвет/метка
 $currencyIcons = [
-    'USDT_TRC20' => ['icon' => 'circle-dollar-sign', 'color' => '#10B981'],
-    'USDC'       => ['icon' => 'circle-dollar-sign', 'color' => '#2775CA'],
-    'ETH'        => ['icon' => 'hexagon',            'color' => '#627EEA'],
-    'SOL'        => ['icon' => 'zap',                'color' => '#9945FF'],
-    'BTC'        => ['icon' => 'bitcoin',            'color' => '#F7931A'],
-    'RUB'        => ['icon' => 'banknote',           'color' => '#A78BFA'],
-    'USD'        => ['icon' => 'dollar-sign',        'color' => '#22D3EE'],
+    'USDT_TRC20' => ['icon' => 'circle-dollar-sign', 'color' => '#10B981', 'label' => 'USDT', 'net' => 'TRC20'],
+    'USDT_ERC20' => ['icon' => 'circle-dollar-sign', 'color' => '#10B981', 'label' => 'USDT', 'net' => 'ERC20'],
+    'USDT_BEP20' => ['icon' => 'circle-dollar-sign', 'color' => '#10B981', 'label' => 'USDT', 'net' => 'BEP20'],
+    'USDC_TRC20' => ['icon' => 'circle-dollar-sign', 'color' => '#2775CA', 'label' => 'USDC', 'net' => 'TRC20'],
+    'USDC_ERC20' => ['icon' => 'circle-dollar-sign', 'color' => '#2775CA', 'label' => 'USDC', 'net' => 'ERC20'],
+    'ETH'        => ['icon' => 'hexagon',            'color' => '#627EEA', 'label' => 'ETH',  'net' => 'ERC20'],
+    'SOL'        => ['icon' => 'zap',                'color' => '#9945FF', 'label' => 'SOL',  'net' => 'SOL'],
+    'BTC'        => ['icon' => 'bitcoin',            'color' => '#F7931A', 'label' => 'BTC',  'net' => 'BTC'],
+    'RUB_SBP'   => ['icon' => 'banknote',           'color' => '#A78BFA', 'label' => 'RUB',  'net' => 'СБП'],
+    'RUB_CASH'  => ['icon' => 'banknote',           'color' => '#A78BFA', 'label' => 'RUB',  'net' => 'Наличные'],
+    'RUB_CARD'  => ['icon' => 'banknote',           'color' => '#A78BFA', 'label' => 'RUB',  'net' => 'Карта'],
+    'USD'        => ['icon' => 'dollar-sign',        'color' => '#22D3EE', 'label' => 'USD',  'net' => 'SWIFT'],
 ];
 $giveIcon = $currencyIcons[$give_currency] ?? ['icon' => 'coins', 'color' => '#A1A1AA'];
 $getIcon  = $currencyIcons[$get_currency]  ?? ['icon' => 'coins', 'color' => '#A1A1AA'];
@@ -103,11 +120,14 @@ $page_title = 'Подтвердите заявку — ' . SITE_NAME;
           $give_dec = 2;
           if ($give_currency === 'BTC') $give_dec = 8;
           elseif ($give_currency === 'ETH') $give_dec = 6;
-          elseif ($give_currency === 'SOL') $give_dec = 4;
+          elseif (in_array($give_currency, ['SOL'])) $give_dec = 4;
           echo number_format($amount_give, $give_dec, '.', ' ');
           ?>
         </div>
-        <div class="text-[11px] sm:text-sm text-txt-secondary"><?= htmlspecialchars(str_replace('_', ' ', $give_currency)) ?></div>
+        <div class="text-[11px] sm:text-sm text-txt-secondary font-medium"><?= htmlspecialchars($giveIcon['label'] ?? $give_currency) ?></div>
+        <?php if (!empty($giveIcon['net'])): ?>
+        <div class="text-[10px] text-txt-muted mt-0.5"><?= htmlspecialchars($giveIcon['net']) ?></div>
+        <?php endif; ?>
       </div>
 
       <!-- Arrow -->
@@ -131,11 +151,14 @@ $page_title = 'Подтвердите заявку — ' . SITE_NAME;
           $get_dec = 2;
           if ($get_currency === 'BTC') $get_dec = 8;
           elseif ($get_currency === 'ETH') $get_dec = 6;
-          elseif ($get_currency === 'SOL') $get_dec = 4;
+          elseif (in_array($get_currency, ['SOL'])) $get_dec = 4;
           echo number_format($amount_get, $get_dec, '.', ' ');
           ?>
         </div>
-        <div class="text-[11px] sm:text-sm text-txt-secondary"><?= htmlspecialchars(str_replace('_', ' ', $get_currency)) ?></div>
+        <div class="text-[11px] sm:text-sm text-txt-secondary font-medium"><?= htmlspecialchars($getIcon['label'] ?? $get_currency) ?></div>
+        <?php if (!empty($getIcon['net'])): ?>
+        <div class="text-[10px] text-txt-muted mt-0.5"><?= htmlspecialchars($getIcon['net']) ?></div>
+        <?php endif; ?>
       </div>
     </div>
 
@@ -146,10 +169,15 @@ $page_title = 'Подтвердите заявку — ' . SITE_NAME;
           <span class="hidden sm:inline">Фиксированный курс</span><span class="sm:hidden">Курс</span>
         </span>
         <span class="font-mono font-medium text-right truncate">
-          1 <?= htmlspecialchars(str_replace('_', ' ', $give_currency)) ?>
+          <?php
+          $giveLabel = ($currencyIcons[$give_currency]['label'] ?? '') . ' ' . ($currencyIcons[$give_currency]['net'] ?? '');
+          $getLabel  = ($currencyIcons[$get_currency]['label']  ?? '') . ' ' . ($currencyIcons[$get_currency]['net']  ?? '');
+          $rateDec = in_array($get_base, ['BTC']) ? 8 : (in_array($get_base, ['ETH']) ? 6 : (in_array($get_base, ['SOL']) ? 4 : 2));
+          ?>
+          1 <?= htmlspecialchars(trim($giveLabel)) ?>
           <span class="text-txt-muted mx-1">=</span>
-          <?= number_format($rate, 4, '.', ' ') ?>
-          <?= htmlspecialchars(str_replace('_', ' ', $get_currency)) ?>
+          <?= number_format($rate, $rateDec, '.', ' ') ?>
+          <?= htmlspecialchars(trim($getLabel)) ?>
         </span>
       </div>
       <div class="flex items-center justify-between gap-3 text-xs sm:text-sm">

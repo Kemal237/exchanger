@@ -350,12 +350,12 @@ $current_page = 'profile.php';
                     </td>
                     <td class="px-3 py-2 text-xs text-txt-secondary whitespace-nowrap"><?= date('d.m.Y H:i', strtotime($order['created_at'])) ?></td>
                     <td class="px-3 py-2 whitespace-nowrap">
-                      <span class="font-medium"><?= number_format($order['amount_give'] ?? 0, 2, '.', ' ') ?></span>
-                      <span class="text-xs text-txt-muted ml-0.5"><?= htmlspecialchars($order['give_currency']) ?></span>
+                      <span class="font-medium"><?= number_format($order['amount_give'] ?? 0, currencyDecimals($order['give_currency']), '.', ' ') ?></span>
+                      <span class="text-xs text-txt-muted ml-0.5"><?= htmlspecialchars(currencyLabel($order['give_currency'])) ?></span>
                     </td>
                     <td class="px-3 py-2 whitespace-nowrap">
-                      <span class="font-medium text-emr"><?= number_format($order['amount_get'] ?? 0, 2, '.', ' ') ?></span>
-                      <span class="text-xs text-txt-muted ml-0.5"><?= htmlspecialchars($order['get_currency']) ?></span>
+                      <span class="font-medium text-emr"><?= number_format($order['amount_get'] ?? 0, currencyDecimals($order['get_currency']), '.', ' ') ?></span>
+                      <span class="text-xs text-txt-muted ml-0.5"><?= htmlspecialchars(currencyLabel($order['get_currency'])) ?></span>
                     </td>
                     <td class="px-3 py-2">
                       <span class="st <?= $s['cls'] ?>">
@@ -399,12 +399,12 @@ $current_page = 'profile.php';
                 <div class="flex items-center justify-between gap-2 mb-2">
                   <div class="min-w-0">
                     <div class="text-[10px] text-txt-muted uppercase mb-0.5">Отдаёте</div>
-                    <div class="font-medium text-xs truncate"><?= number_format($order['amount_give'] ?? 0, 2, '.', ' ') ?> <span class="text-txt-muted"><?= htmlspecialchars($order['give_currency']) ?></span></div>
+                    <div class="font-medium text-xs truncate"><?= number_format($order['amount_give'] ?? 0, currencyDecimals($order['give_currency']), '.', ' ') ?> <span class="text-txt-muted"><?= htmlspecialchars(currencyLabel($order['give_currency'])) ?></span></div>
                   </div>
                   <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-txt-muted flex-shrink-0"></i>
                   <div class="min-w-0 text-right">
                     <div class="text-[10px] text-txt-muted uppercase mb-0.5">Получаете</div>
-                    <div class="font-medium text-xs text-emr truncate"><?= number_format($order['amount_get'] ?? 0, 2, '.', ' ') ?> <span class="text-txt-muted"><?= htmlspecialchars($order['get_currency']) ?></span></div>
+                    <div class="font-medium text-xs text-emr truncate"><?= number_format($order['amount_get'] ?? 0, currencyDecimals($order['get_currency']), '.', ' ') ?> <span class="text-txt-muted"><?= htmlspecialchars(currencyLabel($order['get_currency'])) ?></span></div>
                   </div>
                 </div>
                 <?php if ($status === 'new'): ?>
@@ -462,12 +462,12 @@ $current_page = 'profile.php';
                     </td>
                     <td class="px-3 py-2 text-xs text-txt-secondary whitespace-nowrap"><?= date('d.m.Y H:i', strtotime($order['created_at'])) ?></td>
                     <td class="px-3 py-2 whitespace-nowrap">
-                      <span class="font-medium"><?= number_format($order['amount_give'] ?? 0, 2, '.', ' ') ?></span>
-                      <span class="text-xs text-txt-muted ml-0.5"><?= htmlspecialchars($order['give_currency']) ?></span>
+                      <span class="font-medium"><?= number_format($order['amount_give'] ?? 0, currencyDecimals($order['give_currency']), '.', ' ') ?></span>
+                      <span class="text-xs text-txt-muted ml-0.5"><?= htmlspecialchars(currencyLabel($order['give_currency'])) ?></span>
                     </td>
                     <td class="px-3 py-2 whitespace-nowrap">
-                      <span class="font-medium text-emr"><?= number_format($order['amount_get'] ?? 0, 2, '.', ' ') ?></span>
-                      <span class="text-xs text-txt-muted ml-0.5"><?= htmlspecialchars($order['get_currency']) ?></span>
+                      <span class="font-medium text-emr"><?= number_format($order['amount_get'] ?? 0, currencyDecimals($order['get_currency']), '.', ' ') ?></span>
+                      <span class="text-xs text-txt-muted ml-0.5"><?= htmlspecialchars(currencyLabel($order['get_currency'])) ?></span>
                     </td>
                     <td class="px-3 py-2">
                       <span class="st <?= $s['cls'] ?>">
@@ -500,12 +500,12 @@ $current_page = 'profile.php';
                 <div class="flex items-center justify-between gap-2">
                   <div class="min-w-0">
                     <div class="text-[10px] text-txt-muted uppercase mb-0.5">Отдали</div>
-                    <div class="font-medium text-xs truncate"><?= number_format($order['amount_give'] ?? 0, 2, '.', ' ') ?> <span class="text-txt-muted"><?= htmlspecialchars($order['give_currency']) ?></span></div>
+                    <div class="font-medium text-xs truncate"><?= number_format($order['amount_give'] ?? 0, currencyDecimals($order['give_currency']), '.', ' ') ?> <span class="text-txt-muted"><?= htmlspecialchars(currencyLabel($order['give_currency'])) ?></span></div>
                   </div>
                   <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-txt-muted flex-shrink-0"></i>
                   <div class="min-w-0 text-right">
                     <div class="text-[10px] text-txt-muted uppercase mb-0.5">Получили</div>
-                    <div class="font-medium text-xs text-emr truncate"><?= number_format($order['amount_get'] ?? 0, 2, '.', ' ') ?> <span class="text-txt-muted"><?= htmlspecialchars($order['get_currency']) ?></span></div>
+                    <div class="font-medium text-xs text-emr truncate"><?= number_format($order['amount_get'] ?? 0, currencyDecimals($order['get_currency']), '.', ' ') ?> <span class="text-txt-muted"><?= htmlspecialchars(currencyLabel($order['get_currency'])) ?></span></div>
                   </div>
                 </div>
               </div>

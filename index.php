@@ -5,14 +5,19 @@ require_once 'auth.php';
 // Восстановление данных обмена после логина
 if (isset($_SESSION['pending_exchange'])) {
     $give        = $_SESSION['pending_exchange']['give']        ?? 'USDT_TRC20';
-    $get         = $_SESSION['pending_exchange']['get']         ?? 'RUB';
+    $get         = $_SESSION['pending_exchange']['get']         ?? 'RUB_SBP';
     $amount_give = $_SESSION['pending_exchange']['amount_give'] ?? floatval($_GET['amount'] ?? 100);
     unset($_SESSION['pending_exchange']);
 } else {
     $give        = $_GET['give'] ?? 'USDT_TRC20';
-    $get         = $_GET['get']  ?? 'RUB';
+    $get         = $_GET['get']  ?? 'RUB_SBP';
     $amount_give = floatval($_GET['amount'] ?? 100);
 }
+
+// Миграция старых ключей без сети
+$keyMigration = ['RUB' => 'RUB_SBP', 'USDC' => 'USDC_TRC20', 'USD' => 'USD'];
+$give = $keyMigration[$give] ?? $give;
+$get  = $keyMigration[$get]  ?? $get;
 
 // Флаг авто-запуска обмена после логина
 $auto_exchange = isset($_SESSION['auto_exchange']);
@@ -65,26 +70,66 @@ if ($total_orders_count < 100) $total_orders_count = 12840;
 
 $page_title = SITE_NAME . ' — Обмен USDT, USDC, ETH, SOL, BTC, RUB, USD';
 
-// Лейблы валют
-function currency_label($cur) {
-    return str_replace('_', ' ', $cur);
-}
 function currency_digits($cur) {
-    if ($cur === 'BTC') return 8;
-    if ($cur === 'ETH') return 6;
-    if ($cur === 'SOL') return 4;
+    if (in_array($cur, ['BTC'])) return 8;
+    if (in_array($cur, ['ETH'])) return 6;
+    if (in_array($cur, ['SOL'])) return 4;
     return 2;
 }
 
-$currencyConfig = [
-    'USDT_TRC20' => ['symbol' => '₮', 'label' => 'USDT TRC20', 'short' => 'USDT', 'icolor' => '#10B981'],
-    'USDC'       => ['symbol' => '$', 'label' => 'USDC',        'short' => 'USDC', 'icolor' => '#2775CA'],
-    'ETH'        => ['symbol' => 'Ξ', 'label' => 'ETH',         'short' => 'ETH',  'icolor' => '#627EEA'],
-    'SOL'        => ['symbol' => '◎', 'label' => 'SOL',         'short' => 'SOL',  'icolor' => '#9945FF'],
-    'BTC'        => ['symbol' => '₿', 'label' => 'BTC',         'short' => 'BTC',  'icolor' => '#F7931A'],
-    'RUB'        => ['symbol' => '₽', 'label' => 'RUB',         'short' => 'RUB',  'icolor' => '#A78BFA'],
-    'USD'        => ['symbol' => '$', 'label' => 'USD',         'short' => 'USD',  'icolor' => '#22D3EE'],
+// Двухуровневый конфиг: монета → сети/методы
+$coinGroups = [
+    'USDT' => [
+        'symbol' => '₮', 'label' => 'USDT', 'color' => '#10B981',
+        'networks' => [
+            'USDT_TRC20' => ['tag' => 'TRC20', 'desc' => 'TRON Network'],
+            'USDT_ERC20' => ['tag' => 'ERC20', 'desc' => 'Ethereum Network'],
+            'USDT_BEP20' => ['tag' => 'BEP20', 'desc' => 'BNB Chain'],
+        ],
+    ],
+    'USDC' => [
+        'symbol' => '$', 'label' => 'USDC', 'color' => '#2775CA',
+        'networks' => [
+            'USDC_TRC20' => ['tag' => 'TRC20', 'desc' => 'TRON Network'],
+            'USDC_ERC20' => ['tag' => 'ERC20', 'desc' => 'Ethereum Network'],
+        ],
+    ],
+    'ETH' => [
+        'symbol' => 'Ξ', 'label' => 'ETH', 'color' => '#627EEA',
+        'networks' => ['ETH' => ['tag' => 'ERC20', 'desc' => 'Ethereum']],
+    ],
+    'SOL' => [
+        'symbol' => '◎', 'label' => 'SOL', 'color' => '#9945FF',
+        'networks' => ['SOL' => ['tag' => 'SOL', 'desc' => 'Solana Network']],
+    ],
+    'BTC' => [
+        'symbol' => '₿', 'label' => 'BTC', 'color' => '#F7931A',
+        'networks' => ['BTC' => ['tag' => 'BTC', 'desc' => 'Bitcoin Network']],
+    ],
+    'RUB' => [
+        'symbol' => '₽', 'label' => 'RUB', 'color' => '#A78BFA',
+        'networks' => [
+            'RUB_SBP'  => ['tag' => 'СБП',   'desc' => 'Система быстрых платежей'],
+            'RUB_CASH' => ['tag' => 'Нал.',   'desc' => 'Наличные'],
+            'RUB_CARD' => ['tag' => 'Карта',  'desc' => 'Банковская карта'],
+        ],
+    ],
+    'USD' => [
+        'symbol' => '$', 'label' => 'USD', 'color' => '#22D3EE',
+        'networks' => ['USD' => ['tag' => 'SWIFT', 'desc' => 'Банковский перевод']],
+    ],
 ];
+
+// Найти ключ группы по ключу сети
+function findCoinGroup(string $key, array $groups): string {
+    foreach ($groups as $gk => $g) {
+        if (array_key_exists($key, $g['networks'])) return $gk;
+    }
+    return 'USDT';
+}
+
+$giveCoinKey = findCoinGroup($give, $coinGroups);
+$getCoinKey  = findCoinGroup($get,  $coinGroups);
 ?>
 <!DOCTYPE html>
 <html lang="ru" class="scroll-smooth">
@@ -171,40 +216,38 @@ $currencyConfig = [
         </div>
 
         <!-- You give -->
+        <?php
+        $giveCG  = $coinGroups[$giveCoinKey];
+        $giveNet = $giveCG['networks'][$give] ?? ['tag'=>'?','desc'=>''];
+        $giveMulti = count($giveCG['networks']) > 1;
+        ?>
         <div class="field rounded-xl p-2.5 sm:p-4 mb-2">
           <div class="flex items-center justify-between mb-1.5 sm:mb-2 gap-2">
             <span class="text-[10px] sm:text-xs text-txt-muted whitespace-nowrap">Вы отдаёте</span>
             <span class="text-[10px] sm:text-xs text-txt-muted truncate">Лимит: <span id="limit-text" class="text-txt-secondary">—</span></span>
           </div>
-          <div class="flex items-center gap-1.5 sm:gap-3">
+          <div class="flex items-center gap-1.5 sm:gap-2">
             <input type="text" name="amount_give" id="amount-give" inputmode="decimal"
-                   value="<?= number_format($amount_give, $give === 'BTC' ? 8 : 2, '.', '') ?>"
+                   value="<?= number_format($amount_give, currency_digits($give), '.', '') ?>"
                    class="flex-1 min-w-0 w-full bg-transparent text-lg sm:text-2xl font-semibold outline-none placeholder:text-txt-muted" required>
-            <div class="relative flex-shrink-0" id="give-select-wrapper">
-              <input type="hidden" name="give_currency" id="give-select" value="<?= htmlspecialchars($give) ?>">
-              <?php $gc = $currencyConfig[$give] ?? ['symbol'=>'?','label'=>$give,'icolor'=>'#888']; ?>
-              <button type="button" onclick="toggleCurrencyDrop('give-select-wrapper')"
-                      class="currency-btn flex items-center gap-1.5 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3 rounded-lg bg-bg-soft border border-line hover:border-cy-border transition whitespace-nowrap">
-                <div class="cur-icon w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold flex-shrink-0"
-                     style="background:<?= $gc['icolor'] ?>1A;border:1px solid <?= $gc['icolor'] ?>33;color:<?= $gc['icolor'] ?>">
-                  <?= $gc['symbol'] ?>
+            <input type="hidden" name="give_currency" id="give-select" value="<?= htmlspecialchars($give) ?>">
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <!-- Coin button -->
+              <button type="button" id="give-coin-btn" onclick="openDrop('give','coin')"
+                      class="flex items-center gap-1 sm:gap-1.5 h-9 sm:h-10 px-2 sm:px-3 rounded-lg bg-bg-soft border border-line hover:border-cy-border transition whitespace-nowrap">
+                <div id="give-coin-icon" class="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold flex-shrink-0"
+                     style="background:<?= $giveCG['color'] ?>1A;border:1px solid <?= $giveCG['color'] ?>33;color:<?= $giveCG['color'] ?>">
+                  <?= $giveCG['symbol'] ?>
                 </div>
-                <span class="cur-label text-xs sm:text-sm font-medium"><?= htmlspecialchars($gc['short'] ?? $gc['label']) ?></span>
-                <i data-lucide="chevron-down" class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-txt-muted"></i>
+                <span id="give-coin-label" class="text-xs sm:text-sm font-medium"><?= htmlspecialchars($giveCG['label']) ?></span>
+                <i data-lucide="chevron-down" class="w-3 h-3 text-txt-muted flex-shrink-0"></i>
               </button>
-              <div id="give-drop" class="cur-drop hidden fixed z-[9999] min-w-[155px] max-w-[calc(100vw-16px)] bg-bg-card border border-line rounded-xl shadow-card py-1">
-                <?php foreach ($currencyConfig as $cur => $c): ?>
-                <button type="button" data-value="<?= $cur ?>" onclick="setCurrency('give','<?= $cur ?>')"
-                        class="cur-opt w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-bg-soft transition text-sm <?= $cur===$give?'bg-bg-soft':'' ?>">
-                  <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                       style="background:<?= $c['icolor'] ?>1A;border:1px solid <?= $c['icolor'] ?>33;color:<?= $c['icolor'] ?>">
-                    <?= $c['symbol'] ?>
-                  </div>
-                  <span><?= htmlspecialchars($c['label']) ?></span>
-                  <?php if ($cur===$give): ?><i data-lucide="check" class="chk-icon w-3.5 h-3.5 text-cy ml-auto"></i><?php endif; ?>
-                </button>
-                <?php endforeach; ?>
-              </div>
+              <!-- Network badge -->
+              <button type="button" id="give-net-btn" onclick="openDrop('give','net')"
+                      class="flex items-center gap-0.5 h-6 px-2 rounded-md bg-cy-soft border border-cy-border text-cy hover:opacity-80 transition text-[11px] font-medium whitespace-nowrap">
+                <span id="give-net-label"><?= htmlspecialchars($giveNet['tag']) ?></span>
+                <i data-lucide="chevron-down" id="give-net-chevron" class="w-2.5 h-2.5 <?= $giveMulti ? '' : 'hidden' ?>"></i>
+              </button>
             </div>
           </div>
         </div>
@@ -217,41 +260,70 @@ $currencyConfig = [
         </div>
 
         <!-- You get -->
+        <?php
+        $getCG  = $coinGroups[$getCoinKey];
+        $getNet = $getCG['networks'][$get] ?? ['tag'=>'?','desc'=>''];
+        $getMulti = count($getCG['networks']) > 1;
+        ?>
         <div class="field rounded-xl p-2.5 sm:p-4 mt-2">
           <div class="flex items-center justify-between mb-1.5 sm:mb-2 gap-2">
             <span class="text-[10px] sm:text-xs text-txt-muted whitespace-nowrap">Вы получаете</span>
             <span class="text-[10px] sm:text-xs text-txt-muted truncate">Резерв: <span id="reserve-get" class="text-txt-secondary">—</span></span>
           </div>
-          <div class="flex items-center gap-1.5 sm:gap-3">
+          <div class="flex items-center gap-1.5 sm:gap-2">
             <input type="text" name="amount_get" id="amount-get" inputmode="decimal" class="flex-1 min-w-0 w-full bg-transparent text-lg sm:text-2xl font-semibold outline-none text-cy">
-            <div class="relative flex-shrink-0" id="get-select-wrapper">
-              <input type="hidden" name="get_currency" id="get-select" value="<?= htmlspecialchars($get) ?>">
-              <?php $gc2 = $currencyConfig[$get] ?? ['symbol'=>'?','label'=>$get,'icolor'=>'#888']; ?>
-              <button type="button" onclick="toggleCurrencyDrop('get-select-wrapper')"
-                      class="currency-btn flex items-center gap-1.5 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3 rounded-lg bg-bg-soft border border-line hover:border-cy-border transition whitespace-nowrap">
-                <div class="cur-icon w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold flex-shrink-0"
-                     style="background:<?= $gc2['icolor'] ?>1A;border:1px solid <?= $gc2['icolor'] ?>33;color:<?= $gc2['icolor'] ?>">
-                  <?= $gc2['symbol'] ?>
+            <input type="hidden" name="get_currency" id="get-select" value="<?= htmlspecialchars($get) ?>">
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <!-- Coin button -->
+              <button type="button" id="get-coin-btn" onclick="openDrop('get','coin')"
+                      class="flex items-center gap-1 sm:gap-1.5 h-9 sm:h-10 px-2 sm:px-3 rounded-lg bg-bg-soft border border-line hover:border-cy-border transition whitespace-nowrap">
+                <div id="get-coin-icon" class="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold flex-shrink-0"
+                     style="background:<?= $getCG['color'] ?>1A;border:1px solid <?= $getCG['color'] ?>33;color:<?= $getCG['color'] ?>">
+                  <?= $getCG['symbol'] ?>
                 </div>
-                <span class="cur-label text-xs sm:text-sm font-medium"><?= htmlspecialchars($gc2['short'] ?? $gc2['label']) ?></span>
-                <i data-lucide="chevron-down" class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-txt-muted"></i>
+                <span id="get-coin-label" class="text-xs sm:text-sm font-medium"><?= htmlspecialchars($getCG['label']) ?></span>
+                <i data-lucide="chevron-down" class="w-3 h-3 text-txt-muted flex-shrink-0"></i>
               </button>
-              <div id="get-drop" class="cur-drop hidden fixed z-[9999] min-w-[155px] max-w-[calc(100vw-16px)] bg-bg-card border border-line rounded-xl shadow-card py-1">
-                <?php foreach ($currencyConfig as $cur => $c): ?>
-                <button type="button" data-value="<?= $cur ?>" onclick="setCurrency('get','<?= $cur ?>')"
-                        class="cur-opt w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-bg-soft transition text-sm <?= $cur===$get?'bg-bg-soft':'' ?>">
-                  <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                       style="background:<?= $c['icolor'] ?>1A;border:1px solid <?= $c['icolor'] ?>33;color:<?= $c['icolor'] ?>">
-                    <?= $c['symbol'] ?>
-                  </div>
-                  <span><?= htmlspecialchars($c['label']) ?></span>
-                  <?php if ($cur===$get): ?><i data-lucide="check" class="chk-icon w-3.5 h-3.5 text-cy ml-auto"></i><?php endif; ?>
-                </button>
-                <?php endforeach; ?>
-              </div>
+              <!-- Network badge -->
+              <button type="button" id="get-net-btn" onclick="openDrop('get','net')"
+                      class="flex items-center gap-0.5 h-6 px-2 rounded-md bg-cy-soft border border-cy-border text-cy hover:opacity-80 transition text-[11px] font-medium whitespace-nowrap">
+                <span id="get-net-label"><?= htmlspecialchars($getNet['tag']) ?></span>
+                <i data-lucide="chevron-down" id="get-net-chevron" class="w-2.5 h-2.5 <?= $getMulti ? '' : 'hidden' ?>"></i>
+              </button>
             </div>
           </div>
         </div>
+
+        <!-- Coin dropdowns (PHP rendered, portaled to body via JS) -->
+        <div id="give-coin-drop" class="cur-drop hidden fixed z-[9999] min-w-[160px] bg-bg-card border border-line rounded-xl shadow-card py-1">
+          <?php foreach ($coinGroups as $gk => $group): ?>
+          <button type="button" data-group="<?= $gk ?>" onclick="selectCoin('give','<?= $gk ?>')"
+                  class="coin-opt w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-bg-soft transition text-sm <?= $gk===$giveCoinKey?'bg-bg-soft':'' ?>">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                 style="background:<?= $group['color'] ?>1A;border:1px solid <?= $group['color'] ?>33;color:<?= $group['color'] ?>">
+              <?= $group['symbol'] ?>
+            </div>
+            <span class="font-medium"><?= htmlspecialchars($group['label']) ?></span>
+            <?php if ($gk===$giveCoinKey): ?><i data-lucide="check" class="chk-icon w-3.5 h-3.5 text-cy ml-auto flex-shrink-0"></i><?php endif; ?>
+          </button>
+          <?php endforeach; ?>
+        </div>
+        <div id="give-net-drop" class="cur-drop hidden fixed z-[9999] min-w-[210px] bg-bg-card border border-line rounded-xl shadow-card py-1"></div>
+
+        <div id="get-coin-drop" class="cur-drop hidden fixed z-[9999] min-w-[160px] bg-bg-card border border-line rounded-xl shadow-card py-1">
+          <?php foreach ($coinGroups as $gk => $group): ?>
+          <button type="button" data-group="<?= $gk ?>" onclick="selectCoin('get','<?= $gk ?>')"
+                  class="coin-opt w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-bg-soft transition text-sm <?= $gk===$getCoinKey?'bg-bg-soft':'' ?>">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                 style="background:<?= $group['color'] ?>1A;border:1px solid <?= $group['color'] ?>33;color:<?= $group['color'] ?>">
+              <?= $group['symbol'] ?>
+            </div>
+            <span class="font-medium"><?= htmlspecialchars($group['label']) ?></span>
+            <?php if ($gk===$getCoinKey): ?><i data-lucide="check" class="chk-icon w-3.5 h-3.5 text-cy ml-auto flex-shrink-0"></i><?php endif; ?>
+          </button>
+          <?php endforeach; ?>
+        </div>
+        <div id="get-net-drop" class="cur-drop hidden fixed z-[9999] min-w-[210px] bg-bg-card border border-line rounded-xl shadow-card py-1"></div>
 
         <!-- Rate -->
         <div class="mt-3 sm:mt-4 flex items-center justify-between gap-2 text-xs sm:text-sm bg-bg-soft border border-line rounded-xl px-3 sm:px-4 py-2.5 sm:py-3">
@@ -644,80 +716,214 @@ $currencyConfig = [
     });
   });
 
-  // Currency dropdown helpers
-  const currencyConfig = {
-    'USDT_TRC20': { symbol: '₮', label: 'USDT TRC20', short: 'USDT', icolor: '#10B981' },
-    'USDC':       { symbol: '$', label: 'USDC',        short: 'USDC', icolor: '#2775CA' },
-    'ETH':        { symbol: 'Ξ', label: 'ETH',         short: 'ETH',  icolor: '#627EEA' },
-    'SOL':        { symbol: '◎', label: 'SOL',         short: 'SOL',  icolor: '#9945FF' },
-    'BTC':        { symbol: '₿', label: 'BTC',         short: 'BTC',  icolor: '#F7931A' },
-    'RUB':        { symbol: '₽', label: 'RUB',         short: 'RUB',  icolor: '#A78BFA' },
-    'USD':        { symbol: '$', label: 'USD',          short: 'USD',  icolor: '#22D3EE' },
-  };
+  // ── Двухуровневый пикер валют ──────────────────────────────
+  const coinGroups = <?= json_encode($coinGroups) ?>;
 
-  function toggleCurrencyDrop(wrapperId) {
-    const side = wrapperId.replace('-select-wrapper', '');
-    const wrapper = document.getElementById(wrapperId);
-    const drop = document.getElementById(side + '-drop');
-    const btn = wrapper.querySelector('.currency-btn');
+  // Маппинг: любой ключ сети → базовый ключ в таблице курсов
+  const netToBase = {
+    'USDT_TRC20':'USDT_TRC20','USDT_ERC20':'USDT_TRC20','USDT_BEP20':'USDT_TRC20',
+    'USDC_TRC20':'USDC','USDC_ERC20':'USDC',
+    'ETH':'ETH','SOL':'SOL','BTC':'BTC',
+    'RUB_SBP':'RUB','RUB_CASH':'RUB','RUB_CARD':'RUB',
+    'USD':'USD',
+  };
+  function base(key) { return netToBase[key] || key; }
+
+  function findGroup(key) {
+    for (const [gk, g] of Object.entries(coinGroups))
+      if (key in g.networks) return gk;
+    return null;
+  }
+
+  function openDrop(side, type) {
+    const drop = document.getElementById(side + '-' + type + '-drop');
+    const btn  = document.getElementById(side + '-' + type + '-btn');
     document.querySelectorAll('.cur-drop').forEach(d => { if (d !== drop) d.classList.add('hidden'); });
     if (drop.classList.contains('hidden')) {
       const rect = btn.getBoundingClientRect();
       drop.style.top   = (rect.bottom + 6) + 'px';
       drop.style.right = (window.innerWidth - rect.right) + 'px';
       drop.style.left  = 'auto';
+      drop.style.maxHeight = (window.innerHeight - rect.bottom - 10) + 'px';
+      drop.style.overflowY = 'auto';
     }
     drop.classList.toggle('hidden');
   }
 
-  function updateCurrencyDisplay(side, value) {
-    const wrapper = document.getElementById(side + '-select-wrapper');
-    const drop = document.getElementById(side + '-drop');
-    const btn = wrapper.querySelector('.currency-btn');
-    const cfg = currencyConfig[value] || { symbol: '?', label: value, icolor: '#888' };
-    const iconEl = btn.querySelector('.cur-icon');
-    iconEl.style.background = cfg.icolor + '1A';
-    iconEl.style.border = '1px solid ' + cfg.icolor + '33';
-    iconEl.style.color = cfg.icolor;
-    iconEl.textContent = cfg.symbol;
-    btn.querySelector('.cur-label').textContent = cfg.short || cfg.label;
-    drop.querySelectorAll('.cur-opt').forEach(opt => {
-      const isActive = opt.dataset.value === value;
-      opt.classList.toggle('bg-bg-soft', isActive);
+  function selectCoin(side, groupKey) {
+    const group   = coinGroups[groupKey];
+    const netKeys = Object.keys(group.networks);
+
+    // обновить иконку монеты
+    const iconEl  = document.getElementById(side + '-coin-icon');
+    iconEl.textContent = group.symbol;
+    iconEl.style.cssText = `background:${group.color}1A;border:1px solid ${group.color}33;color:${group.color}`;
+    document.getElementById(side + '-coin-label').textContent = group.label;
+
+    // галочки в дропдауне монет
+    document.querySelectorAll('#' + side + '-coin-drop .coin-opt').forEach(opt => {
+      const active = opt.dataset.group === groupKey;
+      opt.classList.toggle('bg-bg-soft', active);
       const chk = opt.querySelector('.chk-icon');
-      if (isActive && !chk) {
+      if (active && !chk) {
         const i = document.createElement('i');
-        i.setAttribute('data-lucide', 'check');
-        i.className = 'chk-icon w-3.5 h-3.5 text-cy ml-auto';
+        i.setAttribute('data-lucide','check');
+        i.className = 'chk-icon w-3.5 h-3.5 text-cy ml-auto flex-shrink-0';
         opt.appendChild(i);
-        if (window.lucide) lucide.createIcons({ elements: [i] });
-      } else if (!isActive && chk) {
-        chk.remove();
-      }
+        if (window.lucide) lucide.createIcons({ elements:[i] });
+      } else if (!active && chk) chk.remove();
     });
+
+    document.getElementById(side + '-coin-drop').classList.add('hidden');
+
+    // показать/скрыть шеврон сети
+    const chev = document.getElementById(side + '-net-chevron');
+    if (chev) chev.classList.toggle('hidden', netKeys.length <= 1);
+
+    // выбрать первую сеть
+    selectNet(side, netKeys[0], false);
+    document.getElementById(side + '-select').dispatchEvent(new Event('change'));
   }
 
-  function setCurrency(side, value, dispatch = true) {
-    const input = document.getElementById(side + '-select');
-    input.value = value;
-    updateCurrencyDisplay(side, value);
-    document.getElementById(side + '-drop').classList.add('hidden');
-    if (dispatch) input.dispatchEvent(new Event('change'));
+  function selectNet(side, netKey, dispatch = true) {
+    const gk  = findGroup(netKey);
+    const net = coinGroups[gk]?.networks[netKey];
+    if (!net) return;
+
+    document.getElementById(side + '-net-label').textContent = net.tag;
+    document.getElementById(side + '-select').value = netKey;
+    buildNetDrop(side, gk, netKey);
+    document.getElementById(side + '-net-drop').classList.add('hidden');
+
+    if (dispatch) document.getElementById(side + '-select').dispatchEvent(new Event('change'));
   }
 
-  document.addEventListener('click', e => {
-    if (!e.target.closest('[id$="-select-wrapper"]') && !e.target.closest('.cur-drop')) {
-      document.querySelectorAll('.cur-drop').forEach(d => d.classList.add('hidden'));
+  function buildNetDrop(side, groupKey, currentNet) {
+    const drop  = document.getElementById(side + '-net-drop');
+    const group = coinGroups[groupKey];
+    drop.innerHTML = '';
+    for (const [nk, net] of Object.entries(group.networks)) {
+      const isActive = nk === currentNet;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'w-full flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-bg-soft transition ' + (isActive ? 'bg-bg-soft' : '');
+      btn.innerHTML = `
+        <div class="text-left min-w-0">
+          <div class="text-sm font-medium">${net.tag}</div>
+          <div class="text-[11px] text-txt-muted">${net.desc}</div>
+        </div>
+        ${isActive ? '<i data-lucide="check" class="w-3.5 h-3.5 text-cy flex-shrink-0"></i>' : ''}
+      `;
+      btn.onclick = () => selectNet(side, nk);
+      drop.appendChild(btn);
     }
+    if (window.lucide) lucide.createIcons({ elements:[drop] });
+  }
+
+  // закрытие дропдаунов по клику вне
+  document.addEventListener('click', e => {
+    if (!e.target.closest('[id$="-coin-btn"]') && !e.target.closest('[id$="-net-btn"]') && !e.target.closest('.cur-drop'))
+      document.querySelectorAll('.cur-drop').forEach(d => d.classList.add('hidden'));
   });
 
-  // Move dropdowns to body to escape transform/overflow containing blocks
-  ['give-drop', 'get-drop'].forEach(id => {
+  // портировать дропдауны в body
+  ['give-coin-drop','give-net-drop','get-coin-drop','get-net-drop'].forEach(id => {
     const el = document.getElementById(id);
     if (el) document.body.appendChild(el);
   });
 
+  // swap
+  document.getElementById('swap-btn').addEventListener('click', () => {
+    const giveKey = giveSelect.value, getKey = getSelect.value;
+    const tmp = amountGiveEl.value;
+    amountGiveEl.value = amountGetEl.value;
+    amountGetEl.value  = tmp;
+
+    const giveGK = findGroup(giveKey), getGK = findGroup(getKey);
+    const giveG = coinGroups[giveGK], getG = coinGroups[getGK];
+
+    // give ← old get
+    document.getElementById('give-coin-icon').textContent = getG.symbol;
+    document.getElementById('give-coin-icon').style.cssText = `background:${getG.color}1A;border:1px solid ${getG.color}33;color:${getG.color}`;
+    document.getElementById('give-coin-label').textContent = getG.label;
+    document.getElementById('give-net-label').textContent  = getG.networks[getKey]?.tag || '';
+    document.getElementById('give-net-chevron')?.classList.toggle('hidden', Object.keys(getG.networks).length <= 1);
+    giveSelect.value = getKey;
+    buildNetDrop('give', getGK, getKey);
+
+    // get ← old give
+    document.getElementById('get-coin-icon').textContent = giveG.symbol;
+    document.getElementById('get-coin-icon').style.cssText = `background:${giveG.color}1A;border:1px solid ${giveG.color}33;color:${giveG.color}`;
+    document.getElementById('get-coin-label').textContent = giveG.label;
+    document.getElementById('get-net-label').textContent  = giveG.networks[giveKey]?.tag || '';
+    document.getElementById('get-net-chevron')?.classList.toggle('hidden', Object.keys(giveG.networks).length <= 1);
+    getSelect.value = giveKey;
+    buildNetDrop('get', giveGK, giveKey);
+
+    updateLimitText(); recalculate('give');
+  });
+
+  // ── Вычисления (с нормализацией base()) ────────────────────
+  function fmtDigits(cur) {
+    const b = base(cur);
+    if (b === 'BTC') return 8; if (b === 'ETH') return 6; if (b === 'SOL') return 4;
+    return 2;
+  }
+
+  function getRate(from, to) {
+    if (base(from) === base(to)) return 1;
+    const f = base(from), t = base(to);
+    let r = rates[f]?.[t];
+    if (r !== undefined && r > 0) return r;
+    r = rates[t]?.[f];
+    if (r !== undefined && r > 0) return 1 / r;
+    return 0;
+  }
+
+  function updateGetReserve() {
+    const to  = getSelect.value;
+    const res = reserves[base(to)] || 0;
+    const gk  = findGroup(to);
+    const lbl = (coinGroups[gk]?.label || to) + ' · ' + (coinGroups[gk]?.networks[to]?.tag || '');
+    reserveEl.textContent = fmtNum(res, base(to)) + ' ' + lbl;
+  }
+
+  function updateRateLine() {
+    const from = giveSelect.value, to = getSelect.value;
+    const r = getRate(from, to);
+    if (r > 0 && base(from) !== base(to)) {
+      const fGK = findGroup(from), tGK = findGroup(to);
+      const fLabel = coinGroups[fGK]?.label || from;
+      const tLabel = coinGroups[tGK]?.label || to;
+      const tNet   = coinGroups[tGK]?.networks[to]?.tag || '';
+      rateLine.innerHTML = `1 ${fLabel} ≈ <span class="text-cy font-semibold">${fmtNum(r, base(to))} ${tLabel} · ${tNet}</span>`;
+    } else { rateLine.textContent = '—'; }
+  }
+
+  function updateLimitText() {
+    const cur = giveSelect.value, b = base(cur);
+    const minVal = limits[b]?.min ?? 10, maxVal = limits[b]?.max ?? 100000;
+    const d = b === 'BTC' ? 4 : (b === 'ETH' || b === 'SOL' ? 2 : 0);
+    limitText.textContent = `${Number(minVal).toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d})} – ${Number(maxVal).toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d})}`;
+  }
+
+  function validateButton() {
+    const from = giveSelect.value, to = getSelect.value;
+    if (base(from) === base(to)) return setDisabled(true, 'Выберите разные валюты');
+    const minVal = limits[base(from)]?.min ?? 0, maxVal = limits[base(from)]?.max ?? Infinity;
+    const resVal = reserves[base(to)] || 0;
+    const gv = parseFloat(amountGiveEl.value.replace(/ /g,'').replace(',','.')) || 0;
+    const tv = parseFloat(amountGetEl.value.replace(/ /g,'').replace(',','.'))  || 0;
+    if (gv <= 0)       return setDisabled(true, 'Введите сумму');
+    if (gv < minVal)   return setDisabled(true, 'Сумма меньше минимума');
+    if (gv > maxVal)   return setDisabled(true, 'Сумма превышает максимум');
+    if (tv > resVal)   return setDisabled(true, 'Превышен резерв');
+    setDisabled(false, '');
+  }
+
   // init
+  buildNetDrop('give', '<?= $giveCoinKey ?>', '<?= $give ?>');
+  buildNetDrop('get',  '<?= $getCoinKey ?>',  '<?= $get ?>');
   updateLimitText();
   recalculate('give');
   updateGetReserve();
