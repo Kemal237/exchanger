@@ -239,7 +239,7 @@ function hasEnoughReserve($currency, $required_amount) {
 if (!function_exists('savePendingExchange')) {
     function savePendingExchange() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            session_start();
+            if (session_status() === PHP_SESSION_NONE) session_start();
             $_SESSION['pending_exchange'] = [
                 'give'        => $_POST['give_currency'] ?? 'USDT_TRC20',
                 'get'         => $_POST['get_currency']  ?? 'RUB',

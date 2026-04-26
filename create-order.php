@@ -18,8 +18,6 @@ function generateOrderId(PDO $pdo): string {
     return $id;
 }
 
-session_start();
-
 if (!isLoggedIn() || $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');
     exit;

@@ -5,8 +5,6 @@ require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
 
-session_start();
-
 header('Content-Type: application/json; charset=utf-8');
 
 // Пользователь не авторизован → сразу нет Telegram

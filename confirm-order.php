@@ -18,8 +18,6 @@ function generateOrderId(PDO $pdo): string {
     return $id;
 }
 
-session_start();
-
 if (!isLoggedIn() || $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');
     exit;
@@ -56,9 +54,19 @@ if ($count >= 3) {
     exit;
 }
 
-// === ПРОВЕРКА РЕЗЕРВА ===
-if (!hasEnoughReserve($get_currency, $amount_get)) {
-    $_SESSION['error'] = 'Недостаточно резерва по валюте ' . htmlspecialchars($get_currency);
+// Нормализация: операции с резервами используют базовый ключ (без сети/метода)
+$netToBase = [
+    'USDT_TRC20' => 'USDT_TRC20', 'USDT_ERC20' => 'USDT_TRC20', 'USDT_BEP20' => 'USDT_TRC20',
+    'USDC_TRC20' => 'USDC',       'USDC_ERC20' => 'USDC',
+    'ETH'        => 'ETH',         'SOL'        => 'SOL',         'BTC'        => 'BTC',
+    'RUB_SBP'    => 'RUB',        'RUB_CASH'   => 'RUB',         'RUB_CARD'   => 'RUB',
+    'USD'        => 'USD',
+];
+$get_base = $netToBase[$get_currency] ?? $get_currency;
+
+// === ПРОВЕРКА РЕЗЕРВА (по базовому ключу) ===
+if (!hasEnoughReserve($get_base, $amount_get)) {
+    $_SESSION['error'] = 'Недостаточно резерва по валюте ' . htmlspecialchars(currencyLabel($get_currency));
     header('Location: profile.php#orders-table');
     exit;
 }
@@ -69,6 +77,7 @@ $order_id = generateOrderId($pdo);
 
 $pdo->beginTransaction();
 try {
+    // В orders сохраняем полный ключ (RUB_SBP, USDT_ERC20 и т.д.) — для отображения сети
     $stmt = $pdo->prepare("
         INSERT INTO orders
         (id, user_id, give_currency, amount_give, get_currency, amount_get, rate, status, created_at)
@@ -76,7 +85,8 @@ try {
     ");
     $stmt->execute([$order_id, $user_id, $give_currency, $amount_give, $get_currency, $amount_get, $rate]);
 
-    updateReserve($get_currency, $amount_get);
+    // Резерв списываем по базовому ключу (RUB, не RUB_SBP)
+    updateReserve($get_base, $amount_get);
     $pdo->commit();
 } catch (Exception $e) {
     $pdo->rollBack();
