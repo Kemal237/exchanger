@@ -35,6 +35,12 @@ if (!defined('SITE_NAME')) require_once __DIR__ . '/config.php';
           <i data-lucide="mail" class="w-4 h-4 text-cy"></i>
           <?= htmlspecialchars(ADMIN_EMAIL) ?>
         </li>
+        <li>
+          <a href="support.php" class="flex items-center gap-2 hover:text-cy transition">
+            <i data-lucide="message-circle" class="w-4 h-4 text-cy"></i>
+            Техподдержка
+          </a>
+        </li>
       </ul>
     </div>
   </div>

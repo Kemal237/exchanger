@@ -25,6 +25,9 @@ $admin_page = $admin_page ?? basename($_SERVER['SCRIPT_NAME']);
         <a class="<?= $admin_page === 'reserves.php' ? 'text-cy' : 'text-txt-secondary' ?> hover:text-cy transition flex items-center gap-1.5" href="reserves.php">
           <i data-lucide="wallet" class="w-4 h-4"></i> Резервы
         </a>
+        <a class="<?= $admin_page === 'support.php' ? 'text-cy' : 'text-txt-secondary' ?> hover:text-cy transition flex items-center gap-1.5" href="support.php">
+          <i data-lucide="message-circle" class="w-4 h-4"></i> Поддержка
+        </a>
       </nav>
     </div>
     <div class="flex items-center gap-2 sm:gap-3">
@@ -56,6 +59,9 @@ $admin_page = $admin_page ?? basename($_SERVER['SCRIPT_NAME']);
       </a>
       <a class="<?= $admin_page === 'reserves.php' ? 'text-cy bg-cy-soft' : 'text-txt-secondary' ?> flex items-center gap-3 px-3 h-11 rounded-lg hover:bg-bg-soft transition" href="reserves.php">
         <i data-lucide="wallet" class="w-4 h-4"></i> Резервы
+      </a>
+      <a class="<?= $admin_page === 'support.php' ? 'text-cy bg-cy-soft' : 'text-txt-secondary' ?> flex items-center gap-3 px-3 h-11 rounded-lg hover:bg-bg-soft transition" href="support.php">
+        <i data-lucide="message-circle" class="w-4 h-4"></i> Поддержка
       </a>
       <div class="h-px bg-line my-2"></div>
       <a href="../index.php" class="flex items-center gap-3 px-3 h-11 rounded-lg text-txt-secondary hover:text-cy hover:bg-bg-soft transition">

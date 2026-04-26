@@ -34,6 +34,9 @@ if (isLoggedIn() && isset($pdo)) {
         <a class="<?= $current_page === 'rules.php' ? 'text-cy' : 'text-txt-secondary' ?> hover:text-cy transition whitespace-nowrap" href="rules.php">Правила</a>
         <a class="<?= $current_page === 'aml.php' ? 'text-cy' : 'text-txt-secondary' ?> hover:text-cy transition" href="aml.php">AML</a>
         <a class="<?= $current_page === 'kyc.php' ? 'text-cy' : 'text-txt-secondary' ?> hover:text-cy transition" href="kyc.php">KYC</a>
+        <?php if (isLoggedIn()): ?>
+        <a class="<?= $current_page === 'support.php' ? 'text-cy' : 'text-txt-secondary' ?> hover:text-cy transition whitespace-nowrap" href="support.php">Поддержка</a>
+        <?php endif; ?>
       </nav>
     </div>
     <div class="flex items-center gap-2 sm:gap-3">
@@ -90,6 +93,11 @@ if (isLoggedIn() && isset($pdo)) {
       <a class="<?= $current_page === 'kyc.php' ? 'text-cy bg-cy-soft' : 'text-txt-secondary' ?> flex items-center gap-3 px-3 h-11 rounded-lg hover:bg-bg-soft transition" href="kyc.php">
         <i data-lucide="user-check" class="w-4 h-4"></i> KYC процедура
       </a>
+      <?php if (isLoggedIn()): ?>
+      <a class="<?= $current_page === 'support.php' ? 'text-cy bg-cy-soft' : 'text-txt-secondary' ?> flex items-center gap-3 px-3 h-11 rounded-lg hover:bg-bg-soft transition" href="support.php">
+        Поддержка
+      </a>
+      <?php endif; ?>
 
       <div class="h-px bg-line my-2"></div>
 

@@ -4,6 +4,33 @@ define('SITE_NAME', 'Swap');
 define('SITE_URL', 'https://cr873507.tw1.ru');
 define('ADMIN_EMAIL', 'admin@your-domain.com');
 
+// === Telegram Bot (поддержка) ===
+define('TG_BOT_TOKEN',    '8734870076:AAEjnn-fpOPBXbjnaCMcOOmHgqe82SJ-A7U');  // Токен от @BotFather
+define('TG_ADMIN_CHAT_ID', '827051490'); // Ваш Telegram chat_id (получите у @userinfobot)
+
+function sendTelegramMessage(string $text, ?int $replyToMessageId = null): ?int {
+    $token  = TG_BOT_TOKEN;
+    $chatId = TG_ADMIN_CHAT_ID;
+    if (!$token || !$chatId) return null;
+
+    $params = ['chat_id' => $chatId, 'text' => $text, 'parse_mode' => 'HTML'];
+    if ($replyToMessageId) $params['reply_to_message_id'] = $replyToMessageId;
+
+    $ch = curl_init("https://api.telegram.org/bot{$token}/sendMessage");
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => http_build_query($params),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 5,
+        CURLOPT_SSL_VERIFYPEER => false,
+    ]);
+    $result = curl_exec($ch);
+    curl_close($ch);
+
+    $data = json_decode($result, true);
+    return ($data['ok'] ?? false) ? (int)$data['result']['message_id'] : null;
+}
+
 // === Кэширование последних успешных курсов ===
 define('CACHE_FILE', __DIR__ . '/cache_rates.json');
 define('CACHE_TTL', 600); // 10 минут
