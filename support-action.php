@@ -33,13 +33,13 @@ if ($action === 'create') {
     $pdo->prepare("INSERT INTO support_messages (ticket_id, sender, message) VALUES (?, 'user', ?)")
         ->execute([$ticket_id, $message]);
 
-    $tgText = "🎫 <b>Новый тикет #{$ticket_id}</b>\n"
-            . "👤 <b>" . htmlspecialchars($u['username']) . "</b> (ID: {$user_id})\n"
-            . "📧 " . htmlspecialchars($u['email']) . "\n"
-            . ($u['telegram'] ? "💬 " . htmlspecialchars($u['telegram']) . "\n" : "")
-            . "📌 Тема: <b>" . htmlspecialchars($subject) . "</b>\n\n"
+    $tgText = "<b>Новый тикет #{$ticket_id}</b>\n"
+            . "Пользователь: <b>" . htmlspecialchars($u['username']) . "</b> (ID: {$user_id})\n"
+            . "Email: " . htmlspecialchars($u['email']) . "\n"
+            . ($u['telegram'] ? "Telegram: " . htmlspecialchars($u['telegram']) . "\n" : "")
+            . "Тема: <b>" . htmlspecialchars($subject) . "</b>\n\n"
             . htmlspecialchars($message) . "\n\n"
-            . "↩️ <i>Ответьте на это сообщение в Telegram или через админ-панель.</i>";
+            . "<i>Ответить: /reply {$ticket_id} текст</i>";
 
     $tgMsgId = sendTelegramMessage($tgText);
     if ($tgMsgId) {
@@ -82,8 +82,8 @@ if ($action === 'reply') {
     $uName->execute([$user_id]);
     $name = $uName->fetchColumn();
 
-    $tgText = "↩️ <b>Ответ пользователя — тикет #{$ticket_id}</b>\n"
-            . "👤 " . htmlspecialchars($name) . "\n\n"
+    $tgText = "<b>Ответ пользователя — тикет #{$ticket_id}</b>\n"
+            . "Пользователь: " . htmlspecialchars($name) . "\n\n"
             . htmlspecialchars($message);
 
     sendTelegramMessage($tgText, $ticket['tg_message_id'] ?: null);

@@ -41,7 +41,7 @@ if ($action === 'reply') {
         ->execute([$ticket_id]);
 
     // Уведомление в Telegram (ответ в цепочку тикета)
-    $tgText = "📤 <b>Ответ поддержки на тикет #{$ticket_id}</b>\n\n"
+    $tgText = "<b>Ответ поддержки на тикет #{$ticket_id}</b>\n\n"
             . htmlspecialchars($message);
     sendTelegramMessage($tgText, $ticket['tg_message_id'] ?: null);
 

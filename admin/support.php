@@ -88,7 +88,7 @@ $admin_page = 'support.php';
 <script>setTimeout(()=>{ const t=document.getElementById('toast'); if(t) t.remove(); }, 4000);</script>
 <?php endif; ?>
 
-<main class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex-1">
+<main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex-1">
 
   <!-- Title -->
   <section class="mb-6 fade-in">
