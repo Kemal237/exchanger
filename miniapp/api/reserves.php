@@ -38,7 +38,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($action === 'reserve') {
             $amount     = floatval($body['amount'] ?? 0);
             $actionType = $body['action_type'] ?? 'add';
-            if ($action === 'reserve' && $amount <= 0) {
+            if (!in_array($actionType, ['add', 'subtract'])) {
+                $actionType = 'add';
+            }
+            if ($amount <= 0) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Amount must be positive']);
                 exit;
@@ -54,6 +57,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($action === 'limits') {
             $min = floatval($body['min'] ?? 0);
             $max = floatval($body['max'] ?? 0);
+            if ($max > 0 && $min > $max) {
+                http_response_code(400);
+                echo json_encode(['error' => 'min must not exceed max']);
+                exit;
+            }
             $pdo->prepare("
                 INSERT INTO reserves (currency, amount, min, max)
                 VALUES (?, 0, ?, ?)
