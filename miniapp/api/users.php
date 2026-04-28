@@ -62,9 +62,9 @@ try {
         FROM users u
         $where
         ORDER BY u.created_at DESC
-        LIMIT ? OFFSET ?
+        LIMIT {$limit} OFFSET {$offset}
     ");
-    $stmt->execute(array_merge($params, [$limit, $offset]));
+    $stmt->execute($params);
 
     echo json_encode([
         'users' => $stmt->fetchAll(PDO::FETCH_ASSOC),

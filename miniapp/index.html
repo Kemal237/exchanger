@@ -197,8 +197,11 @@ label{font-size:12px;color:var(--hint);margin-bottom:4px;display:block}
 <div id="toast" class="toast"></div>
 
 <script>
-var tg       = window.Telegram.WebApp;
-var initData = tg.initData;
+var tg          = window.Telegram.WebApp;
+var initData    = tg.initData;
+var urlParams   = new URLSearchParams(window.location.search);
+var authToken   = urlParams.get('auth') || '';
+var miniappKey  = urlParams.get('key')  || '';
 tg.ready();
 tg.expand();
 
@@ -207,7 +210,7 @@ var BASE = '/miniapp/api';
 function api(path, options) {
   options = options || {};
   return fetch(BASE + path, Object.assign({}, options, {
-    headers: Object.assign({ 'X-Telegram-Init-Data': initData, 'Content-Type': 'application/json' }, options.headers || {})
+    headers: Object.assign({ 'X-Telegram-Init-Data': initData, 'X-Auth-Token': authToken, 'X-Miniapp-Key': miniappKey, 'Content-Type': 'application/json' }, options.headers || {})
   })).then(function(res) {
     return res.json().then(function(data) {
       if (!res.ok) throw new Error(data.error || 'Ошибка ' + res.status);

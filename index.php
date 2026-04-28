@@ -362,7 +362,7 @@ $getCoinKey  = findCoinGroup($get,  $coinGroups);
     <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
       <?php
       $reserveCards = [
-          'USDT_TRC20' => ['sym' => '₮', 'name' => 'USDT',  'sub' => 'Tether · TRC20',    'color' => '#10B981', 'dec' => 2, 'ldec' => 0],
+          'USDT_TRC20' => ['sym' => '₮', 'name' => 'USDT',  'sub' => 'Tether',    'color' => '#10B981', 'dec' => 2, 'ldec' => 0],
           'USDC'       => ['sym' => '$', 'name' => 'USDC',  'sub' => 'USD Coin',            'color' => '#2775CA', 'dec' => 2, 'ldec' => 0],
           'ETH'        => ['sym' => 'Ξ', 'name' => 'ETH',   'sub' => 'Ethereum',            'color' => '#627EEA', 'dec' => 4, 'ldec' => 2],
           'SOL'        => ['sym' => '◎', 'name' => 'SOL',   'sub' => 'Solana',              'color' => '#9945FF', 'dec' => 2, 'ldec' => 1],

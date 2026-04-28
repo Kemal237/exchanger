@@ -69,12 +69,22 @@ function handleMessage(int $chatId, string $text, array $message): void {
 
     // /start, /help
     if (in_array($text, ['/start', '/help'])) {
+        // Generate 24-hour auth token for Mini App (works on all Telegram clients)
+        $token     = bin2hex(random_bytes(16));
+        $tokenFile = __DIR__ . '/miniapp_tokens.json';
+        $tokens    = file_exists($tokenFile) ? (json_decode(file_get_contents($tokenFile), true) ?: []) : [];
+        // Remove expired tokens
+        foreach ($tokens as $t => $info) {
+            if ($info['expires'] < time()) unset($tokens[$t]);
+        }
+        $tokens[$token] = ['chat_id' => $chatId, 'expires' => time() + 86400];
+        file_put_contents($tokenFile, json_encode($tokens));
+
+        $miniappUrl = 'https://cr873507.tw1.ru/miniapp/index.html?auth=' . $token;
         $keyboard = [
-            'keyboard'        => [[
-                ['text' => '📊 Открыть панель управления', 'web_app' => ['url' => 'https://cr873507.tw1.ru/miniapp/index.html']]
+            'inline_keyboard' => [[
+                ['text' => '📊 Открыть панель управления', 'web_app' => ['url' => $miniappUrl]]
             ]],
-            'resize_keyboard' => true,
-            'persistent'      => true,
         ];
         tgSend($chatId,
             "👋 <b>Бот поддержки " . SITE_NAME . "</b>\n\n"

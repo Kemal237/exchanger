@@ -16,7 +16,7 @@ try {
 } catch (Exception $e) { /* fallback to cache */ }
 
 $currencyMeta = [
-    'USDT_TRC20' => ['icon' => 'circle-dollar-sign', 'color' => '#10B981', 'name' => 'USDT TRC20', 'dec' => 2],
+    'USDT_TRC20' => ['icon' => 'circle-dollar-sign', 'color' => '#10B981', 'name' => 'USDT', 'dec' => 2],
     'USDC'       => ['icon' => 'circle-dollar-sign', 'color' => '#2775CA', 'name' => 'USDC',        'dec' => 2],
     'ETH'        => ['icon' => 'hexagon',            'color' => '#627EEA', 'name' => 'ETH',          'dec' => 6],
     'SOL'        => ['icon' => 'zap',                'color' => '#9945FF', 'name' => 'SOL',          'dec' => 4],

@@ -76,9 +76,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             JOIN users u ON u.id = t.user_id
             $where
             ORDER BY t.updated_at DESC
-            LIMIT ? OFFSET ?
+            LIMIT {$limit} OFFSET {$offset}
         ");
-        $stmt->execute(array_merge($params, [$limit, $offset]));
+        $stmt->execute($params);
 
         $counts = [];
         foreach (['open', 'answered', 'closed'] as $s) {

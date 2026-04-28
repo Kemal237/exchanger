@@ -35,9 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             LEFT JOIN users u ON u.id = o.user_id
             $where
             ORDER BY o.created_at DESC
-            LIMIT ? OFFSET ?
+            LIMIT {$limit} OFFSET {$offset}
         ");
-        $stmt->execute(array_merge($params, [$limit, $offset]));
+        $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         echo json_encode([

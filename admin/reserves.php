@@ -120,7 +120,7 @@ $admin_page = 'reserves.php';
           <label class="block text-xs font-medium text-txt-secondary mb-1.5 uppercase tracking-wider">Валюта</label>
           <select name="currency" required class="input-d w-full h-10 px-3 rounded-lg text-sm">
             <option value="">Выберите валюту</option>
-            <option value="USDT_TRC20">USDT TRC20</option>
+            <option value="USDT_TRC20">USDT</option>
             <option value="USDC">USDC</option>
             <option value="ETH">ETH</option>
             <option value="SOL">SOL</option>
@@ -162,7 +162,7 @@ $admin_page = 'reserves.php';
           <label class="block text-xs font-medium text-txt-secondary mb-1.5 uppercase tracking-wider">Валюта</label>
           <select name="currency" id="limit-currency" required class="input-d w-full h-10 px-3 rounded-lg text-sm">
             <option value="">Выберите валюту</option>
-            <option value="USDT_TRC20">USDT TRC20</option>
+            <option value="USDT_TRC20">USDT</option>
             <option value="USDC">USDC</option>
             <option value="ETH">ETH</option>
             <option value="SOL">SOL</option>

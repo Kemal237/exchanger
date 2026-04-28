@@ -39,18 +39,43 @@ function verifyTelegramInitData(string $initData) {
 
 function requireAuth() {
     header('Content-Type: application/json');
+    $chatId = 0;
+    $user   = [];
+
+    // Method 1: Full HMAC verification (mobile / modern Telegram clients)
     $initData = $_SERVER['HTTP_X_TELEGRAM_INIT_DATA'] ?? '';
-    $params   = verifyTelegramInitData($initData);
-    if ($params === false) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Unauthorized']);
-        exit;
+    if ($initData) {
+        $params = verifyTelegramInitData($initData);
+        if ($params !== false) {
+            $u      = json_decode($params['user'] ?? '{}', true);
+            $chatId = (int)(is_array($u) ? ($u['id'] ?? 0) : 0);
+            $user   = is_array($u) ? $u : [];
+        }
     }
 
-    $user   = json_decode($params['user'] ?? '{}', true);
-    if (!is_array($user)) $user = [];
-    $chatId = (int)($user['id'] ?? 0);
-    if ($chatId === 0) {
+    // Method 2: Dynamic token from /start command (inline button with ?auth=TOKEN)
+    if ($chatId <= 0) {
+        $authToken = $_SERVER['HTTP_X_AUTH_TOKEN'] ?? '';
+        if ($authToken) {
+            $tokenFile = __DIR__ . '/../../miniapp_tokens.json';
+            if (file_exists($tokenFile)) {
+                $tokens = json_decode(file_get_contents($tokenFile), true) ?: [];
+                if (isset($tokens[$authToken]) && $tokens[$authToken]['expires'] > time()) {
+                    $chatId = (int)$tokens[$authToken]['chat_id'];
+                }
+            }
+        }
+    }
+
+    // Method 3: Static key (Menu Button — fixed URL with ?key=MINIAPP_KEY)
+    if ($chatId <= 0) {
+        $key = $_SERVER['HTTP_X_MINIAPP_KEY'] ?? '';
+        if ($key && defined('MINIAPP_KEY') && hash_equals(MINIAPP_KEY, $key)) {
+            return ['chat_id' => 0, 'user' => []]; // key is the auth, no chat_id needed
+        }
+    }
+
+    if ($chatId <= 0) {
         http_response_code(403);
         echo json_encode(['error' => 'Unauthorized']);
         exit;

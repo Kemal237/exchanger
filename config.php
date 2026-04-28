@@ -4,6 +4,9 @@ define('SITE_NAME', 'Swap');
 define('SITE_URL', 'https://cr873507.tw1.ru');
 define('ADMIN_EMAIL', 'admin@your-domain.com');
 
+// Ключ доступа к Mini App — замени на любую случайную строку (мин. 20 символов)
+define('MINIAPP_KEY', 'k9mX2pL7nR4sT8vW3qY6');
+
 // === Telegram Bot (поддержка) ===
 define('TG_BOT_TOKEN',     '8734870076:AAEjnn-fpOPBXbjnaCMcOOmHgqe82SJ-A7U'); // Токен от @BotFather
 define('TG_ADMIN_CHAT_ID', '827051490'); // Ваш Telegram chat_id
@@ -210,7 +213,7 @@ if ($cached) {
 
 function currencyLabel(string $key): string {
     static $map = [
-        'USDT_TRC20' => 'USDT · TRC20',
+        'USDT_TRC20' => 'USDT',
         'USDT_ERC20' => 'USDT · ERC20',
         'USDT_BEP20' => 'USDT · BEP20',
         'USDC_TRC20' => 'USDC · TRC20',
