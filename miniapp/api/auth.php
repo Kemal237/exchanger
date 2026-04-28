@@ -5,8 +5,6 @@
 require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../db.php';
 
-header('Content-Type: application/json');
-
 function verifyTelegramInitData(string $initData) {
     $token = TG_BOT_TOKEN;
     if (!$token || !$initData) return false;
@@ -37,6 +35,7 @@ function verifyTelegramInitData(string $initData) {
 }
 
 function requireAuth() {
+    header('Content-Type: application/json');
     $initData = $_SERVER['HTTP_X_TELEGRAM_INIT_DATA'] ?? '';
     $params   = verifyTelegramInitData($initData);
     if ($params === false) {
