@@ -296,11 +296,7 @@ function loadDashboard(period, btn) {
         '<div class="card"><h3>В работе</h3><div class="val" style="color:var(--warning)">' + d.orders.in_process + '</div></div>' +
         '<div class="card"><h3>Отменено</h3><div class="val" style="color:var(--danger)">' + d.orders.canceled + '</div></div>' +
       '</div>' +
-      (d.rates ? '<div class="card"><h3 style="margin-bottom:10px">Курсы (RUB)</h3><div class="rates-grid">' +
-        '<div class="rate-item"><div class="rate-name">BTC</div><div class="rate-val">' + fmtNum(d.rates.BTC_RUB,0) + ' ₽</div></div>' +
-        '<div class="rate-item"><div class="rate-name">ETH</div><div class="rate-val">' + fmtNum(d.rates.ETH_RUB,0) + ' ₽</div></div>' +
-        '<div class="rate-item"><div class="rate-name">USDT</div><div class="rate-val">' + fmtNum(d.rates.USDT_RUB,2) + ' ₽</div></div>' +
-      '</div></div>' : '');
+      '';
   }).catch(function(e){ el.innerHTML = '<div class="empty">Ошибка: ' + esc(e.message) + '</div>'; });
 }
 

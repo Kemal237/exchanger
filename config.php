@@ -9,33 +9,40 @@ define('MINIAPP_KEY', 'k9mX2pL7nR4sT8vW3qY6');
 
 // === Telegram Bot (поддержка) ===
 define('TG_BOT_TOKEN',     '8734870076:AAEjnn-fpOPBXbjnaCMcOOmHgqe82SJ-A7U'); // Токен от @BotFather
-define('TG_ADMIN_CHAT_ID', '827051490'); // Ваш Telegram chat_id
+define('TG_ADMIN_CHAT_ID', '827051490, 427658003'); // chat_id администраторов через запятую
 
 // Белый список: chat_id через запятую. Только эти люди могут использовать бота.
 // Чтобы добавить человека — узнайте его chat_id и вставьте сюда.
 define('TG_ALLOWED_CHATS', '827051490, 427658003');
 
 function sendTelegramMessage(string $text, ?int $replyToMessageId = null): ?int {
-    $token  = TG_BOT_TOKEN;
-    $chatId = TG_ADMIN_CHAT_ID;
-    if (!$token || !$chatId) return null;
+    $token   = TG_BOT_TOKEN;
+    $rawIds  = TG_ADMIN_CHAT_ID;
+    if (!$token || !$rawIds) return null;
 
-    $params = ['chat_id' => $chatId, 'text' => $text, 'parse_mode' => 'HTML'];
-    if ($replyToMessageId) $params['reply_to_message_id'] = $replyToMessageId;
+    $chatIds = array_filter(array_map('trim', explode(',', $rawIds)));
+    $lastMsgId = null;
 
-    $ch = curl_init("https://api.telegram.org/bot{$token}/sendMessage");
-    curl_setopt_array($ch, [
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => http_build_query($params),
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 5,
-        CURLOPT_SSL_VERIFYPEER => false,
-    ]);
-    $result = curl_exec($ch);
-    curl_close($ch);
+    foreach ($chatIds as $chatId) {
+        $params = ['chat_id' => $chatId, 'text' => $text, 'parse_mode' => 'HTML'];
+        if ($replyToMessageId) $params['reply_to_message_id'] = $replyToMessageId;
 
-    $data = json_decode($result, true);
-    return ($data['ok'] ?? false) ? (int)$data['result']['message_id'] : null;
+        $ch = curl_init("https://api.telegram.org/bot{$token}/sendMessage");
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => http_build_query($params),
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 5,
+            CURLOPT_SSL_VERIFYPEER => false,
+        ]);
+        $result = curl_exec($ch);
+        curl_close($ch);
+
+        $data = json_decode($result, true);
+        if ($data['ok'] ?? false) $lastMsgId = (int)$data['result']['message_id'];
+    }
+
+    return $lastMsgId;
 }
 
 // === Кэширование последних успешных курсов ===
