@@ -2,7 +2,6 @@
 // miniapp/api/dashboard.php — GET ?period=today|7d|30d
 
 require_once __DIR__ . '/auth.php';
-requireAuth();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
@@ -10,7 +9,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     exit;
 }
 
+requireAuth();
+
 $period = $_GET['period'] ?? 'today';
+if (!in_array($period, ['today', '7d', '30d'])) {
+    $period = 'today';
+}
 $now    = date('Y-m-d H:i:s');
 
 switch ($period) {
