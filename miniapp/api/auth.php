@@ -10,6 +10,9 @@ function verifyTelegramInitData(string $initData) {
     if (!$token || !$initData) return false;
 
     parse_str($initData, $params);
+    foreach ($params as $v) {
+        if (is_array($v)) return false;
+    }
     $hash = $params['hash'] ?? '';
     if (!$hash) return false;
     unset($params['hash']);
@@ -44,8 +47,14 @@ function requireAuth() {
         exit;
     }
 
-    $user   = json_decode($params['user'] ?? '{}', true) ?? [];
+    $user   = json_decode($params['user'] ?? '{}', true);
+    if (!is_array($user)) $user = [];
     $chatId = (int)($user['id'] ?? 0);
+    if ($chatId === 0) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Unauthorized']);
+        exit;
+    }
 
     $raw     = defined('TG_ALLOWED_CHATS') ? TG_ALLOWED_CHATS : '';
     $allowed = array_filter(array_map('trim', explode(',', $raw)));
