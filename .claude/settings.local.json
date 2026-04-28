@@ -16,7 +16,9 @@
       "Bash(curl -s \"https://api.rapira.net/auth/token\" -X POST -H \"Content-Type: application/json\")",
       "Bash(curl -s \"https://api.rapira.net/market/rates\" -H \"Authorization: Bearer dummy\")",
       "WebFetch(domain:p2p.army)",
-      "Bash(del \"d:\\\\exchanger\\\\cache_rates.json\")"
+      "Bash(del \"d:\\\\exchanger\\\\cache_rates.json\")",
+      "Bash(bash \"/c/Users/kemal/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/scripts/start-server.sh\" --project-dir \"/d/exchanger\")",
+      "PowerShell(node --version 2>&1)"
     ]
   }
 }
