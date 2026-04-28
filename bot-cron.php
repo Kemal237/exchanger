@@ -69,6 +69,13 @@ function handleMessage(int $chatId, string $text, array $message): void {
 
     // /start, /help
     if (in_array($text, ['/start', '/help'])) {
+        $keyboard = [
+            'keyboard'        => [[
+                ['text' => '📊 Открыть панель управления', 'web_app' => ['url' => 'https://cr873507.tw1.ru/miniapp/index.html']]
+            ]],
+            'resize_keyboard' => true,
+            'persistent'      => true,
+        ];
         tgSend($chatId,
             "👋 <b>Бот поддержки " . SITE_NAME . "</b>\n\n"
           . "<b>Тикеты:</b>\n"
@@ -76,7 +83,8 @@ function handleMessage(int $chatId, string $text, array $message): void {
           . "/ticket 5 — посмотреть тикет #5\n"
           . "<code>/reply 5 текст</code> — ответить\n"
           . "<code>/close 5</code> — закрыть тикет\n"
-          . "<code>/open 5</code> — открыть заново"
+          . "<code>/open 5</code> — открыть заново",
+            $keyboard
         );
         return;
     }
@@ -243,17 +251,21 @@ function handleMessage(int $chatId, string $text, array $message): void {
 }
 
 // ===================================================================
-function tgSend(int $chatId, string $text): void {
+function tgSend(int $chatId, string $text, ?array $replyMarkup = null): void {
     $token = TG_BOT_TOKEN;
     if (!$token || !$chatId) return;
     $ch = curl_init("https://api.telegram.org/bot{$token}/sendMessage");
+    $postFields = [
+        'chat_id'    => $chatId,
+        'text'       => $text,
+        'parse_mode' => 'HTML',
+    ];
+    if ($replyMarkup !== null) {
+        $postFields['reply_markup'] = json_encode($replyMarkup);
+    }
     curl_setopt_array($ch, [
         CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => http_build_query([
-            'chat_id'    => $chatId,
-            'text'       => $text,
-            'parse_mode' => 'HTML',
-        ]),
+        CURLOPT_POSTFIELDS     => http_build_query($postFields),
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => 8,
         CURLOPT_SSL_VERIFYPEER => false,
