@@ -590,7 +590,12 @@ $getCoinKey  = findCoinGroup($get,  $coinGroups);
     const to   = getSelect.value;
     const r    = getRate(from, to);
     if (r > 0 && from !== to) {
-      rateLine.innerHTML = `1 ${from.replace('_',' ')} ≈ <span class="text-cy font-semibold">${fmtNum(r, to)} ${to.replace('_',' ')}</span>`;
+      const _fiatFrom1 = from.startsWith('RUB') || from === 'USD';
+      if (_fiatFrom1) {
+        rateLine.innerHTML = `1 ${to.replace('_',' ')} ≈ <span class="text-cy font-semibold">${fmtNum(1/r, from)} ${from.replace('_',' ')}</span>`;
+      } else {
+        rateLine.innerHTML = `1 ${from.replace('_',' ')} ≈ <span class="text-cy font-semibold">${fmtNum(r, to)} ${to.replace('_',' ')}</span>`;
+      }
     } else {
       rateLine.textContent = '—';
     }
@@ -893,8 +898,15 @@ $getCoinKey  = findCoinGroup($get,  $coinGroups);
       const fGK = findGroup(from), tGK = findGroup(to);
       const fLabel = coinGroups[fGK]?.label || from;
       const tLabel = coinGroups[tGK]?.label || to;
+      const fNet   = coinGroups[fGK]?.networks[from]?.tag || '';
       const tNet   = coinGroups[tGK]?.networks[to]?.tag || '';
-      rateLine.innerHTML = `1 ${fLabel} ≈ <span class="text-cy font-semibold">${fmtNum(r, base(to))} ${tLabel} · ${tNet}</span>`;
+      const fBase  = base(from);
+      const isFiat = fBase === 'RUB' || fBase === 'USD';
+      if (isFiat) {
+        rateLine.innerHTML = `1 ${tLabel} · ${tNet} ≈ <span class="text-cy font-semibold">${fmtNum(1/r, fBase)} ${fLabel}</span>`;
+      } else {
+        rateLine.innerHTML = `1 ${fLabel} ≈ <span class="text-cy font-semibold">${fmtNum(r, base(to))} ${tLabel} · ${tNet}</span>`;
+      }
     } else { rateLine.textContent = '—'; }
   }
 

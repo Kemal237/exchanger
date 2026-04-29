@@ -149,9 +149,10 @@ $current_page = 'rates.php';
         <div id="group-<?= $from ?>" class="<?= $isOpen ? '' : 'hidden' ?> border-t border-line/50">
 
           <!-- Column labels (only on desktop) -->
+          <?php $isFiatFrom = in_array($from, ['RUB', 'USD']); ?>
           <div class="hidden sm:grid grid-cols-[1fr,auto,auto,auto] gap-4 px-6 py-2 bg-bg-soft/30 text-[10px] text-txt-muted uppercase tracking-wider">
             <span>Получаете</span>
-            <span class="w-40 text-right">Курс (за 1 <?= htmlspecialchars($fromMeta['name']) ?>)</span>
+            <span class="w-40 text-right"><?= $isFiatFrom ? 'Курс (за 1 ед.)' : 'Курс (за 1 ' . htmlspecialchars($fromMeta['name']) . ')' ?></span>
             <span class="w-36 text-right">Резерв</span>
             <span class="w-24 text-right"></span>
           </div>
@@ -159,10 +160,16 @@ $current_page = 'rates.php';
           <?php foreach ($validPairs as $to => $rate):
             $toMeta  = $currencyMeta[$to] ?? ['icon'=>'coins','color'=>'#888','name'=>$to,'dec'=>2];
             $reserve = $reserves[$to] ?? 0;
-            $dec = 2;
-            if ($to === 'BTC') $dec = 8;
-            elseif ($to === 'ETH') $dec = 6;
-            elseif ($to === 'SOL') $dec = 4;
+            if ($isFiatFrom) {
+                $displayRate = $rate > 0 ? round(1 / $rate, 2) : 0;
+                $dec = 2;
+            } else {
+                $displayRate = $rate;
+                $dec = 2;
+                if ($to === 'BTC') $dec = 8;
+                elseif ($to === 'ETH') $dec = 6;
+                elseif ($to === 'SOL') $dec = 4;
+            }
           ?>
           <div class="flex sm:grid sm:grid-cols-[1fr,auto,auto,auto] items-center gap-3 sm:gap-4 px-4 sm:px-6 py-2.5 sm:py-3 border-t border-line/40 hover:bg-bg-soft/40 transition-colors">
 
@@ -178,7 +185,7 @@ $current_page = 'rates.php';
 
             <!-- Rate -->
             <div class="sm:w-40 text-right flex-shrink-0">
-              <span class="font-mono text-cy text-sm font-medium"><?= number_format($rate, $dec, '.', ' ') ?></span>
+              <span class="font-mono text-cy text-sm font-medium"><?= number_format($displayRate, $dec, '.', ' ') ?></span>
             </div>
 
             <!-- Reserve -->

@@ -170,12 +170,25 @@ $page_title = 'Подтвердите заявку — ' . SITE_NAME;
           <?php
           $giveLabel = ($currencyIcons[$give_currency]['label'] ?? '') . ' ' . ($currencyIcons[$give_currency]['net'] ?? '');
           $getLabel  = ($currencyIcons[$get_currency]['label']  ?? '') . ' ' . ($currencyIcons[$get_currency]['net']  ?? '');
-          $rateDec = in_array($get_base, ['BTC']) ? 8 : (in_array($get_base, ['ETH']) ? 6 : (in_array($get_base, ['SOL']) ? 4 : 2));
+          $fiatBases = ['RUB', 'USD'];
+          // Если отдают фиат — показываем 1 крипто = X фиат (инвертируем)
+          if (in_array($give_base, $fiatBases) && $rate > 0) {
+              $displayRate = round(1 / $rate, 2);
+              $displayDec  = 2;
+              $leftLabel   = trim($getLabel);
+              $rightLabel  = trim($giveLabel);
+              $displayVal  = number_format($displayRate, $displayDec, '.', ' ');
+          } else {
+              $displayDec  = in_array($get_base, ['BTC']) ? 8 : (in_array($get_base, ['ETH']) ? 6 : (in_array($get_base, ['SOL']) ? 4 : 2));
+              $leftLabel   = trim($giveLabel);
+              $rightLabel  = trim($getLabel);
+              $displayVal  = number_format($rate, $displayDec, '.', ' ');
+          }
           ?>
-          1 <?= htmlspecialchars(trim($giveLabel)) ?>
+          1 <?= htmlspecialchars($leftLabel) ?>
           <span class="text-txt-muted mx-1">=</span>
-          <?= number_format($rate, $rateDec, '.', ' ') ?>
-          <?= htmlspecialchars(trim($getLabel)) ?>
+          <?= $displayVal ?>
+          <?= htmlspecialchars($rightLabel) ?>
         </span>
       </div>
       <div class="flex items-center justify-between gap-3 text-xs sm:text-sm">

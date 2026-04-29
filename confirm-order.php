@@ -106,7 +106,10 @@ $tgText = "🆕 <b>Новая заявка #{$order_id}</b>\n\n"
         . "💬 Telegram: " . htmlspecialchars($telegram ?: '—') . "\n\n"
         . "➡️ Отдаёт: <b>" . number_format($amount_give, 2, '.', ' ') . " " . htmlspecialchars(currencyLabelFull($give_currency)) . "</b>\n"
         . "⬅️ Получает: <b>" . number_format($amount_get, 2, '.', ' ') . " " . htmlspecialchars(currencyLabelFull($get_currency)) . "</b>\n"
-        . "📊 Курс: {$rate}\n"
+        . "📊 Курс: " . (in_array($give_base, ['RUB', 'USD']) && $rate > 0
+            ? "1 " . currencyLabelFull($get_currency) . " = " . number_format(round(1 / $rate, 2), 2, '.', ' ') . " " . currencyLabelFull($give_currency)
+            : "1 " . currencyLabelFull($give_currency) . " = " . $rate . " " . currencyLabelFull($get_currency)
+          ) . "\n"
         . "🕐 " . date('d.m.Y H:i:s');
 
 sendTelegramMessage($tgText);
