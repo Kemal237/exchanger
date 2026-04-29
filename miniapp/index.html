@@ -54,13 +54,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .item-meta{font-size:11px;color:var(--hint);margin-top:2px}
 
 .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;flex-shrink:0}
-.badge-new{background:rgba(46,166,255,.15);color:#2ea6ff}
-.badge-process{background:rgba(243,156,18,.15);color:#f39c12}
-.badge-success{background:rgba(46,204,113,.15);color:#2ecc71}
-.badge-canceled{background:rgba(231,76,60,.15);color:#e74c3c}
-.badge-open{background:rgba(243,156,18,.15);color:#f39c12}
-.badge-answered{background:rgba(46,204,113,.15);color:#2ecc71}
-.badge-closed{background:rgba(120,120,120,.15);color:#888}
+.badge-new{background:rgba(245,158,11,.12);color:#F59E0B;border:1px solid rgba(245,158,11,.3)}
+.badge-process{background:rgba(34,211,238,.12);color:#22D3EE;border:1px solid rgba(34,211,238,.3)}
+.badge-success{background:rgba(16,185,129,.12);color:#10B981;border:1px solid rgba(16,185,129,.3)}
+.badge-canceled{background:rgba(239,68,68,.12);color:#EF4444;border:1px solid rgba(239,68,68,.3)}
+.badge-open{background:rgba(245,158,11,.12);color:#F59E0B;border:1px solid rgba(245,158,11,.3)}
+.badge-answered{background:rgba(16,185,129,.12);color:#10B981;border:1px solid rgba(16,185,129,.3)}
+.badge-closed{background:rgba(120,120,120,.12);color:#888;border:1px solid rgba(120,120,120,.2)}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:10px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s;width:100%}
 .btn:active{opacity:.75}
@@ -259,6 +259,15 @@ function loadSection(name) {
 var sLabel = { new:'Новая', in_process:'В работе', success:'Выполнена', canceled:'Отменена', open:'Открыт', answered:'Отвечен', closed:'Закрыт' };
 var sBadge = { new:'badge-new', in_process:'badge-process', success:'badge-success', canceled:'badge-canceled', open:'badge-open', answered:'badge-answered', closed:'badge-closed' };
 
+var cLabel = {
+  'USDT_TRC20':'USDT · TRC20','USDT_ERC20':'USDT · ERC20','USDT_BEP20':'USDT · BEP20',
+  'USDC_TRC20':'USDC · TRC20','USDC_ERC20':'USDC · ERC20','USDC':'USDC',
+  'ETH':'ETH · ERC20','SOL':'SOL','BTC':'BTC',
+  'RUB_SBP':'RUB · СБП','RUB_CASH':'RUB · Нал.','RUB_CARD':'RUB · Карта','RUB':'RUB',
+  'USD':'USD · Нал.'
+};
+function curLabel(key) { return cLabel[key] || key.replace(/_/g,' · '); }
+
 function badge(status) {
   return '<span class="badge ' + (sBadge[status]||'') + '">' + (sLabel[status]||status) + '</span>';
 }
@@ -312,7 +321,7 @@ function loadOrders(status, page) {
     if (!d.orders.length) { html = '<div class="empty">Нет заявок</div>'; }
     else d.orders.forEach(function(o) {
       html += '<div class="item" onclick=\'openOrder(' + JSON.stringify(o).replace(/\'/g,'\\\'') + ')\'>' +
-        '<div class="item-top"><div class="item-title">' + esc(o.give_currency) + ' → ' + esc(o.get_currency) + '</div>' + badge(o.status) + '</div>' +
+        '<div class="item-top"><div class="item-title">' + esc(curLabel(o.give_currency)) + ' → ' + esc(curLabel(o.get_currency)) + '</div>' + badge(o.status) + '</div>' +
         '<div class="item-meta">#' + o.id + ' · ' + esc(o.username||'—') + ' · ' + fmtDate(o.created_at) + '</div>' +
         '<div class="item-meta">' + fmtNum(o.amount_give) + ' → ' + fmtNum(o.amount_get) + '</div></div>';
     });
@@ -331,7 +340,7 @@ function openOrder(o) {
   document.getElementById('order-modal-content').innerHTML =
     '<div class="modal-title">Заявка #' + o.id + '</div>' +
     '<div class="card" style="margin-bottom:12px">' +
-      '<div class="card-row"><span style="color:var(--hint)">Обмен</span><b>' + esc(o.give_currency) + ' → ' + esc(o.get_currency) + '</b></div>' +
+      '<div class="card-row"><span style="color:var(--hint)">Обмен</span><b>' + esc(curLabel(o.give_currency)) + ' → ' + esc(curLabel(o.get_currency)) + '</b></div>' +
       '<div class="card-row"><span style="color:var(--hint)">Сумма</span><span>' + fmtNum(o.amount_give) + ' → ' + fmtNum(o.amount_get) + '</span></div>' +
       '<div class="card-row"><span style="color:var(--hint)">Пользователь</span><span>' + esc(o.username||'—') + '</span></div>' +
       '<div class="card-row"><span style="color:var(--hint)">Дата</span><span>' + fmtDate(o.created_at) + '</span></div>' +
@@ -383,7 +392,7 @@ function openUser(userId, username) {
     var html = '<div class="modal-title">История: ' + esc(username) + '</div>';
     if (!orders.length) { html += '<div class="empty">Нет заявок</div>'; }
     else orders.forEach(function(o) {
-      html += '<div class="item" style="cursor:default"><div class="item-top"><div class="item-title">' + esc(o.give_currency) + ' → ' + esc(o.get_currency) + '</div>' + badge(o.status) + '</div>' +
+      html += '<div class="item" style="cursor:default"><div class="item-top"><div class="item-title">' + esc(curLabel(o.give_currency)) + ' → ' + esc(curLabel(o.get_currency)) + '</div>' + badge(o.status) + '</div>' +
         '<div class="item-meta">#' + o.id + ' · ' + fmtDate(o.created_at) + '</div>' +
         '<div class="item-meta">' + fmtNum(o.amount_give) + ' → ' + fmtNum(o.amount_get) + '</div></div>';
     });
