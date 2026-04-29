@@ -25,7 +25,10 @@ function sendTelegramMessage(string $text, ?int $replyToMessageId = null): ?int 
 
     foreach ($chatIds as $chatId) {
         $params = ['chat_id' => $chatId, 'text' => $text, 'parse_mode' => 'HTML'];
-        if ($replyToMessageId) $params['reply_to_message_id'] = $replyToMessageId;
+        if ($replyToMessageId) {
+            $params['reply_to_message_id']      = $replyToMessageId;
+            $params['allow_sending_without_reply'] = true;
+        }
 
         $ch = curl_init("https://api.telegram.org/bot{$token}/sendMessage");
         curl_setopt_array($ch, [
