@@ -95,7 +95,7 @@ if (isLoggedIn() && isset($pdo)) {
       </a>
       <?php if (isLoggedIn()): ?>
       <a class="<?= $current_page === 'support.php' ? 'text-cy bg-cy-soft' : 'text-txt-secondary' ?> flex items-center gap-3 px-3 h-11 rounded-lg hover:bg-bg-soft transition" href="support.php">
-        Поддержка
+        <i data-lucide="life-buoy" class="w-4 h-4"></i> Поддержка
       </a>
       <?php endif; ?>
 
