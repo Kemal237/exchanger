@@ -221,6 +221,26 @@ if ($cached) {
 // ХЕЛПЕРЫ ОТОБРАЖЕНИЯ ВАЛЮТ
 // ================================================
 
+function currencyLabelFull(string $key): string {
+    static $map = [
+        'USDT_TRC20' => 'USDT · TRC20',
+        'USDT_ERC20' => 'USDT · ERC20',
+        'USDT_BEP20' => 'USDT · BEP20',
+        'USDC_TRC20' => 'USDC · TRC20',
+        'USDC_ERC20' => 'USDC · ERC20',
+        'ETH'        => 'ETH · ERC20',
+        'SOL'        => 'SOL',
+        'BTC'        => 'BTC',
+        'RUB_SBP'    => 'RUB · СБП',
+        'RUB_CASH'   => 'RUB · Наличные',
+        'RUB_CARD'   => 'RUB · Карта',
+        'USD'        => 'USD · Наличные',
+        'RUB'        => 'RUB',
+        'USDC'       => 'USDC',
+    ];
+    return $map[$key] ?? str_replace('_', ' · ', $key);
+}
+
 function currencyLabel(string $key): string {
     static $map = [
         'USDT_TRC20' => 'USDT',

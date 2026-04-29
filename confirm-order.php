@@ -95,6 +95,22 @@ try {
     exit;
 }
 
+// === Уведомление в Telegram о новой заявке ===
+$uStmt = $pdo->prepare("SELECT username, email FROM users WHERE id = ?");
+$uStmt->execute([$user_id]);
+$uInfo = $uStmt->fetch(PDO::FETCH_ASSOC);
+
+$tgText = "🆕 <b>Новая заявка #{$order_id}</b>\n\n"
+        . "👤 Пользователь: <b>" . htmlspecialchars($uInfo['username'] ?? '—') . "</b> (ID: {$user_id})\n"
+        . "📧 Email: " . htmlspecialchars($uInfo['email'] ?? '—') . "\n"
+        . "💬 Telegram: " . htmlspecialchars($telegram ?: '—') . "\n\n"
+        . "➡️ Отдаёт: <b>" . number_format($amount_give, 2, '.', ' ') . " " . htmlspecialchars(currencyLabelFull($give_currency)) . "</b>\n"
+        . "⬅️ Получает: <b>" . number_format($amount_get, 2, '.', ' ') . " " . htmlspecialchars(currencyLabelFull($get_currency)) . "</b>\n"
+        . "📊 Курс: {$rate}\n"
+        . "🕐 " . date('d.m.Y H:i:s');
+
+sendTelegramMessage($tgText);
+
 $_SESSION['highlight_order'] = $order_id;
 $_SESSION['toast'] = ['type' => 'success', 'message' => "Заявка успешно создана! Номер: $order_id"];
 

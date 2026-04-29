@@ -14,13 +14,37 @@ require_once __DIR__ . '/../db.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (isset($_POST['change_status'])) {
-        $order_id = $_POST['order_id'];
+        $order_id   = $_POST['order_id'];
         $new_status = $_POST['new_status'];
 
         $valid_statuses = ['new', 'in_process', 'success', 'canceled'];
         if (in_array($new_status, $valid_statuses)) {
             $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
             $stmt->execute([$new_status, $order_id]);
+
+            // Имя администратора из сессии
+            $adminName = 'Администратор';
+            if (!empty($_SESSION['user_id'])) {
+                $aStmt = $pdo->prepare("SELECT username FROM users WHERE id = ?");
+                $aStmt->execute([$_SESSION['user_id']]);
+                $adminName = $aStmt->fetchColumn() ?: 'Администратор';
+            }
+
+            $statusLabels = [
+                'new'        => '🆕 Новая',
+                'in_process' => '⚙️ В работе',
+                'success'    => '✅ Выполнена',
+                'canceled'   => '❌ Отменена',
+            ];
+            $statusLabel = $statusLabels[$new_status] ?? $new_status;
+
+            $tgText = "🔄 <b>Статус заявки #{$order_id} изменён</b>\n\n"
+                    . "📋 Новый статус: <b>{$statusLabel}</b>\n"
+                    . "👤 Администратор: <b>" . htmlspecialchars($adminName) . "</b>\n"
+                    . "🕐 " . date('d.m.Y H:i:s');
+
+            sendTelegramMessage($tgText);
+
             $_SESSION['toast'] = ['type' => 'success', 'message' => "Статус заявки $order_id изменён"];
         }
     }
