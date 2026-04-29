@@ -5,17 +5,17 @@ require_once 'auth.php';
 // Восстановление данных обмена после логина
 if (isset($_SESSION['pending_exchange'])) {
     $give        = $_SESSION['pending_exchange']['give']        ?? 'USDT_TRC20';
-    $get         = $_SESSION['pending_exchange']['get']         ?? 'RUB_SBP';
+    $get         = $_SESSION['pending_exchange']['get']         ?? 'RUB_CASH';
     $amount_give = $_SESSION['pending_exchange']['amount_give'] ?? floatval($_GET['amount'] ?? 100);
     unset($_SESSION['pending_exchange']);
 } else {
     $give        = $_GET['give'] ?? 'USDT_TRC20';
-    $get         = $_GET['get']  ?? 'RUB_SBP';
+    $get         = $_GET['get']  ?? 'RUB_CASH';
     $amount_give = floatval($_GET['amount'] ?? 100);
 }
 
 // Миграция старых ключей без сети
-$keyMigration = ['RUB' => 'RUB_SBP', 'USDC' => 'USDC_TRC20', 'USD' => 'USD'];
+$keyMigration = ['RUB' => 'RUB_CASH', 'USDC' => 'USDC_TRC20', 'USD' => 'USD'];
 $give = $keyMigration[$give] ?? $give;
 $get  = $keyMigration[$get]  ?? $get;
 
@@ -109,9 +109,7 @@ $coinGroups = [
     'RUB' => [
         'symbol' => '₽', 'label' => 'RUB', 'color' => '#A78BFA',
         'networks' => [
-            'RUB_SBP'  => ['tag' => 'СБП',   'desc' => 'Система быстрых платежей'],
             'RUB_CASH' => ['tag' => 'Нал.',   'desc' => 'Наличные'],
-            'RUB_CARD' => ['tag' => 'Карта',  'desc' => 'Банковская карта'],
         ],
     ],
     'USD' => [
@@ -367,7 +365,7 @@ $getCoinKey  = findCoinGroup($get,  $coinGroups);
           'ETH'        => ['sym' => 'Ξ', 'name' => 'ETH',   'sub' => 'Ethereum',            'color' => '#627EEA', 'dec' => 4, 'ldec' => 2],
           'SOL'        => ['sym' => '◎', 'name' => 'SOL',   'sub' => 'Solana',              'color' => '#9945FF', 'dec' => 2, 'ldec' => 1],
           'BTC'        => ['sym' => '₿', 'name' => 'BTC',   'sub' => 'Bitcoin',             'color' => '#F7931A', 'dec' => 6, 'ldec' => 3],
-          'RUB'        => ['sym' => '₽', 'name' => 'RUB',   'sub' => 'Карта / СБП',         'color' => '#A78BFA', 'dec' => 0, 'ldec' => 0],
+          'RUB'        => ['sym' => '₽', 'name' => 'RUB',   'sub' => 'Наличные',            'color' => '#A78BFA', 'dec' => 0, 'ldec' => 0],
           'USD'        => ['sym' => '$', 'name' => 'USD',   'sub' => 'Доллар США',          'color' => '#22D3EE', 'dec' => 2, 'ldec' => 0],
       ];
       $di = 1;

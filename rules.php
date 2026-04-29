@@ -75,7 +75,7 @@ $current_page = 'rules.php';
         <h2 class="text-lg sm:text-xl font-bold">1. Общие положения</h2>
       </div>
       <div class="space-y-3 text-sm text-txt-secondary leading-relaxed">
-        <p>Сервис <strong class="text-txt-primary"><?= htmlspecialchars(SITE_NAME) ?></strong> предоставляет услуги обмена криптовалют (USDT TRC20, BTC) и фиатных средств (рубли, переводы по СБП и на банковские карты). Настоящие Правила регулируют отношения между Сервисом и Пользователем.</p>
+        <p>Сервис <strong class="text-txt-primary"><?= htmlspecialchars(SITE_NAME) ?></strong> предоставляет услуги обмена криптовалют (USDT, BTC) и фиатных средств (рубли и доллары США наличными). Настоящие Правила регулируют отношения между Сервисом и Пользователем.</p>
         <p>Используя сервис, пользователь подтверждает, что:</p>
         <ul class="space-y-2 mt-2">
           <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-vi mt-0.5 flex-shrink-0"></i><span>Ознакомлен с настоящими Правилами и согласен с ними в полном объёме</span></li>

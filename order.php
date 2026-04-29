@@ -61,9 +61,7 @@ $currencyIcons = [
     'ETH'        => ['icon' => 'hexagon',            'color' => '#627EEA', 'label' => 'ETH',  'net' => 'ERC20'],
     'SOL'        => ['icon' => 'zap',                'color' => '#9945FF', 'label' => 'SOL',  'net' => 'SOL'],
     'BTC'        => ['icon' => 'bitcoin',            'color' => '#F7931A', 'label' => 'BTC',  'net' => 'BTC'],
-    'RUB_SBP'   => ['icon' => 'banknote',           'color' => '#A78BFA', 'label' => 'RUB',  'net' => 'СБП'],
     'RUB_CASH'  => ['icon' => 'banknote',           'color' => '#A78BFA', 'label' => 'RUB',  'net' => 'Наличные'],
-    'RUB_CARD'  => ['icon' => 'banknote',           'color' => '#A78BFA', 'label' => 'RUB',  'net' => 'Карта'],
     'USD'        => ['icon' => 'dollar-sign',        'color' => '#22D3EE', 'label' => 'USD',  'net' => 'Наличные'],
 ];
 $giveIcon = $currencyIcons[$give_currency] ?? ['icon' => 'coins', 'color' => '#A1A1AA'];
