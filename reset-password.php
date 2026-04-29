@@ -2,6 +2,7 @@
 require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
+require_once 'activity_log.php';
 
 if (isLoggedIn()) {
     header('Location: profile.php');
@@ -53,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tokenValid) {
             SET password = ?, password_reset_token = NULL, password_reset_sent_at = NULL
             WHERE id = ?
         ")->execute([$hash, $user['id']]);
+        logAction($pdo, 'password_reset_done', 'Пароль успешно сброшен для: ' . $user['username'], 'success', 'user', (string)$user['id']);
         $done = true;
     }
 }

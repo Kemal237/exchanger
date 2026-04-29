@@ -7,6 +7,13 @@ require_once __DIR__ . '/db.php';
 
 if (!TG_BOT_TOKEN) exit;
 
+// Очистка логов старше 90 дней с вероятностью 1% (≈раз в 1.5ч при крон каждую минуту)
+if (rand(1, 100) === 1) {
+    try {
+        $pdo->exec("DELETE FROM activity_logs WHERE created_at < DATE_SUB(NOW(), INTERVAL 90 DAY)");
+    } catch (Exception $e) { /* не критично */ }
+}
+
 // 5 опросов с интервалом 10 секунд = максимальная задержка ответа ~10 секунд
 // Суммарное время выполнения ~50с — безопасно вписывается в минуту cron
 for ($i = 0; $i < 5; $i++) {

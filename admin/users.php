@@ -10,6 +10,7 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../activity_log.php';
 
 // AJAX: обновление статуса заявки из модалки истории
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status'])) {
@@ -62,8 +63,12 @@ $sort_order  = (isset($_GET['order']) && $_GET['order'] === 'desc') ? 'DESC' : '
 
 if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     $delete_id = (int)$_GET['delete'];
+    $delStmt = $pdo->prepare("SELECT username FROM users WHERE id = ?");
+    $delStmt->execute([$delete_id]);
+    $deletedUsername = $delStmt->fetchColumn() ?: '—';
     $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
     $stmt->execute([$delete_id]);
+    logAction($pdo, 'admin_user_delete', "Удалён пользователь #{$delete_id} ({$deletedUsername})", 'success', 'user', (string)$delete_id);
     $_SESSION['toast'] = ['type' => 'success', 'message' => 'Пользователь удалён'];
     header('Location: users.php');
     exit;
@@ -94,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $stmt = $pdo->prepare("UPDATE users SET username = ?, email = ?, telegram = ?, role = ?, email_verified = ?, email_verification_token = IF(? = 1, NULL, email_verification_token) WHERE id = ?");
                 $stmt->execute([$new_username, $new_email, $new_telegram, $new_role, $email_verified, $email_verified, $user_id]);
             }
+            logAction($pdo, 'admin_user_edit', "Редактирование пользователя #{$user_id} ({$new_username})" . ($new_password ? ', пароль изменён' : ''), 'success', 'user', (string)$user_id);
             $edit_success = 'Пользователь успешно обновлён';
             // Reload edit user after update
             $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");

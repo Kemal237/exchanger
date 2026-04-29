@@ -3,6 +3,7 @@ require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
 require_once 'mailer.php';
+require_once 'activity_log.php';
 
 $error = $success = '';
 
@@ -41,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             sendVerificationEmail($email, $username, $token);
 
             if (login($username, $password)) {
+                logAction($pdo, 'user_register', 'Регистрация: ' . $username . ' (' . $email . ')', 'success', 'user', (string)($_SESSION['user_id'] ?? ''));
                 $_SESSION['toast'] = [
                     'type'    => 'success',
                     'message' => 'Аккаунт создан! Проверьте почту — отправили письмо для подтверждения email.'
@@ -51,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Регистрация прошла, но автоматический вход не удался. Попробуйте войти вручную.';
             }
         } else {
+            logAction($pdo, 'user_register_fail', 'Попытка регистрации: ' . $username . ' (логин/email занят)', 'error', 'user', '');
             $error = 'Логин или email уже занят';
         }
     }

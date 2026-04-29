@@ -4,6 +4,7 @@
 require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
+require_once 'activity_log.php';
 
 function generateOrderId(PDO $pdo): string {
     $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -90,10 +91,13 @@ try {
     $pdo->commit();
 } catch (Exception $e) {
     $pdo->rollBack();
+    logAction($pdo, 'order_create_fail', 'Ошибка создания заявки: ' . $e->getMessage(), 'error', 'order', '');
     $_SESSION['error'] = 'Ошибка создания заявки. Попробуйте ещё раз.';
     header('Location: profile.php#orders-table');
     exit;
 }
+
+logAction($pdo, 'order_create', "Создана заявка {$order_id}: {$give_currency} → {$get_currency}, сумма {$amount_give} → {$amount_get}", 'success', 'order', $order_id);
 
 // === Уведомление в Telegram о новой заявке ===
 $uStmt = $pdo->prepare("SELECT username, email FROM users WHERE id = ?");

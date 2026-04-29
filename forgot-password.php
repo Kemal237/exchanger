@@ -3,6 +3,7 @@ require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
 require_once 'mailer.php';
+require_once 'activity_log.php';
 
 if (isLoggedIn()) {
     header('Location: profile.php');
@@ -16,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
 
     if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        logAction($pdo, 'password_reset_request', 'Некорректный email: ' . $email, 'error', 'user', '');
         $error = 'Введите корректный email';
     } else {
         $stmt = $pdo->prepare("SELECT id, username, password_reset_sent_at FROM users WHERE email = ? LIMIT 1");
@@ -40,7 +42,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Всегда показываем успех — не раскрываем существование email
-        if (!$error) $sent = true;
+        if (!$error) {
+            $sent = true;
+            logAction($pdo, 'password_reset_request', 'Запрос сброса пароля для email: ' . $email, 'success', 'user', '');
+        }
     }
 }
 

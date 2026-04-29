@@ -1,6 +1,8 @@
 <?php
 require_once '../config.php';
 require_once '../auth.php';
+require_once '../db.php';
+require_once '../activity_log.php';
 
 if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
     header('Location: index.php');
@@ -19,9 +21,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isAdmin()) {
     $pass = $_POST['password'] ?? '';
     if ($pass === ADMIN_PASSWORD) {
         $_SESSION['admin_logged_in'] = true;
+        logAction($pdo, 'admin_login', 'Вход в админ-панель: ' . ($_SESSION['username'] ?? 'unknown'), 'success', 'admin', '');
         header('Location: index.php');
         exit;
     } else {
+        logAction($pdo, 'admin_login_fail', 'Неудачная попытка входа в админ-панель', 'error', 'admin', '');
         $error = 'Неверный пароль';
     }
 }

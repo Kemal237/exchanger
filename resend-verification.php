@@ -4,6 +4,7 @@ require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
 require_once 'mailer.php';
+require_once 'activity_log.php';
 
 if (!isLoggedIn()) {
     header('Location: login.php');
@@ -40,8 +41,10 @@ $pdo->prepare("UPDATE users SET email_verification_token = ?, email_verification
 $sent = sendVerificationEmail($user['email'], $user['username'], $token);
 
 if ($sent) {
+    logAction($pdo, 'email_verify_resend', 'Повторная отправка письма верификации на ' . $user['email'], 'success', 'user', (string)$user_id);
     $_SESSION['toast'] = ['type' => 'success', 'message' => 'Письмо с подтверждением отправлено на ' . $user['email']];
 } else {
+    logAction($pdo, 'email_verify_resend', 'Ошибка повторной отправки письма верификации на ' . $user['email'], 'error', 'user', (string)$user_id);
     $_SESSION['toast'] = ['type' => 'error', 'message' => 'Не удалось отправить письмо. Проверьте настройки SMTP.'];
 }
 

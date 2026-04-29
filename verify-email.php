@@ -3,6 +3,7 @@
 require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
+require_once 'activity_log.php';
 
 $token = trim($_GET['token'] ?? '');
 $status = 'invalid'; // invalid | expired | already | success
@@ -31,6 +32,7 @@ if (!empty($token)) {
                 SET email_verified = 1, email_verification_token = NULL
                 WHERE id = ?
             ")->execute([$user['id']]);
+            logAction($pdo, 'email_verified', 'Email подтверждён для пользователя #' . $user['id'], 'success', 'user', (string)$user['id']);
             $status = 'success';
         }
     }

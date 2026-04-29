@@ -7,6 +7,7 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../activity_log.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: support.php');
@@ -55,6 +56,7 @@ if ($action === 'reply') {
             . "👤 Администратор: <b>" . htmlspecialchars($adminName) . "</b>\n\n"
             . htmlspecialchars($message);
     sendTelegramMessage($tgText, $ticket['tg_message_id'] ?: null);
+    logAction($pdo, 'admin_ticket_reply', "Ответ адм. на тикет #{$ticket_id} (адм: {$adminName})", 'success', 'ticket', (string)$ticket_id);
 
     if ($isAjax) {
         header('Content-Type: application/json');
@@ -76,6 +78,7 @@ if ($action === 'status') {
 
     $pdo->prepare("UPDATE support_tickets SET status = ?, updated_at = NOW() WHERE id = ?")
         ->execute([$new_status, $ticket_id]);
+    logAction($pdo, 'admin_ticket_status', "Статус тикета #{$ticket_id} → {$new_status}", 'success', 'ticket', (string)$ticket_id);
 
     $redirect = $new_status === 'closed' ? 'closed' : ($new_status === 'answered' ? 'answered' : 'open');
 

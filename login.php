@@ -2,6 +2,7 @@
 require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
+require_once 'activity_log.php';
 
 $error = '';
 $message = $_SESSION['auth_message'] ?? '';
@@ -15,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Заполните все поля';
     } elseif (login($username, $password)) {
         $username_display = htmlspecialchars($_SESSION['username'] ?? 'пользователь');
+        logAction($pdo, 'user_login', 'Успешный вход: ' . $username, 'success', 'user', (string)($_SESSION['user_id'] ?? ''));
 
         if (isset($_SESSION['pending_exchange'])) {
             $_SESSION['toast'] = [
@@ -32,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: index.php');
         exit;
     } else {
+        logAction($pdo, 'user_login_fail', 'Неудачная попытка входа: ' . $username, 'error', 'user', '');
         $error = 'Неверный логин или пароль';
     }
 }

@@ -2,6 +2,7 @@
 require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
+require_once 'activity_log.php';
 
 if (!isLoggedIn() || $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: support.php');
@@ -47,6 +48,7 @@ if ($action === 'create') {
             ->execute([$tgMsgId, $ticket_id]);
     }
 
+    logAction($pdo, 'ticket_create', "Создан тикет #{$ticket_id}: " . $subject, 'success', 'ticket', (string)$ticket_id);
     $_SESSION['toast'] = ['type' => 'success', 'message' => "Обращение #{$ticket_id} отправлено. Ждите ответа."];
     header("Location: support.php?ticket={$ticket_id}#ticket-{$ticket_id}");
     exit;
@@ -94,6 +96,7 @@ if ($action === 'reply') {
             . htmlspecialchars($message);
 
     sendTelegramMessage($tgText, $ticket['tg_message_id'] ?: null);
+    logAction($pdo, 'ticket_reply', "Ответ в тикет #{$ticket_id}", 'success', 'ticket', (string)$ticket_id);
 
     if ($isAjax) {
         header('Content-Type: application/json');

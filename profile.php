@@ -8,6 +8,7 @@ error_reporting(E_ALL);
 require_once 'config.php';
 require_once 'db.php';
 require_once 'auth.php';
+require_once 'activity_log.php';
 
 if (!isLoggedIn()) {
     header('Location: login.php');
@@ -22,6 +23,7 @@ if (isset($_GET['cancel_order'])) {
     $order_id = $_GET['cancel_order'];
     $stmt = $pdo->prepare("UPDATE orders SET status = 'canceled', canceled_at = NOW() WHERE id = ? AND user_id = ? AND status = 'new'");
     $stmt->execute([$order_id, $user_id]);
+    logAction($pdo, 'order_cancel', "Пользователь отменил заявку {$order_id}", 'success', 'order', $order_id);
     $_SESSION['toast'] = ['type' => 'success', 'message' => "Заявка $order_id отменена"];
     header('Location: profile.php');
     exit;
@@ -77,6 +79,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $_SESSION['username'] = $new_name;
             $_SESSION['email']    = $new_email;
+            $changes = [];
+            if ($new_name !== ($_SESSION['username'] ?? '')) $changes[] = 'ник';
+            if ($new_pass) $changes[] = 'пароль';
+            if ($new_telegram) $changes[] = 'telegram';
+            $desc = 'Обновлён профиль' . ($changes ? ': ' . implode(', ', $changes) : '');
+            logAction($pdo, 'profile_update', $desc, 'success', 'user', (string)$user_id);
             $_SESSION['toast'] = ['type' => 'success', 'message' => 'Профиль успешно обновлён'];
             header('Location: profile.php');
             exit;

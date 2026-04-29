@@ -10,6 +10,7 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../activity_log.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
@@ -44,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     . "🕐 " . date('d.m.Y H:i:s');
 
             sendTelegramMessage($tgText);
+            logAction($pdo, 'order_status_change', "Статус заявки {$order_id} → {$new_status} (адм: {$adminName})", 'success', 'order', $order_id);
 
             $_SESSION['toast'] = ['type' => 'success', 'message' => "Статус заявки $order_id изменён"];
         }
@@ -53,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $order_id = $_POST['order_id'];
         $stmt = $pdo->prepare("DELETE FROM orders WHERE id = ?");
         $stmt->execute([$order_id]);
+        logAction($pdo, 'order_delete', "Удалена заявка {$order_id}", 'success', 'order', $order_id);
         $_SESSION['toast'] = ['type' => 'success', 'message' => "Заявка $order_id удалена"];
     }
 
