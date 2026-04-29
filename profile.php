@@ -200,7 +200,7 @@ $current_page = 'profile.php';
     </div>
     <div class="gborder spot rounded-xl bg-bg-card p-3 sm:p-5 reveal" data-d="3">
       <div class="flex items-center justify-between mb-2">
-        <span class="text-[10px] sm:text-xs text-txt-muted uppercase tracking-wider">В работе</span>
+        <span class="text-[10px] sm:text-xs text-txt-muted uppercase tracking-wider">Активных</span>
         <i data-lucide="clock" class="w-4 h-4 text-warn"></i>
       </div>
       <div class="text-lg sm:text-2xl font-bold text-warn count-up" data-target="<?= $active_orders ?>">0</div>
