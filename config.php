@@ -243,7 +243,7 @@ function currencyLabelFull(string $key): string {
 
 function currencyLabel(string $key): string {
     static $map = [
-        'USDT_TRC20' => 'USDT',
+        'USDT_TRC20' => 'USDT · TRC20',
         'USDT_ERC20' => 'USDT · ERC20',
         'USDT_BEP20' => 'USDT · BEP20',
         'USDC_TRC20' => 'USDC · TRC20',

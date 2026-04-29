@@ -446,7 +446,7 @@ $admin_page = 'users.php';
   });
 
   const currencyLabelMap = {
-    'USDT_TRC20':'USDT','USDT_ERC20':'USDT · ERC20','USDT_BEP20':'USDT · BEP20',
+    'USDT_TRC20':'USDT · TRC20','USDT_ERC20':'USDT · ERC20','USDT_BEP20':'USDT · BEP20',
     'USDC_TRC20':'USDC · TRC20','USDC_ERC20':'USDC · ERC20',
     'ETH':'ETH · ERC20','SOL':'SOL','BTC':'BTC',
     'RUB_SBP':'RUB · СБП','RUB_CASH':'RUB · Нал.','RUB_CARD':'RUB · Карта',
