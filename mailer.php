@@ -1,7 +1,14 @@
 <?php
 // mailer.php — отправка писем через PHPMailer + SMTP
 
-require_once __DIR__ . '/mail_config.php';
+define('MAIL_HOST',       'smtp.timeweb.ru');
+define('MAIL_PORT',       465);
+define('MAIL_USERNAME',   'noreply@cr873507.tw1.ru');
+define('MAIL_PASSWORD',   'Bkm31072005&');
+define('MAIL_FROM',       'noreply@cr873507.tw1.ru');
+define('MAIL_FROM_NAME',  SITE_NAME);
+define('MAIL_ENCRYPTION', 'ssl');
+
 require_once __DIR__ . '/lib/phpmailer/Exception.php';
 require_once __DIR__ . '/lib/phpmailer/PHPMailer.php';
 require_once __DIR__ . '/lib/phpmailer/SMTP.php';

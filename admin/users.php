@@ -563,7 +563,7 @@ $admin_page = 'users.php';
   });
 </script>
 
-<?php require_once __DIR__ . '/notes-modal.php'; ?>
+<?php require_once __DIR__ . '/notes.php'; ?>
 
 <?php require_once __DIR__ . '/footer.php'; ?>
 

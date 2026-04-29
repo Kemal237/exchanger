@@ -1,3 +1,136 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) session_start();
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+    http_response_code(403);
+    if (!empty($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) {
+        echo json_encode(['error' => 'Forbidden']);
+    }
+    exit;
+}
+
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../db.php';
+
+$upload_dir = __DIR__ . '/../uploads/admin-notes/';
+
+// ── File download ──────────────────────────────────────────────────
+if (isset($_GET['file'])) {
+    $file_id = (int)$_GET['file'];
+    if (!$file_id) { http_response_code(404); exit; }
+
+    $stmt = $pdo->prepare("SELECT filename, original_name FROM admin_note_files WHERE id = ?");
+    $stmt->execute([$file_id]);
+    $file = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$file) { http_response_code(404); exit; }
+
+    $path = $upload_dir . $file['filename'];
+    if (!file_exists($path)) { http_response_code(404); exit; }
+
+    $mime = mime_content_type($path) ?: 'application/octet-stream';
+    header('Content-Type: ' . $mime);
+    header('Content-Disposition: attachment; filename="' . rawurlencode($file['original_name']) . '"');
+    header('Content-Length: ' . filesize($path));
+    readfile($path);
+    exit;
+}
+
+// ── JSON API ───────────────────────────────────────────────────────
+if (isset($_GET['entity_type']) || isset($_POST['action'])) {
+    header('Content-Type: application/json');
+    if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
+
+    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+        $entity_type = $_GET['entity_type'] ?? '';
+        $entity_id   = trim($_GET['entity_id'] ?? '');
+
+        if (!in_array($entity_type, ['user', 'order']) || $entity_id === '') {
+            echo json_encode(['error' => 'Invalid params']); exit;
+        }
+
+        $stmt = $pdo->prepare("SELECT * FROM admin_notes WHERE entity_type = ? AND entity_id = ? ORDER BY created_at DESC");
+        $stmt->execute([$entity_type, $entity_id]);
+        $notes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($notes as &$note) {
+            $fs = $pdo->prepare("SELECT id, filename, original_name FROM admin_note_files WHERE note_id = ?");
+            $fs->execute([$note['id']]);
+            $note['files'] = $fs->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        echo json_encode($notes);
+        exit;
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $action = $_POST['action'] ?? '';
+
+        if ($action === 'delete') {
+            $note_id = (int)($_POST['note_id'] ?? 0);
+            $fs = $pdo->prepare("SELECT filename FROM admin_note_files WHERE note_id = ?");
+            $fs->execute([$note_id]);
+            foreach ($fs->fetchAll(PDO::FETCH_ASSOC) as $f) {
+                $p = $upload_dir . $f['filename'];
+                if (file_exists($p)) unlink($p);
+            }
+            $pdo->prepare("DELETE FROM admin_notes WHERE id = ?")->execute([$note_id]);
+            echo json_encode(['success' => true]);
+            exit;
+        }
+
+        if ($action === 'add') {
+            $entity_type = $_POST['entity_type'] ?? '';
+            $entity_id   = trim($_POST['entity_id'] ?? '');
+            $note_text   = trim($_POST['note_text'] ?? '');
+            $admin_name  = $_SESSION['username'] ?? 'Администратор';
+
+            if (!in_array($entity_type, ['user', 'order']) || $entity_id === '') {
+                echo json_encode(['error' => 'Invalid params']); exit;
+            }
+
+            $has_text  = $note_text !== '';
+            $has_files = !empty($_FILES['files']['name'][0]);
+
+            if (!$has_text && !$has_files) {
+                echo json_encode(['error' => 'Добавьте текст или прикрепите файл']); exit;
+            }
+
+            $stmt = $pdo->prepare("INSERT INTO admin_notes (entity_type, entity_id, admin_name, note_text) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$entity_type, $entity_id, $admin_name, $note_text]);
+            $note_id = (int)$pdo->lastInsertId();
+
+            $uploaded = [];
+            if ($has_files) {
+                foreach ($_FILES['files']['name'] as $i => $orig) {
+                    if ($_FILES['files']['error'][$i] !== UPLOAD_ERR_OK || !$orig) continue;
+                    $ext = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
+                    $fn  = bin2hex(random_bytes(16)) . ($ext ? '.' . $ext : '');
+                    if (move_uploaded_file($_FILES['files']['tmp_name'][$i], $upload_dir . $fn)) {
+                        $pdo->prepare("INSERT INTO admin_note_files (note_id, filename, original_name) VALUES (?, ?, ?)")
+                            ->execute([$note_id, $fn, $orig]);
+                        $fid = (int)$pdo->lastInsertId();
+                        $uploaded[] = ['id' => $fid, 'filename' => $fn, 'original_name' => $orig];
+                    }
+                }
+            }
+
+            echo json_encode([
+                'success' => true,
+                'note'    => [
+                    'id'         => $note_id,
+                    'note_text'  => $note_text,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'admin_name' => $admin_name,
+                    'files'      => $uploaded,
+                ],
+            ]);
+            exit;
+        }
+    }
+
+    echo json_encode(['error' => 'Unknown action']);
+    exit;
+}
+?>
 <!-- Notes Modal (shared: users + orders) -->
 <div id="notes-modal" class="hidden fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onclick="closeNotesModal()">
   <div class="gborder rounded-2xl bg-bg-card shadow-card w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden" onclick="event.stopPropagation()">
@@ -70,7 +203,7 @@ async function loadNotes() {
   list.innerHTML = '<div class="flex flex-col items-center justify-center gap-2 py-10 text-txt-muted"><i data-lucide="loader" class="w-6 h-6 opacity-50"></i></div>';
   lucide.createIcons();
   try {
-    const res  = await fetch('notes-handler.php?entity_type=' + _nType + '&entity_id=' + _nId);
+    const res  = await fetch('notes.php?entity_type=' + _nType + '&entity_id=' + _nId);
     const data = await res.json();
     renderNotes(data);
   } catch(e) {
@@ -98,7 +231,7 @@ function renderNotes(notes) {
     const files = n.files && n.files.length
       ? `<div class="mt-2.5 flex flex-wrap gap-1.5">
            ${n.files.map(f => `
-             <a href="notes-file.php?id=${f.id}" target="_blank"
+             <a href="notes.php?file=${f.id}" target="_blank"
                 class="inline-flex items-center gap-1 px-2 h-7 rounded-md bg-bg-soft border border-line text-xs text-txt-secondary hover:text-cy hover:border-cy-border transition" title="${esc(f.original_name)}">
                <i data-lucide="paperclip" class="w-3 h-3 flex-shrink-0"></i>
                <span class="max-w-[140px] truncate">${esc(f.original_name)}</span>
@@ -139,7 +272,7 @@ async function deleteNote(noteId) {
   const fd = new FormData();
   fd.append('action', 'delete');
   fd.append('note_id', noteId);
-  await fetch('notes-handler.php', { method: 'POST', body: fd });
+  await fetch('notes.php', { method: 'POST', body: fd });
   loadNotes();
 }
 
@@ -166,7 +299,7 @@ async function submitNote() {
   for (const f of files) fd.append('files[]', f);
 
   try {
-    const res  = await fetch('notes-handler.php', { method: 'POST', body: fd });
+    const res  = await fetch('notes.php', { method: 'POST', body: fd });
     const data = await res.json();
     if (data.success) {
       document.getElementById('notes-textarea').value = '';

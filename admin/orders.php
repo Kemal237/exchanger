@@ -325,7 +325,7 @@ $admin_page = 'orders.php';
 
 </main>
 
-<?php require_once __DIR__ . '/notes-modal.php'; ?>
+<?php require_once __DIR__ . '/notes.php'; ?>
 
 <?php require_once __DIR__ . '/footer.php'; ?>
 
