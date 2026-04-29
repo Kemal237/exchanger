@@ -18,6 +18,7 @@ $ticket_id = (int)($_POST['ticket_id'] ?? 0);
 
 // === Ответить пользователю ===
 if ($action === 'reply') {
+    $isAjax  = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
     $message = trim($_POST['message'] ?? '');
     if (!$ticket_id || empty($message)) {
         header('Location: support.php');
@@ -55,6 +56,11 @@ if ($action === 'reply') {
             . htmlspecialchars($message);
     sendTelegramMessage($tgText, $ticket['tg_message_id'] ?: null);
 
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true]);
+        exit;
+    }
     $_SESSION['toast'] = ['type' => 'success', 'message' => "Ответ на тикет #{$ticket_id} отправлен"];
     header("Location: support.php?status=answered&ticket={$ticket_id}#ticket-{$ticket_id}");
     exit;

@@ -142,7 +142,7 @@ $current_page = 'support.php';
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="font-semibold text-sm truncate"><?= htmlspecialchars($ticket['subject']) ?></span>
-            <span class="st <?= $statusClass[$ticket['status']] ?? 'st-warn' ?> flex-shrink-0 text-[10px]">
+            <span class="st <?= $statusClass[$ticket['status']] ?? 'st-warn' ?> flex-shrink-0 text-[10px]" id="status-badge-<?= $tid ?>">
               <?= $statusLabel[$ticket['status']] ?? $ticket['status'] ?>
             </span>
           </div>
@@ -193,9 +193,8 @@ $current_page = 'support.php';
         </div>
 
         <!-- Reply form -->
-        <?php if (!$isClosed): ?>
-        <div class="border-t border-line/50 px-4 sm:px-5 py-3">
-          <form method="POST" action="support-action.php" class="flex gap-2 items-end">
+        <div id="reply-form-<?= $tid ?>" class="border-t border-line/50 px-4 sm:px-5 py-3<?= $isClosed ? ' hidden' : '' ?>">
+          <form method="POST" action="support-action.php" class="flex gap-2 items-end reply-form">
             <input type="hidden" name="action" value="reply">
             <input type="hidden" name="ticket_id" value="<?= $tid ?>">
             <textarea name="message" rows="2" required placeholder="Ваш ответ…"
@@ -205,12 +204,10 @@ $current_page = 'support.php';
             </button>
           </form>
         </div>
-        <?php else: ?>
-        <div class="border-t border-line/50 px-4 sm:px-5 py-3 text-center text-xs text-txt-muted">
+        <div id="reply-closed-<?= $tid ?>" class="border-t border-line/50 px-4 sm:px-5 py-3 text-center text-xs text-txt-muted<?= $isClosed ? '' : ' hidden' ?>">
           <i data-lucide="lock" class="w-3.5 h-3.5 inline-block mr-1 align-middle"></i>
           Обращение закрыто
         </div>
-        <?php endif; ?>
 
       </div>
     </div>
@@ -266,7 +263,6 @@ function toggleTicket(id) {
   const isHidden = body.classList.contains('hidden');
   body.classList.toggle('hidden', !isHidden);
   if (chevron) chevron.classList.toggle('rotate-180', isHidden);
-  // Scroll to bottom of messages
   if (isHidden) {
     const msgs = document.getElementById('msgs-' + id);
     if (msgs) setTimeout(() => { msgs.scrollTop = msgs.scrollHeight; }, 50);
@@ -283,7 +279,6 @@ function closeCreateModal() {
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCreateModal(); });
 
-// Auto-open ticket from URL param
 <?php if ($openTicketId): ?>
 (function() {
   const el = document.getElementById('tbody-<?= (int)$openTicketId ?>');
@@ -292,6 +287,107 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCreateM
   if (card) setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 })();
 <?php endif; ?>
+
+// ── Auto-polling ──────────────────────────────────────────────
+(function() {
+  const lastId = {};
+  <?php foreach ($tickets as $t):
+    $tid = $t['id'];
+    $msgs = $messages_map[$tid] ?? [];
+    $lid  = !empty($msgs) ? (int)end($msgs)['id'] : 0;
+  ?>
+  lastId[<?= $tid ?>] = <?= $lid ?>;
+  <?php endforeach; ?>
+
+  const statusLabels  = {open:'Открыт', answered:'Ответили', closed:'Закрыт'};
+  const statusClasses = {open:'st-warn', answered:'st-ok',    closed:'st-cancel'};
+
+  function fmtTime(s) {
+    if (!s) return '';
+    const p = s.split(/[\s\-:]/);
+    return p[2] + '.' + p[1] + ' ' + p[3] + ':' + p[4];
+  }
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function buildMsg(m) {
+    const isUser = m.sender === 'user';
+    const w = document.createElement('div');
+    w.className = 'flex ' + (isUser ? 'justify-end' : 'justify-start');
+    let h = '<div class="max-w-[80%]">';
+    if (!isUser) h += '<div class="flex items-center gap-1.5 mb-1"><div class="w-5 h-5 rounded-full bg-vi/20 flex items-center justify-center"><i data-lucide="shield-check" class="w-3 h-3 text-vi"></i></div><span class="text-[10px] text-vi font-medium">Поддержка</span></div>';
+    h += '<div class="px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed '
+       + (isUser ? 'bg-cy/15 border border-cy/20 text-txt-primary rounded-tr-sm'
+                 : 'bg-bg-soft border border-line text-txt-primary rounded-tl-sm')
+       + '">' + esc(m.message).replace(/\n/g, '<br>') + '</div>';
+    h += '<div class="text-[10px] text-txt-muted mt-1 ' + (isUser ? 'text-right' : 'text-left') + '">' + fmtTime(m.created_at) + '</div></div>';
+    w.innerHTML = h;
+    return w;
+  }
+
+  function applyStatus(tid, status) {
+    const badge = document.getElementById('status-badge-' + tid);
+    if (badge) {
+      badge.textContent = statusLabels[status] || status;
+      badge.className   = 'st ' + (statusClasses[status] || 'st-warn') + ' flex-shrink-0 text-[10px]';
+    }
+    if (status === 'closed') {
+      const fEl = document.getElementById('reply-form-'   + tid);
+      const cEl = document.getElementById('reply-closed-' + tid);
+      if (fEl) fEl.classList.add('hidden');
+      if (cEl) cEl.classList.remove('hidden');
+    }
+  }
+
+  function poll(tid) {
+    fetch('support-poll.php?ticket_id=' + tid + '&last_id=' + (lastId[tid] || 0))
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data || data.error) return;
+        const c = document.getElementById('msgs-' + tid);
+        if (c && data.messages && data.messages.length) {
+          const atBottom = c.scrollHeight - c.scrollTop <= c.clientHeight + 60;
+          data.messages.forEach(m => {
+            c.appendChild(buildMsg(m));
+            if (parseInt(m.id) > (lastId[tid] || 0)) lastId[tid] = parseInt(m.id);
+          });
+          if (atBottom) c.scrollTop = c.scrollHeight;
+          if (window.lucide) lucide.createIcons();
+        }
+        if (data.status) applyStatus(tid, data.status);
+      })
+      .catch(() => {});
+  }
+
+  function getOpen() {
+    return Array.from(document.querySelectorAll('[id^="tbody-"]'))
+      .filter(el => !el.classList.contains('hidden'))
+      .map(el => parseInt(el.id.slice(6)));
+  }
+
+  setInterval(() => getOpen().forEach(id => poll(id)), 5000);
+
+  // AJAX reply
+  document.querySelectorAll('.reply-form').forEach(form => {
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const ta  = form.querySelector('textarea[name="message"]');
+      const btn = form.querySelector('button[type="submit"]');
+      const tid = parseInt(form.querySelector('input[name="ticket_id"]').value);
+      if (!ta.value.trim()) return;
+      btn.disabled = true;
+      fetch('support-action.php', {
+        method: 'POST',
+        body: new FormData(form),
+        headers: {'X-Requested-With': 'XMLHttpRequest'}
+      })
+      .then(r => r.json())
+      .then(d => { if (d.success) { ta.value = ''; poll(tid); } })
+      .catch(() => {})
+      .finally(() => { btn.disabled = false; });
+    });
+  });
+})();
 </script>
 
 </body>

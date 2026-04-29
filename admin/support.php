@@ -88,7 +88,7 @@ $admin_page = 'support.php';
 <script>setTimeout(()=>{ const t=document.getElementById('toast'); if(t) t.remove(); }, 4000);</script>
 <?php endif; ?>
 
-<main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex-1">
+<main class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex-1">
 
   <!-- Title -->
   <section class="mb-6 fade-in">
@@ -143,7 +143,7 @@ $admin_page = 'support.php';
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2 mb-0.5">
             <span class="font-semibold text-sm"><?= htmlspecialchars($ticket['subject']) ?></span>
-            <span class="st <?= $statusClass[$ticket['status']] ?? 'st-warn' ?> text-[10px]">
+            <span class="st <?= $statusClass[$ticket['status']] ?? 'st-warn' ?> text-[10px]" id="status-badge-<?= $tid ?>">
               <?= $statusLabel[$ticket['status']] ?>
             </span>
             <?php if ($ticket['last_sender'] === 'user' && $ticket['status'] === 'open'): ?>
@@ -214,9 +214,8 @@ $admin_page = 'support.php';
         <!-- Actions -->
         <div class="border-t border-line/50 px-4 sm:px-5 py-3 space-y-3">
 
-          <?php if (!$isClosed): ?>
-          <!-- Reply form -->
-          <form method="POST" action="support-action.php" class="flex gap-2 items-end">
+          <div id="reply-form-<?= $tid ?>"<?= $isClosed ? ' class="hidden"' : '' ?>>
+          <form method="POST" action="support-action.php" class="flex gap-2 items-end reply-form">
             <input type="hidden" name="action" value="reply">
             <input type="hidden" name="ticket_id" value="<?= $tid ?>">
             <textarea name="message" rows="2" required placeholder="Ответ пользователю…"
@@ -225,7 +224,7 @@ $admin_page = 'support.php';
               <i data-lucide="send" class="w-3.5 h-3.5"></i> Ответить
             </button>
           </form>
-          <?php endif; ?>
+          </div>
 
           <!-- Status actions -->
           <div class="flex flex-wrap items-center gap-2">
@@ -284,6 +283,113 @@ function toggleTicket(id) {
   if (card) setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 })();
 <?php endif; ?>
+
+// ── Auto-polling ──────────────────────────────────────────────
+(function() {
+  const lastId    = {};
+  const usernames = {};
+  <?php foreach ($tickets as $t):
+    $tid = $t['id'];
+    $msgs = $messages_map[$tid] ?? [];
+    $lid  = !empty($msgs) ? (int)end($msgs)['id'] : 0;
+  ?>
+  lastId[<?= $tid ?>]    = <?= $lid ?>;
+  usernames[<?= $tid ?>] = <?= json_encode($t['user_name']) ?>;
+  <?php endforeach; ?>
+
+  const statusLabels  = {open:'Открыт', answered:'Ответили', closed:'Закрыт'};
+  const statusClasses = {open:'st-warn', answered:'st-ok',    closed:'st-cancel'};
+
+  function fmtTime(s) {
+    if (!s) return '';
+    const p = s.split(/[\s\-:]/);
+    return p[2] + '.' + p[1] + '.' + p[0].slice(2) + ' ' + p[3] + ':' + p[4];
+  }
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function buildMsg(m, tid) {
+    const isAdmin = m.sender === 'admin';
+    const uname   = usernames[tid] || '';
+    const w = document.createElement('div');
+    w.className = 'flex ' + (isAdmin ? 'justify-end' : 'justify-start');
+    let h = '<div class="max-w-[80%]">';
+    if (!isAdmin) {
+      h += '<div class="flex items-center gap-1.5 mb-1"><div class="w-5 h-5 rounded-full bg-cy/20 flex items-center justify-center"><i data-lucide="user" class="w-3 h-3 text-cy"></i></div><span class="text-[10px] text-cy font-medium">' + esc(uname) + '</span></div>';
+    } else {
+      h += '<div class="flex items-center justify-end gap-1.5 mb-1"><span class="text-[10px] text-vi font-medium">Поддержка</span><div class="w-5 h-5 rounded-full bg-vi/20 flex items-center justify-center"><i data-lucide="shield-check" class="w-3 h-3 text-vi"></i></div></div>';
+    }
+    h += '<div class="px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed '
+       + (isAdmin ? 'bg-vi/10 border border-vi/20 text-txt-primary rounded-tr-sm'
+                  : 'bg-bg-soft border border-line text-txt-primary rounded-tl-sm')
+       + '">' + esc(m.message).replace(/\n/g, '<br>') + '</div>';
+    h += '<div class="text-[10px] text-txt-muted mt-1 ' + (isAdmin ? 'text-right' : 'text-left') + '">' + fmtTime(m.created_at) + '</div></div>';
+    w.innerHTML = h;
+    return w;
+  }
+
+  function applyStatus(tid, status) {
+    const badge = document.getElementById('status-badge-' + tid);
+    if (badge) {
+      badge.textContent = statusLabels[status] || status;
+      badge.className   = 'st ' + (statusClasses[status] || 'st-warn') + ' text-[10px]';
+    }
+    if (status === 'closed') {
+      const fEl = document.getElementById('reply-form-' + tid);
+      if (fEl) fEl.classList.add('hidden');
+    }
+  }
+
+  function poll(tid) {
+    fetch('support-poll.php?ticket_id=' + tid + '&last_id=' + (lastId[tid] || 0))
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data || data.error) return;
+        const c = document.getElementById('msgs-' + tid);
+        if (c && data.messages && data.messages.length) {
+          const atBottom = c.scrollHeight - c.scrollTop <= c.clientHeight + 60;
+          data.messages.forEach(m => {
+            c.appendChild(buildMsg(m, tid));
+            if (parseInt(m.id) > (lastId[tid] || 0)) lastId[tid] = parseInt(m.id);
+          });
+          if (atBottom) c.scrollTop = c.scrollHeight;
+          if (window.lucide) lucide.createIcons();
+        }
+        if (data.status) applyStatus(tid, data.status);
+        if (data.username) usernames[tid] = data.username;
+      })
+      .catch(() => {});
+  }
+
+  function getOpen() {
+    return Array.from(document.querySelectorAll('[id^="tbody-"]'))
+      .filter(el => !el.classList.contains('hidden'))
+      .map(el => parseInt(el.id.slice(6)));
+  }
+
+  setInterval(() => getOpen().forEach(id => poll(id)), 5000);
+
+  // AJAX reply
+  document.querySelectorAll('.reply-form').forEach(form => {
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const ta  = form.querySelector('textarea[name="message"]');
+      const btn = form.querySelector('button[type="submit"]');
+      const tid = parseInt(form.querySelector('input[name="ticket_id"]').value);
+      if (!ta.value.trim()) return;
+      btn.disabled = true;
+      fetch('support-action.php', {
+        method: 'POST',
+        body: new FormData(form),
+        headers: {'X-Requested-With': 'XMLHttpRequest'}
+      })
+      .then(r => r.json())
+      .then(d => { if (d.success) { ta.value = ''; poll(tid); } })
+      .catch(() => {})
+      .finally(() => { btn.disabled = false; });
+    });
+  });
+})();
 </script>
 
 </body>
