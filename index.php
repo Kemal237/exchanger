@@ -116,7 +116,7 @@ $coinGroups = [
     ],
     'USD' => [
         'symbol' => '$', 'label' => 'USD', 'color' => '#22D3EE',
-        'networks' => ['USD' => ['tag' => 'SWIFT', 'desc' => 'Банковский перевод']],
+        'networks' => ['USD' => ['tag' => 'Нал.', 'desc' => 'Наличные']],
     ],
 ];
 

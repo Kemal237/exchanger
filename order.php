@@ -64,7 +64,7 @@ $currencyIcons = [
     'RUB_SBP'   => ['icon' => 'banknote',           'color' => '#A78BFA', 'label' => 'RUB',  'net' => 'СБП'],
     'RUB_CASH'  => ['icon' => 'banknote',           'color' => '#A78BFA', 'label' => 'RUB',  'net' => 'Наличные'],
     'RUB_CARD'  => ['icon' => 'banknote',           'color' => '#A78BFA', 'label' => 'RUB',  'net' => 'Карта'],
-    'USD'        => ['icon' => 'dollar-sign',        'color' => '#22D3EE', 'label' => 'USD',  'net' => 'SWIFT'],
+    'USD'        => ['icon' => 'dollar-sign',        'color' => '#22D3EE', 'label' => 'USD',  'net' => 'Наличные'],
 ];
 $giveIcon = $currencyIcons[$give_currency] ?? ['icon' => 'coins', 'color' => '#A1A1AA'];
 $getIcon  = $currencyIcons[$get_currency]  ?? ['icon' => 'coins', 'color' => '#A1A1AA'];
