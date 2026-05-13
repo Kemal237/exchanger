@@ -10,6 +10,7 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../activity_log.php';
 
 $upload_dir = __DIR__ . '/../uploads/admin-notes/';
 
@@ -66,6 +67,12 @@ if (isset($_GET['entity_type']) || isset($_POST['action'])) {
 
         if ($action === 'delete') {
             $note_id = (int)($_POST['note_id'] ?? 0);
+
+            // Получаем инфо о заметке перед удалением
+            $nStmt = $pdo->prepare("SELECT entity_type, entity_id, note_text FROM admin_notes WHERE id = ?");
+            $nStmt->execute([$note_id]);
+            $nInfo = $nStmt->fetch(PDO::FETCH_ASSOC);
+
             $fs = $pdo->prepare("SELECT filename FROM admin_note_files WHERE note_id = ?");
             $fs->execute([$note_id]);
             foreach ($fs->fetchAll(PDO::FETCH_ASSOC) as $f) {
@@ -73,6 +80,15 @@ if (isset($_GET['entity_type']) || isset($_POST['action'])) {
                 if (file_exists($p)) unlink($p);
             }
             $pdo->prepare("DELETE FROM admin_notes WHERE id = ?")->execute([$note_id]);
+
+            if ($nInfo) {
+                $typeLabel = $nInfo['entity_type'] === 'order' ? 'заявке' : 'пользователю';
+                logAction($pdo, 'note_delete',
+                    "Удалена заметка к {$typeLabel} #{$nInfo['entity_id']}: " . mb_substr($nInfo['note_text'] ?? '', 0, 80),
+                    'success', $nInfo['entity_type'], $nInfo['entity_id']
+                );
+            }
+
             echo json_encode(['success' => true]);
             exit;
         }
@@ -109,9 +125,26 @@ if (isset($_GET['entity_type']) || isset($_POST['action'])) {
                             ->execute([$note_id, $fn, $orig]);
                         $fid = (int)$pdo->lastInsertId();
                         $uploaded[] = ['id' => $fid, 'filename' => $fn, 'original_name' => $orig];
+
+                        // Лог загрузки файла
+                        $fileTypeLabel = $entity_type === 'order' ? "заявке #{$entity_id}" : "пользователю #{$entity_id}";
+                        logAction($pdo, 'note_file_upload',
+                            "Загружен файл к {$fileTypeLabel}: {$orig} (адм: {$admin_name})",
+                            'success', $entity_type, $entity_id
+                        );
                     }
                 }
             }
+
+            // Лог добавления заметки
+            $typeLabel = $entity_type === 'order' ? 'заявке' : 'пользователю';
+            $fileCount = count($uploaded);
+            $logDesc   = "Заметка к {$typeLabel} #{$entity_id} (адм: {$admin_name})";
+            if ($note_text) $logDesc .= ': ' . mb_substr($note_text, 0, 120);
+            if ($fileCount) $logDesc .= " [{$fileCount} файл(ов)]";
+            logAction($pdo, $entity_type === 'order' ? 'note_order_add' : 'note_user_add',
+                $logDesc, 'success', $entity_type, $entity_id
+            );
 
             echo json_encode([
                 'success' => true,

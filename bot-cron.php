@@ -100,7 +100,12 @@ function handleMessage(int $chatId, string $text, array $message): void {
           . "/ticket 5 — посмотреть тикет #5\n"
           . "<code>/reply 5 текст</code> — ответить\n"
           . "<code>/close 5</code> — закрыть тикет\n"
-          . "<code>/open 5</code> — открыть заново",
+          . "<code>/open 5</code> — открыть заново\n\n"
+          . "<b>Логи активности:</b>\n"
+          . "/logs — последние 15 действий\n"
+          . "/logs_errors — только ошибки\n"
+          . "/logs_orders — действия с заявками\n"
+          . "/logs_notes — заметки и файлы",
             $keyboard
         );
         return;
@@ -261,9 +266,157 @@ function handleMessage(int $chatId, string $text, array $message): void {
         return;
     }
 
+    // /logs — последние 15 записей активности
+    if ($text === '/logs') {
+        try {
+            $rows = $pdo->query("
+                SELECT created_at, role, username, action, description, result, ip
+                FROM activity_logs
+                ORDER BY id DESC LIMIT 15
+            ")->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($rows)) {
+                tgSend($chatId, "Логов пока нет.");
+                return;
+            }
+
+            $actionShort = [
+                'user_login'           => '🔑 Вход',
+                'user_login_fail'      => '🚫 Неудачный вход',
+                'user_logout'          => '🚪 Выход',
+                'user_register'        => '🆕 Регистрация',
+                'user_register_fail'   => '🚫 Рег. неудача',
+                'profile_update'       => '✏️ Профиль',
+                'password_reset_request'=> '🔒 Сброс пароля',
+                'password_reset_done'  => '🔓 Пароль сброшен',
+                'email_verified'       => '✅ Email подтверждён',
+                'email_verify_resend'  => '📧 Повтор письма',
+                'admin_login'          => '🛡 Вход (адм)',
+                'admin_login_fail'     => '🚫 Вход адм. неудача',
+                'admin_logout'         => '🚪 Выход (адм)',
+                'order_create'         => '📝 Заявка создана',
+                'order_create_fail'    => '❌ Заявка ошибка',
+                'order_cancel'         => '🚫 Заявка отменена',
+                'order_status_change'  => '🔄 Статус заявки',
+                'order_delete'         => '🗑 Заявка удалена',
+                'ticket_create'        => '🎫 Тикет создан',
+                'ticket_reply'         => '💬 Ответ в тикет',
+                'admin_ticket_reply'   => '🛡💬 Ответ адм.',
+                'admin_ticket_status'  => '🔄 Статус тикета',
+                'admin_user_delete'    => '🗑 Польз. удалён',
+                'admin_user_edit'      => '✏️ Польз. изменён',
+                'note_order_add'       => '📋 Заметка к заявке',
+                'note_user_add'        => '👤 Заметка к польз.',
+                'note_file_upload'     => '📎 Файл загружен',
+                'note_delete'          => '🗑 Заметка удалена',
+            ];
+
+            $out = "📊 <b>Последние 15 действий</b>\n";
+            $out .= str_repeat('─', 28) . "\n\n";
+            foreach ($rows as $r) {
+                $dt  = date('d.m H:i', strtotime($r['created_at']));
+                $act = $actionShort[$r['action']] ?? ('⚙️ ' . $r['action']);
+                $who = $r['username'] ? htmlspecialchars($r['username']) : "гость ({$r['ip']})";
+                $ok  = $r['result'] === 'error' ? ' ❌' : '';
+                $out .= "<code>{$dt}</code> {$act}{$ok}\n";
+                $out .= "   └ {$who}";
+                if ($r['description']) {
+                    $short = mb_substr($r['description'], 0, 80);
+                    $out .= " — " . htmlspecialchars($short);
+                }
+                $out .= "\n\n";
+            }
+            $out .= "Фильтры: <code>/logs_errors</code> · <code>/logs_orders</code> · <code>/logs_notes</code>";
+            tgSend($chatId, $out);
+        } catch (Throwable $e) {
+            tgSend($chatId, "Ошибка БД: " . $e->getMessage());
+        }
+        return;
+    }
+
+    // /logs_errors — только ошибки (неудачные входы и пр.)
+    if ($text === '/logs_errors') {
+        try {
+            $rows = $pdo->query("
+                SELECT created_at, username, action, description, ip
+                FROM activity_logs
+                WHERE result = 'error'
+                ORDER BY id DESC LIMIT 15
+            ")->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($rows)) { tgSend($chatId, "Ошибок не зафиксировано."); return; }
+
+            $out = "🚨 <b>Последние ошибки / неудачи</b>\n\n";
+            foreach ($rows as $r) {
+                $dt  = date('d.m H:i', strtotime($r['created_at']));
+                $who = $r['username'] ?: "гость ({$r['ip']})";
+                $out .= "<code>{$dt}</code> ❌ " . htmlspecialchars($r['action']) . "\n"
+                      . "   └ " . htmlspecialchars($who) . " — " . htmlspecialchars(mb_substr($r['description'], 0, 80)) . "\n\n";
+            }
+            tgSend($chatId, $out);
+        } catch (Throwable $e) {
+            tgSend($chatId, "Ошибка БД: " . $e->getMessage());
+        }
+        return;
+    }
+
+    // /logs_orders — только действия с заявками
+    if ($text === '/logs_orders') {
+        try {
+            $rows = $pdo->query("
+                SELECT created_at, username, action, description, result
+                FROM activity_logs
+                WHERE action LIKE 'order_%'
+                ORDER BY id DESC LIMIT 15
+            ")->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($rows)) { tgSend($chatId, "Действий с заявками не найдено."); return; }
+
+            $out = "📋 <b>Последние действия с заявками</b>\n\n";
+            foreach ($rows as $r) {
+                $dt  = date('d.m H:i', strtotime($r['created_at']));
+                $ok  = $r['result'] === 'error' ? '❌' : '✅';
+                $who = $r['username'] ?: 'гость';
+                $out .= "{$ok} <code>{$dt}</code> " . htmlspecialchars($r['action']) . "\n"
+                      . "   └ " . htmlspecialchars($who) . " — " . htmlspecialchars(mb_substr($r['description'], 0, 100)) . "\n\n";
+            }
+            tgSend($chatId, $out);
+        } catch (Throwable $e) {
+            tgSend($chatId, "Ошибка БД: " . $e->getMessage());
+        }
+        return;
+    }
+
+    // /logs_notes — только заметки и файлы
+    if ($text === '/logs_notes') {
+        try {
+            $rows = $pdo->query("
+                SELECT created_at, username, action, description
+                FROM activity_logs
+                WHERE action LIKE 'note_%'
+                ORDER BY id DESC LIMIT 15
+            ")->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($rows)) { tgSend($chatId, "Заметок не найдено."); return; }
+
+            $out = "📝 <b>Последние заметки и файлы</b>\n\n";
+            foreach ($rows as $r) {
+                $dt  = date('d.m H:i', strtotime($r['created_at']));
+                $ico = str_contains($r['action'], 'file') ? '📎' : (str_contains($r['action'], 'delete') ? '🗑' : '📝');
+                $who = $r['username'] ?: 'неизвестно';
+                $out .= "{$ico} <code>{$dt}</code> — " . htmlspecialchars($who) . "\n"
+                      . "   └ " . htmlspecialchars(mb_substr($r['description'], 0, 120)) . "\n\n";
+            }
+            tgSend($chatId, $out);
+        } catch (Throwable $e) {
+            tgSend($chatId, "Ошибка БД: " . $e->getMessage());
+        }
+        return;
+    }
+
     // Неизвестное сообщение
     if ($text) {
-        tgSend($chatId, "Команды:\n/list — тикеты\n<code>/reply 5 текст</code> — ответ\n/help — справка");
+        tgSend($chatId, "Команды:\n/list — тикеты\n<code>/reply 5 текст</code> — ответ\n/logs — активность\n/help — справка");
     }
 }
 

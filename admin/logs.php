@@ -113,6 +113,10 @@ $actionLabels = [
     'admin_ticket_status'    => 'Смена статуса тикета',
     'admin_user_delete'      => 'Удаление пользователя',
     'admin_user_edit'        => 'Редактирование пользователя',
+    'note_order_add'         => 'Заметка к заявке',
+    'note_user_add'          => 'Заметка к пользователю',
+    'note_file_upload'       => 'Загрузка файла в заметку',
+    'note_delete'            => 'Удаление заметки',
 ];
 
 $roleColors = [

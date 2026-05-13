@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SwapVault — Макет (тёмно-зелёный / золото)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+/* ─────────────────────────────────────
+   TOKENS
+───────────────────────────────────── */
+:root {
+  --c-void:     #040A05;
+  --c-base:     #070E08;
+  --c-card:     #0B160C;
+  --c-raise:    #0F1E10;
+  --c-lift:     #142415;
+  --c-soft:     #1A2E1B;
+
+  --b-main:     #192B1A;
+  --b-mid:      #243D25;
+  --b-gold:     #2C2008;
+  --b-gold2:    #3D2D0A;
+
+  --gold:       #C9A040;
+  --gold-hi:    #DEAD58;
+  --gold-lo:    #7A6025;
+  --gold-glow:  rgba(201,160,64,.12);
+
+  --g-dim:      #1C4520;
+  --g-mid:      #2D7035;
+
+  --t-1:        #EDE8D4;
+  --t-2:        #A89E88;
+  --t-3:        #5E5848;
+  --t-4:        #2A2618;
+
+  --red:        #D95050;
+  --green-ok:   #4BAF6A;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; color-scheme: dark; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px; line-height: 1.5;
+  background: var(--c-void);
+  color: var(--t-1);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ─── BACKGROUND ─── */
+.bg-layer {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+}
+/* subtle vignette gradient */
+.bg-layer::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 120% 80% at 70% -10%, rgba(18,55,22,.35) 0%, transparent 60%),
+    radial-gradient(ellipse 90% 60% at -5% 80%, rgba(14,42,16,.28) 0%, transparent 55%);
+}
+/* fine dot grid — subtle */
+.bg-layer::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(201,160,64,.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse 100% 70% at 50% 0, black 0%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse 100% 70% at 50% 0, black 0%, transparent 85%);
+}
+
+/* ─── TICKER ─── */
+.ticker {
+  position: relative; z-index: 10;
+  background: var(--c-card);
+  border-bottom: 1px solid var(--b-gold);
+  height: 32px; overflow: hidden;
+  display: flex; align-items: center;
+}
+.ticker-inner {
+  display: flex; align-items: center; gap: 0;
+  white-space: nowrap;
+  animation: ticker-scroll 28s linear infinite;
+}
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.ticker-item {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 0 20px; border-right: 1px solid var(--b-main);
+  font-size: 11px; font-weight: 500; letter-spacing: .02em;
+  font-variant-numeric: tabular-nums;
+}
+.ticker-sym { color: var(--gold); font-weight: 700; }
+.ticker-val { color: var(--t-1); }
+.ticker-chg { font-size: 10px; }
+.up   { color: var(--green-ok); }
+.dn   { color: var(--red); }
+.ticker-label {
+  flex-shrink: 0; padding: 0 14px;
+  font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--gold-lo); border-right: 1px solid var(--b-gold);
+  background: var(--c-card); z-index: 1;
+}
+
+/* ─── HEADER ─── */
+header {
+  position: sticky; top: 0; z-index: 40;
+  background: rgba(7,14,8,.88);
+  backdrop-filter: blur(20px) saturate(1.6);
+  border-bottom: 1px solid var(--b-main);
+}
+.hdr-inner {
+  max-width: 1300px; margin: 0 auto;
+  padding: 0 24px; height: 52px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.logo { display: flex; align-items: center; gap: 9px; text-decoration: none; flex-shrink: 0; }
+.logo-mark {
+  width: 30px; height: 30px; border-radius: 7px;
+  background: linear-gradient(135deg, var(--g-dim), var(--g-mid));
+  border: 1px solid rgba(201,160,64,.3);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gold-hi);
+}
+.logo-mark svg { width: 15px; height: 15px; }
+.logo-name {
+  font-size: 15px; font-weight: 800; letter-spacing: -.03em;
+  color: var(--t-1);
+}
+.logo-name b { color: var(--gold); font-weight: 800; }
+
+.hdr-nav { display: flex; align-items: center; gap: 0; }
+.hdr-a {
+  padding: 0 12px; height: 52px; line-height: 52px;
+  font-size: 13px; font-weight: 500; letter-spacing: -.01em;
+  color: var(--t-3); text-decoration: none; white-space: nowrap;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color .15s, border-color .15s;
+}
+.hdr-a:hover { color: var(--t-2); }
+.hdr-a.act   { color: var(--gold); border-bottom-color: var(--gold); }
+
+.hdr-right { display: flex; align-items: center; gap: 8px; }
+.hdr-xml {
+  display: flex; align-items: center; gap: 5px;
+  padding: 0 10px; height: 30px; border-radius: 5px;
+  border: 1px solid var(--b-gold2); font-size: 11px; font-weight: 600;
+  color: var(--gold-lo); text-decoration: none; letter-spacing: .04em;
+  transition: all .15s;
+}
+.hdr-xml:hover { border-color: var(--gold); color: var(--gold); }
+.hdr-xml svg { width: 12px; height: 12px; }
+.btn-login {
+  padding: 0 14px; height: 30px; border-radius: 5px;
+  background: transparent; border: 1px solid var(--b-mid);
+  font-size: 12px; font-weight: 600; letter-spacing: .02em;
+  color: var(--t-2); cursor: pointer; text-decoration: none;
+  transition: all .15s; display: flex; align-items: center;
+}
+.btn-login:hover { border-color: var(--t-2); color: var(--t-1); }
+.btn-reg {
+  padding: 0 14px; height: 30px; border-radius: 5px;
+  background: var(--gold); border: 0;
+  font-size: 12px; font-weight: 700; letter-spacing: .03em;
+  color: #0A0700; cursor: pointer; text-decoration: none;
+  transition: all .18s; display: flex; align-items: center;
+}
+.btn-reg:hover { background: var(--gold-hi); }
+
+/* ─── MAIN LAYOUT ─── */
+main { position: relative; z-index: 1; }
+.page { max-width: 1300px; margin: 0 auto; padding: 0 24px; }
+
+/* ─── HERO ─── */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 480px;
+  gap: 32px; align-items: start;
+  padding: 40px 0 48px;
+}
+
+/* ── HERO LEFT ── */
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-bottom: 16px;
+  font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--gold-lo);
+}
+.eyebrow-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green-ok); box-shadow: 0 0 6px var(--green-ok);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.hero-h1 {
+  font-size: 44px; font-weight: 800; letter-spacing: -.05em; line-height: 1.05;
+  color: var(--t-1); margin-bottom: 14px;
+}
+.hero-h1 .accent {
+  color: var(--gold);
+  /* no gradient — just flat gold, more intentional */
+}
+.hero-sub {
+  font-size: 14px; font-weight: 400; line-height: 1.7;
+  color: var(--t-3); margin-bottom: 28px; max-width: 380px;
+}
+
+/* Stats row */
+.stats-row {
+  display: flex; gap: 0; margin-bottom: 24px;
+  border: 1px solid var(--b-main); border-radius: 8px; overflow: hidden;
+}
+.stat-cell {
+  flex: 1; padding: 12px 16px;
+  border-right: 1px solid var(--b-main);
+}
+.stat-cell:last-child { border-right: 0; }
+.stat-n {
+  font-size: 22px; font-weight: 800; letter-spacing: -.04em; line-height: 1;
+  color: var(--t-1); margin-bottom: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.stat-n span { color: var(--gold); }
+.stat-l {
+  font-size: 10px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--t-3);
+}
+
+/* Tags */
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 5px;
+  border: 1px solid var(--b-main); background: var(--c-card);
+  font-size: 11px; font-weight: 500; color: var(--t-3);
+}
+.tag svg { width: 11px; height: 11px; flex-shrink: 0; }
+.tag.g svg { color: var(--green-ok); }
+.tag.y svg { color: var(--gold); }
+.tag.p svg { color: #A78BFA; }
+
+/* ── EXCHANGE FORM ── */
+.x-card {
+  background: var(--c-card);
+  border: 1px solid var(--b-main);
+  border-radius: 10px;
+  overflow: hidden;
+}
+/* gold top accent */
+.x-card::before {
+  content: '';
+  display: block; height: 2px;
+  background: linear-gradient(90deg, var(--g-dim), var(--gold), var(--g-dim));
+}
+
+.x-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px 0;
+}
+.x-title { font-size: 13px; font-weight: 700; letter-spacing: -.01em; color: var(--t-1); }
+.x-refresh {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--t-3);
+}
+.x-refresh svg { width: 12px; height: 12px; }
+.x-refresh-cd { color: var(--gold); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Fields */
+.x-field {
+  margin: 12px 18px 0;
+  background: var(--c-raise);
+  border: 1px solid var(--b-main);
+  border-radius: 7px; padding: 10px 12px;
+}
+.x-field-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.x-field-lbl { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--t-3); }
+.x-field-limit { font-size: 10px; color: var(--t-3); font-variant-numeric: tabular-nums; }
+.x-field-limit span { color: var(--t-2); }
+.x-field-row { display: flex; align-items: center; gap: 8px; }
+.x-amount {
+  flex: 1; min-width: 0;
+  background: none; border: none; outline: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 26px; font-weight: 700; letter-spacing: -.04em;
+  color: var(--t-1); font-variant-numeric: tabular-nums;
+}
+.x-amount.get-amt { color: var(--gold-hi); }
+.x-amount::placeholder { color: var(--t-4); }
+
+/* Currency picker */
+.cur-pick {
+  display: flex; align-items: center; gap: 5px; flex-shrink: 0;
+}
+.cur-coin-btn, .cur-net-btn {
+  display: flex; align-items: center; gap: 5px;
+  cursor: pointer; border: 1px solid var(--b-mid); border-radius: 5px;
+  background: var(--c-soft); transition: border-color .15s;
+}
+.cur-coin-btn:hover, .cur-net-btn:hover { border-color: var(--gold); }
+.cur-coin-btn { padding: 5px 8px 5px 6px; }
+.cur-net-btn  {
+  padding: 4px 7px;
+  font-size: 10px; font-weight: 700; letter-spacing: .04em;
+  color: var(--gold); border-color: var(--b-gold2);
+}
+.cur-net-btn:hover { border-color: var(--gold); }
+.cur-ico {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.cur-lbl { font-size: 12px; font-weight: 700; letter-spacing: -.01em; color: var(--t-1); }
+.cur-chev { width: 11px; height: 11px; color: var(--t-3); }
+
+/* Swap row */
+.x-swap-row {
+  display: flex; align-items: center; justify-content: center;
+  position: relative; margin: 10px 0 0;
+  padding: 0 18px;
+}
+.x-swap-line { position: absolute; left: 18px; right: 18px; height: 1px; background: var(--b-main); }
+.x-swap-btn {
+  position: relative; z-index: 1;
+  width: 32px; height: 32px; border-radius: 6px;
+  background: var(--c-lift); border: 1px solid var(--b-gold);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gold); cursor: pointer;
+  transition: background .15s, transform .2s;
+}
+.x-swap-btn:hover { background: rgba(201,160,64,.12); transform: rotate(180deg); }
+.x-swap-btn svg { width: 14px; height: 14px; }
+
+/* Rate bar */
+.x-rate {
+  margin: 10px 18px 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; border-radius: 6px;
+  border: 1px solid var(--b-main); background: var(--c-raise);
+  font-size: 11px;
+}
+.x-rate-lbl { color: var(--t-3); }
+.x-rate-val { font-weight: 600; color: var(--t-1); font-variant-numeric: tabular-nums; }
+.x-rate-val .hl { color: var(--gold); }
+
+/* Submit */
+.x-submit-wrap { padding: 12px 18px 16px; }
+.x-submit {
+  width: 100%; height: 44px; border-radius: 7px;
+  background: var(--gold);
+  border: 0; cursor: pointer;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px; font-weight: 700; letter-spacing: .04em;
+  color: #0A0700;
+  transition: background .18s, transform .15s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.x-submit:hover { background: var(--gold-hi); transform: translateY(-1px); }
+.x-submit:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+.x-submit svg { width: 15px; height: 15px; }
+.x-err {
+  text-align: center; font-size: 11px; color: var(--red);
+  min-height: 16px; margin-top: 6px;
+}
+.x-fine {
+  text-align: center; font-size: 10px; color: var(--t-3);
+  margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+.x-fine svg { width: 10px; height: 10px; }
+.x-fine a { color: var(--gold-lo); text-decoration: underline; text-underline-offset: 2px; }
+
+/* Dropdowns */
+.cur-drop {
+  display: none; position: fixed; z-index: 9999;
+  background: var(--c-card); border: 1px solid var(--b-mid);
+  border-radius: 8px; box-shadow: 0 12px 40px rgba(0,0,0,.7);
+  min-width: 160px; overflow: hidden;
+}
+.cur-drop.open { display: block; }
+.drop-opt {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 12px; cursor: pointer;
+  font-size: 13px; font-weight: 500; color: var(--t-2);
+  border-bottom: 1px solid var(--b-main); transition: background .12s;
+}
+.drop-opt:last-child { border-bottom: 0; }
+.drop-opt:hover { background: var(--c-lift); color: var(--t-1); }
+.drop-opt.sel { color: var(--gold); background: var(--c-raise); }
+.drop-opt svg { width: 13px; height: 13px; flex-shrink: 0; margin-left: auto; color: var(--gold); }
+
+/* ─── RESERVES ─── */
+.section { padding: 32px 0; }
+.section-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-size: 16px; font-weight: 700; letter-spacing: -.02em; color: var(--t-1);
+}
+.section-sub { font-size: 11px; color: var(--t-3); margin-top: 2px; }
+.section-link {
+  font-size: 12px; font-weight: 600; color: var(--gold-lo);
+  text-decoration: none; display: flex; align-items: center; gap: 4px;
+  letter-spacing: .02em;
+}
+.section-link:hover { color: var(--gold); }
+.section-link svg { width: 13px; height: 13px; }
+
+.sep { height: 1px; background: var(--b-main); margin: 0; }
+
+.res-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0; border: 1px solid var(--b-main); border-radius: 8px; overflow: hidden;
+}
+.res-cell {
+  padding: 14px 16px; border-right: 1px solid var(--b-main);
+  border-bottom: 1px solid var(--b-main);
+  transition: background .15s;
+}
+.res-cell:hover { background: var(--c-card); }
+.res-cell:nth-child(4n) { border-right: 0; }
+.res-cell:nth-last-child(-n+4) { border-bottom: 0; }
+/* last row: fix the last remaining cell */
+.res-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.res-coin {
+  display: flex; align-items: center; gap: 7px;
+}
+.res-ico {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.res-name { font-size: 12px; font-weight: 700; letter-spacing: -.01em; color: var(--t-1); }
+.res-sub  { font-size: 10px; color: var(--t-3); }
+.res-badge {
+  padding: 2px 7px; border-radius: 3px;
+  font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+}
+.res-badge.ok  { background: rgba(75,175,106,.1); color: var(--green-ok); border: 1px solid rgba(75,175,106,.2); }
+.res-badge.no  { background: var(--c-raise); color: var(--t-3); border: 1px solid var(--b-main); }
+.res-amt {
+  font-size: 17px; font-weight: 700; letter-spacing: -.03em; color: var(--t-1);
+  font-variant-numeric: tabular-nums; margin-bottom: 2px;
+}
+.res-amt.zero { color: var(--t-3); }
+.res-lim { font-size: 10px; color: var(--t-3); font-variant-numeric: tabular-nums; }
+
+/* ─── HOW IT WORKS ─── */
+.steps {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+  border: 1px solid var(--b-main); border-radius: 8px; overflow: hidden;
+}
+.step {
+  padding: 20px 18px; border-right: 1px solid var(--b-main);
+  position: relative;
+}
+.step:last-child { border-right: 0; }
+.step-num {
+  font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--gold-lo); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+.step-num-circle {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--b-gold); border: 1px solid var(--b-gold2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: var(--gold);
+}
+.step-ico {
+  width: 38px; height: 38px; border-radius: 8px; margin-bottom: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--c-raise); border: 1px solid var(--b-main);
+  color: var(--gold);
+}
+.step-ico svg { width: 17px; height: 17px; }
+.step-name { font-size: 13px; font-weight: 700; letter-spacing: -.01em; color: var(--t-1); margin-bottom: 4px; }
+.step-desc { font-size: 12px; color: var(--t-3); line-height: 1.5; }
+/* connector arrow */
+.step:not(:last-child)::after {
+  content: '›'; position: absolute; right: -10px; top: 20px;
+  font-size: 16px; color: var(--gold-lo); z-index: 1; line-height: 1;
+}
+
+/* ─── FOOTER ─── */
+footer {
+  position: relative; z-index: 1;
+  border-top: 1px solid var(--b-main);
+  margin-top: 48px;
+}
+.ftr-inner { max-width: 1300px; margin: 0 auto; padding: 36px 24px 24px; }
+.ftr-grid {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 28px;
+}
+.ftr-brand-desc { font-size: 12px; color: var(--t-3); line-height: 1.65; margin-top: 10px; max-width: 250px; }
+.ftr-col-h {
+  font-size: 9px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--gold-lo); margin-bottom: 12px;
+}
+.ftr-links { display: flex; flex-direction: column; gap: 8px; }
+.ftr-a { font-size: 12px; color: var(--t-3); text-decoration: none; transition: color .15s; }
+.ftr-a:hover { color: var(--gold-hi); }
+.ftr-bottom {
+  padding-top: 20px; border-top: 1px solid var(--b-main);
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  font-size: 11px; color: var(--t-3);
+}
+.ftr-chips { display: flex; gap: 6px; }
+.ftr-chip {
+  padding: 3px 8px; border-radius: 3px;
+  border: 1px solid var(--b-gold);
+  font-size: 9px; font-weight: 700; letter-spacing: .08em;
+  color: var(--gold-lo);
+}
+
+/* ─── TELEGRAM MODAL ─── */
+.modal-bg {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.75); backdrop-filter: blur(6px);
+  align-items: center; justify-content: center; padding: 16px;
+}
+.modal-bg.open { display: flex; }
+.modal {
+  background: var(--c-card); border: 1px solid var(--b-mid);
+  border-radius: 10px; padding: 28px; max-width: 380px; width: 100%; position: relative;
+}
+.modal::before {
+  content: ''; display: block; height: 2px; margin: -28px -28px 24px;
+  background: linear-gradient(90deg, var(--g-dim), var(--gold), var(--g-dim));
+  border-radius: 10px 10px 0 0;
+}
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  width: 26px; height: 26px; border-radius: 5px;
+  background: var(--c-raise); border: 1px solid var(--b-main);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--t-3); transition: color .15s;
+}
+.modal-close:hover { color: var(--t-1); }
+.modal-close svg { width: 13px; height: 13px; }
+.modal-ico {
+  width: 40px; height: 40px; border-radius: 8px; margin-bottom: 14px;
+  background: rgba(201,160,64,.1); border: 1px solid var(--b-gold2);
+  display: flex; align-items: center; justify-content: center; color: var(--gold);
+}
+.modal-ico svg { width: 18px; height: 18px; }
+.modal h3 { font-size: 16px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 6px; }
+.modal p  { font-size: 12px; color: var(--t-3); line-height: 1.6; margin-bottom: 18px; }
+.modal-input {
+  width: 100%; height: 40px; border-radius: 6px; padding: 0 12px;
+  background: var(--c-raise); border: 1px solid var(--b-mid);
+  font-family: 'Inter', system-ui, sans-serif; font-size: 13px; color: var(--t-1);
+  outline: none; transition: border-color .15s; margin-bottom: 10px;
+}
+.modal-input:focus { border-color: var(--gold); }
+.modal-input::placeholder { color: var(--t-3); }
+.modal-submit {
+  width: 100%; height: 40px; border-radius: 6px; border: 0; cursor: pointer;
+  background: var(--gold); font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px; font-weight: 700; letter-spacing: .04em; color: #0A0700;
+  transition: background .15s; display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.modal-submit:hover { background: var(--gold-hi); }
+.modal-submit svg { width: 13px; height: 13px; }
+
+/* ─── MISC ─── */
+.reveal { opacity: 0; transform: translateY(14px); transition: opacity .5s ease, transform .5s ease; }
+.reveal.vis { opacity: 1; transform: none; }
+.mt-divider { border: none; border-top: 1px solid var(--b-main); margin: 0; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1024px) {
+  .hero { grid-template-columns: 1fr; gap: 24px; padding: 28px 0 36px; }
+  .hero-h1 { font-size: 34px; }
+  .res-grid { grid-template-columns: repeat(2,1fr); }
+  .res-cell:nth-child(2n) { border-right: 0; }
+  .res-cell:nth-child(4n) { border-right: auto; }
+  .steps { grid-template-columns: repeat(2,1fr); }
+  .step:nth-child(2) { border-right: 0; }
+  .step:nth-child(3) { border-top: 1px solid var(--b-main); }
+  .ftr-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) {
+  .hdr-inner { padding: 0 16px; }
+  .hdr-nav { display: none; }
+  .hero-h1 { font-size: 28px; }
+  .res-grid { grid-template-columns: 1fr; }
+  .res-cell { border-right: 0 !important; }
+  .steps { grid-template-columns: 1fr; }
+  .step { border-right: 0 !important; border-top: 1px solid var(--b-main); }
+  .step:first-child { border-top: 0; }
+  .ftr-grid { grid-template-columns: 1fr; gap: 24px; }
+  .page { padding: 0 16px; }
+}
+</style>
+</head>
+<body>
+<div class="bg-layer"></div>
+
+<!-- ═══ TICKER ═══ -->
+<div class="ticker">
+  <span class="ticker-label">Live курсы</span>
+  <div class="ticker-inner" id="ticker">
+    <!-- duplicated for seamless scroll -->
+    <span class="ticker-item"><span class="ticker-sym">USDT</span> <span class="ticker-val">97.20 ₽</span> <span class="ticker-chg up">+0.3%</span></span>
+    <span class="ticker-item"><span class="ticker-sym">BTC</span>  <span class="ticker-val">9 200 000 ₽</span> <span class="ticker-chg up">+1.2%</span></span>
+    <span class="ticker-item"><span class="ticker-sym">ETH</span>  <span class="ticker-val">238 000 ₽</span> <span class="ticker-chg dn">−0.8%</span></span>
+    <span class="ticker-item"><span class="ticker-sym">SOL</span>  <span class="ticker-val">15 600 ₽</span> <span class="ticker-chg up">+2.1%</span></span>
+    <span class="ticker-item"><span class="ticker-sym">USDC</span> <span class="ticker-val">97.10 ₽</span> <span class="ticker-chg up">+0.2%</span></span>
+    <span class="ticker-item"><span class="ticker-sym">USD</span>  <span class="ticker-val">95.00 ₽</span> <span class="ticker-chg dn">−0.1%</span></span>
+    <!-- duplicate -->
+    <span class="ticker-item"><span class="ticker-sym">USDT</span> <span class="ticker-val">97.20 ₽</span> <span class="ticker-chg up">+0.3%</span></span>
+    <span class="ticker-item"><span class="ticker-sym">BTC</span>  <span class="ticker-val">9 200 000 ₽</span> <span class="ticker-chg up">+1.2%</span></span>
+    <span class="ticker-item"><span class="ticker-sym">ETH</span>  <span class="ticker-val">238 000 ₽</span> <span class="ticker-chg dn">−0.8%</span></span>
+    <span class="ticker-item"><span class="ticker-sym">SOL</span>  <span class="ticker-val">15 600 ₽</span> <span class="ticker-chg up">+2.1%</span></span>
+    <span class="ticker-item"><span class="ticker-sym">USDC</span> <span class="ticker-val">97.10 ₽</span> <span class="ticker-chg up">+0.2%</span></span>
+    <span class="ticker-item"><span class="ticker-sym">USD</span>  <span class="ticker-val">95.00 ₽</span> <span class="ticker-chg dn">−0.1%</span></span>
+  </div>
+</div>
+
+<!-- ═══ HEADER ═══ -->
+<header>
+  <div class="hdr-inner">
+    <div style="display:flex;align-items:center;gap:32px;">
+      <a href="#" class="logo">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <span class="logo-name">Swap<b>Vault</b></span>
+      </a>
+      <nav class="hdr-nav">
+        <a class="hdr-a act" href="#">Обмен</a>
+        <a class="hdr-a" href="#">Курсы</a>
+        <a class="hdr-a" href="#">Правила</a>
+        <a class="hdr-a" href="#">AML</a>
+        <a class="hdr-a" href="#">KYC</a>
+      </nav>
+    </div>
+    <div class="hdr-right">
+      <a href="#" class="hdr-xml">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
+        BestChange XML
+      </a>
+      <a href="#" class="btn-login">Войти</a>
+      <a href="#" class="btn-reg">Регистрация</a>
+    </div>
+  </div>
+</header>
+
+<!-- ═══ MAIN ═══ -->
+<main>
+<div class="page">
+
+  <!-- ── HERO ── -->
+  <section class="hero">
+
+    <!-- LEFT -->
+    <div class="hero-left reveal">
+      <div class="hero-eyebrow">
+        <span class="eyebrow-dot"></span>
+        Верифицированный обменник · BestChange
+      </div>
+      <h1 class="hero-h1">
+        Обмен криптовалют<br>
+        <span class="accent">быстро и безопасно</span>
+      </h1>
+      <p class="hero-sub">
+        USDT · BTC · ETH · SOL · RUB — моментальный обмен по актуальному курсу. Ответ в Telegram за 7 минут.
+      </p>
+
+      <div class="stats-row">
+        <div class="stat-cell">
+          <div class="stat-n">12 840<span>+</span></div>
+          <div class="stat-l">Заявок</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-n">≈ 7<span> мин</span></div>
+          <div class="stat-l">Ср. время</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-n">24<span>/7</span></div>
+          <div class="stat-l">Поддержка</div>
+        </div>
+      </div>
+
+      <div class="tags">
+        <span class="tag g">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          AML проверка
+        </span>
+        <span class="tag y">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Быстрые выплаты
+        </span>
+        <span class="tag p">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+          Поддержка 24/7
+        </span>
+      </div>
+    </div>
+
+    <!-- RIGHT: EXCHANGE FORM -->
+    <div class="reveal" style="animation-delay:.1s">
+      <form id="exchange-form" action="order.php" method="POST">
+        <div class="x-card">
+          <div class="x-head">
+            <span class="x-title">Обменять</span>
+            <span class="x-refresh">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" class="ref-icon"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-4.78"/></svg>
+              обновление <span class="x-refresh-cd" id="cd">15с</span>
+            </span>
+          </div>
+
+          <!-- Give -->
+          <div class="x-field">
+            <div class="x-field-top">
+              <span class="x-field-lbl">Вы отдаёте</span>
+              <span class="x-field-limit">Лимит: <span id="lim-txt">50 – 55 000</span></span>
+            </div>
+            <div class="x-field-row">
+              <input type="text" id="amt-give" name="amount_give" class="x-amount" value="1 000" inputmode="decimal">
+              <input type="hidden" name="give_currency" id="give-val" value="USDT_TRC20">
+              <div class="cur-pick">
+                <button type="button" class="cur-coin-btn" onclick="openDrop('give','coin')">
+                  <div class="cur-ico" id="give-ico" style="background:#10B9811A;border:1px solid #10B98133;color:#10B981">₮</div>
+                  <span class="cur-lbl" id="give-lbl">USDT</span>
+                  <svg class="cur-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <button type="button" class="cur-net-btn" id="give-net-btn" onclick="openDrop('give','net')">
+                  <span id="give-net">TRC20</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:9px;height:9px;"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Swap -->
+          <div class="x-swap-row">
+            <div class="x-swap-line"></div>
+            <button type="button" class="x-swap-btn" id="swap-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M7 16V4m0 0L3 8m4-4 4 4"/><path d="M17 8v12m0 0 4-4m-4 4-4-4"/></svg>
+            </button>
+          </div>
+
+          <!-- Get -->
+          <div class="x-field" style="margin-top:0">
+            <div class="x-field-top">
+              <span class="x-field-lbl">Вы получаете</span>
+              <span class="x-field-limit">Резерв: <span id="res-txt">—</span></span>
+            </div>
+            <div class="x-field-row">
+              <input type="text" id="amt-get" name="amount_get" class="x-amount get-amt" placeholder="0" readonly>
+              <input type="hidden" name="get_currency" id="get-val" value="RUB_CASH">
+              <div class="cur-pick">
+                <button type="button" class="cur-coin-btn" onclick="openDrop('get','coin')">
+                  <div class="cur-ico" id="get-ico" style="background:#A78BFA1A;border:1px solid #A78BFA33;color:#A78BFA">₽</div>
+                  <span class="cur-lbl" id="get-lbl">RUB</span>
+                  <svg class="cur-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <button type="button" class="cur-net-btn" id="get-net-btn" onclick="openDrop('get','net')">
+                  <span id="get-net">Нал.</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rate -->
+          <div class="x-rate">
+            <span class="x-rate-lbl">Курс</span>
+            <span class="x-rate-val" id="rate-line">1 USDT ≈ <span class="hl">97.20 ₽</span></span>
+          </div>
+
+          <!-- Dropdowns (portaled to body via JS) -->
+          <div id="give-coin-drop" class="cur-drop">
+            <div class="drop-opt sel" data-g="USDT" onclick="selCoin('give','USDT')"><div class="cur-ico" style="background:#10B9811A;border:1px solid #10B98133;color:#10B981">₮</div>USDT <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="drop-opt" data-g="USDC" onclick="selCoin('give','USDC')"><div class="cur-ico" style="background:#2775CA1A;border:1px solid #2775CA33;color:#2775CA">$</div>USDC</div>
+            <div class="drop-opt" data-g="ETH"  onclick="selCoin('give','ETH')"><div class="cur-ico" style="background:#627EEA1A;border:1px solid #627EEA33;color:#627EEA">Ξ</div>ETH</div>
+            <div class="drop-opt" data-g="SOL"  onclick="selCoin('give','SOL')"><div class="cur-ico" style="background:#9945FF1A;border:1px solid #9945FF33;color:#9945FF">◎</div>SOL</div>
+            <div class="drop-opt" data-g="BTC"  onclick="selCoin('give','BTC')"><div class="cur-ico" style="background:#F7931A1A;border:1px solid #F7931A33;color:#F7931A">₿</div>BTC</div>
+            <div class="drop-opt" data-g="RUB"  onclick="selCoin('give','RUB')"><div class="cur-ico" style="background:#A78BFA1A;border:1px solid #A78BFA33;color:#A78BFA">₽</div>RUB</div>
+            <div class="drop-opt" data-g="USD"  onclick="selCoin('give','USD')"><div class="cur-ico" style="background:#22D3EE1A;border:1px solid #22D3EE33;color:#22D3EE">$</div>USD</div>
+          </div>
+          <div id="give-net-drop" class="cur-drop"></div>
+          <div id="get-coin-drop" class="cur-drop">
+            <div class="drop-opt" data-g="USDT" onclick="selCoin('get','USDT')"><div class="cur-ico" style="background:#10B9811A;border:1px solid #10B98133;color:#10B981">₮</div>USDT</div>
+            <div class="drop-opt" data-g="USDC" onclick="selCoin('get','USDC')"><div class="cur-ico" style="background:#2775CA1A;border:1px solid #2775CA33;color:#2775CA">$</div>USDC</div>
+            <div class="drop-opt" data-g="ETH"  onclick="selCoin('get','ETH')"><div class="cur-ico" style="background:#627EEA1A;border:1px solid #627EEA33;color:#627EEA">Ξ</div>ETH</div>
+            <div class="drop-opt" data-g="SOL"  onclick="selCoin('get','SOL')"><div class="cur-ico" style="background:#9945FF1A;border:1px solid #9945FF33;color:#9945FF">◎</div>SOL</div>
+            <div class="drop-opt" data-g="BTC"  onclick="selCoin('get','BTC')"><div class="cur-ico" style="background:#F7931A1A;border:1px solid #F7931A33;color:#F7931A">₿</div>BTC</div>
+            <div class="drop-opt sel" data-g="RUB" onclick="selCoin('get','RUB')"><div class="cur-ico" style="background:#A78BFA1A;border:1px solid #A78BFA33;color:#A78BFA">₽</div>RUB <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="drop-opt" data-g="USD"  onclick="selCoin('get','USD')"><div class="cur-ico" style="background:#22D3EE1A;border:1px solid #22D3EE33;color:#22D3EE">$</div>USD</div>
+          </div>
+          <div id="get-net-drop" class="cur-drop"></div>
+
+          <div class="x-submit-wrap">
+            <button type="submit" class="x-submit" id="sub-btn">
+              Обменять
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
+            <div class="x-err" id="err-txt"></div>
+            <div class="x-fine">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Нажимая кнопку, вы соглашаетесь с <a href="aml.php">AML политикой</a>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <hr class="mt-divider">
+
+  <!-- ── RESERVES ── -->
+  <section class="section">
+    <div class="section-head reveal">
+      <div>
+        <div class="section-title">Резервы</div>
+        <div class="section-sub">Доступные средства обновляются в реальном времени</div>
+      </div>
+      <a href="rates.php" class="section-link">
+        Все курсы
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </a>
+    </div>
+
+    <div class="res-grid reveal">
+      <!-- USDT -->
+      <div class="res-cell">
+        <div class="res-top">
+          <div class="res-coin">
+            <div class="res-ico" style="background:#10B9811A;border:1px solid #10B98133;color:#10B981">₮</div>
+            <div><div class="res-name">USDT</div><div class="res-sub">Tether · TRC20</div></div>
+          </div>
+          <span class="res-badge ok">В наличии</span>
+        </div>
+        <div class="res-amt">1 500 000.00</div>
+        <div class="res-lim">Лимит 50 – 55 000</div>
+      </div>
+      <!-- USDC -->
+      <div class="res-cell">
+        <div class="res-top">
+          <div class="res-coin">
+            <div class="res-ico" style="background:#2775CA1A;border:1px solid #2775CA33;color:#2775CA">$</div>
+            <div><div class="res-name">USDC</div><div class="res-sub">USD Coin</div></div>
+          </div>
+          <span class="res-badge ok">В наличии</span>
+        </div>
+        <div class="res-amt">500 000.00</div>
+        <div class="res-lim">Лимит 50 – 55 000</div>
+      </div>
+      <!-- ETH -->
+      <div class="res-cell">
+        <div class="res-top">
+          <div class="res-coin">
+            <div class="res-ico" style="background:#627EEA1A;border:1px solid #627EEA33;color:#627EEA">Ξ</div>
+            <div><div class="res-name">ETH</div><div class="res-sub">Ethereum</div></div>
+          </div>
+          <span class="res-badge ok">В наличии</span>
+        </div>
+        <div class="res-amt">150.0000</div>
+        <div class="res-lim">Лимит 0.01 – 100</div>
+      </div>
+      <!-- SOL -->
+      <div class="res-cell">
+        <div class="res-top">
+          <div class="res-coin">
+            <div class="res-ico" style="background:#9945FF1A;border:1px solid #9945FF33;color:#9945FF">◎</div>
+            <div><div class="res-name">SOL</div><div class="res-sub">Solana</div></div>
+          </div>
+          <span class="res-badge ok">В наличии</span>
+        </div>
+        <div class="res-amt">5 000.00</div>
+        <div class="res-lim">Лимит 0.5 – 10 000</div>
+      </div>
+      <!-- BTC -->
+      <div class="res-cell">
+        <div class="res-top">
+          <div class="res-coin">
+            <div class="res-ico" style="background:#F7931A1A;border:1px solid #F7931A33;color:#F7931A">₿</div>
+            <div><div class="res-name">BTC</div><div class="res-sub">Bitcoin</div></div>
+          </div>
+          <span class="res-badge ok">В наличии</span>
+        </div>
+        <div class="res-amt">15.500000</div>
+        <div class="res-lim">Лимит 0.001 – 10</div>
+      </div>
+      <!-- RUB -->
+      <div class="res-cell">
+        <div class="res-top">
+          <div class="res-coin">
+            <div class="res-ico" style="background:#A78BFA1A;border:1px solid #A78BFA33;color:#A78BFA">₽</div>
+            <div><div class="res-name">RUB</div><div class="res-sub">Наличные</div></div>
+          </div>
+          <span class="res-badge ok">В наличии</span>
+        </div>
+        <div class="res-amt">50 000 000</div>
+        <div class="res-lim">Лимит 5 000 – 2 000 000</div>
+      </div>
+      <!-- USD -->
+      <div class="res-cell">
+        <div class="res-top">
+          <div class="res-coin">
+            <div class="res-ico" style="background:#22D3EE1A;border:1px solid #22D3EE33;color:#22D3EE">$</div>
+            <div><div class="res-name">USD</div><div class="res-sub">Доллар США</div></div>
+          </div>
+          <span class="res-badge ok">В наличии</span>
+        </div>
+        <div class="res-amt">500 000.00</div>
+        <div class="res-lim">Лимит 50 – 50 000</div>
+      </div>
+      <!-- empty cell to fill grid -->
+      <div class="res-cell" style="background:transparent;cursor:default;"></div>
+    </div>
+  </section>
+
+  <hr class="mt-divider">
+
+  <!-- ── HOW IT WORKS ── -->
+  <section class="section">
+    <div class="section-head reveal">
+      <div>
+        <div class="section-title">Как это работает</div>
+      </div>
+    </div>
+
+    <div class="steps reveal">
+      <div class="step">
+        <div class="step-num"><div class="step-num-circle">1</div></div>
+        <div class="step-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        </div>
+        <div class="step-name">Выберите направление</div>
+        <div class="step-desc">Укажите, что отдаёте и что хотите получить. Курс фиксируется мгновенно.</div>
+      </div>
+      <div class="step">
+        <div class="step-num"><div class="step-num-circle">2</div></div>
+        <div class="step-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="step-name">Оставьте заявку</div>
+        <div class="step-desc">Введите реквизиты и Telegram для связи. Заявка создаётся моментально.</div>
+      </div>
+      <div class="step">
+        <div class="step-num"><div class="step-num-circle">3</div></div>
+        <div class="step-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </div>
+        <div class="step-name">Переведите средства</div>
+        <div class="step-desc">Отправьте оплату на указанные реквизиты в течение 30 минут.</div>
+      </div>
+      <div class="step">
+        <div class="step-num"><div class="step-num-circle">4</div></div>
+        <div class="step-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="step-name">Получите обмен</div>
+        <div class="step-desc">Оператор подтвердит платёж и отправит средства. Ответ за ~7 минут.</div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /page -->
+</main>
+
+<!-- ═══ TELEGRAM MODAL ═══ -->
+<div class="modal-bg" id="tg-modal">
+  <div class="modal">
+    <button class="modal-close" id="tg-close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="modal-ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </div>
+    <h3>Укажите Telegram</h3>
+    <p>Чтобы оператор мог оперативно связаться с вами по заявке и отправить реквизиты.</p>
+    <form id="tg-form">
+      <input type="text" class="modal-input" id="tg-input" placeholder="@username" name="telegram" required>
+      <button type="submit" class="modal-submit">
+        Подтвердить
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="ftr-inner">
+    <div class="ftr-grid">
+      <div>
+        <a href="#" class="logo" style="margin-bottom:0">
+          <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <span class="logo-name">Swap<b>Vault</b></span>
+        </a>
+        <p class="ftr-brand-desc">Профессиональный обмен криптовалют с фиксированным курсом и персональным менеджером в Telegram.</p>
+      </div>
+      <div>
+        <div class="ftr-col-h">Сервисы</div>
+        <div class="ftr-links">
+          <a href="#" class="ftr-a">Обмен криптовалюты</a>
+          <a href="#" class="ftr-a">Актуальные курсы</a>
+          <a href="#" class="ftr-a">Личный кабинет</a>
+          <a href="#" class="ftr-a">BestChange XML</a>
+        </div>
+      </div>
+      <div>
+        <div class="ftr-col-h">Компания</div>
+        <div class="ftr-links">
+          <a href="#" class="ftr-a">AML политика</a>
+          <a href="#" class="ftr-a">KYC процедура</a>
+          <a href="#" class="ftr-a">Правила сервиса</a>
+        </div>
+      </div>
+      <div>
+        <div class="ftr-col-h">Поддержка</div>
+        <div class="ftr-links">
+          <a href="#" class="ftr-a">Техподдержка</a>
+          <a href="#" class="ftr-a">Telegram бот</a>
+          <a href="#" class="ftr-a">FAQ</a>
+        </div>
+      </div>
+    </div>
+    <div class="ftr-bottom">
+      <span>© 2025 SwapVault. Все права защищены.</span>
+      <div class="ftr-chips">
+        <span class="ftr-chip">AML</span>
+        <span class="ftr-chip">KYC</span>
+        <span class="ftr-chip">SSL</span>
+        <span class="ftr-chip">BestChange</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+lucide.createIcons();
+
+// ── Rate data (static demo) ──────────────────────────────
+const RATES = {
+  USDT_TRC20: { RUB:97.20, USD:0.975, BTC:0.0000105, ETH:0.000398, SOL:0.622, USDC:0.975 },
+  USDC:       { RUB:97.10, USD:0.975, BTC:0.0000105, ETH:0.000398, SOL:0.622, USDT_TRC20:0.975 },
+  ETH:        { RUB:238000, USD:2437, BTC:0.0256, USDT_TRC20:2437, USDC:2437, SOL:15.2 },
+  SOL:        { RUB:15600, USD:160, BTC:0.00168, USDT_TRC20:160, USDC:160, ETH:0.064 },
+  BTC:        { RUB:9000000, USD:92000, USDT_TRC20:92000, USDC:92000, ETH:38.5, SOL:580 },
+  RUB:        { USDT_TRC20:0.0103, USDC:0.0103, ETH:0.0000042, SOL:0.000064, BTC:0.00000011, USD:0.0103 },
+  USD:        { USDT_TRC20:0.975, USDC:0.975, ETH:0.000398, SOL:0.0061, BTC:0.0000105, RUB:97.0 },
+};
+const LIMITS = {
+  USDT_TRC20:{min:50,max:55000}, USDC:{min:50,max:55000}, ETH:{min:0.01,max:100},
+  SOL:{min:0.5,max:10000}, BTC:{min:0.001,max:10}, RUB:{min:5000,max:2000000}, USD:{min:50,max:50000},
+};
+const RESERVES = {
+  USDT_TRC20:1500000, USDC:500000, ETH:150, SOL:5000, BTC:15.5, RUB:50000000, USD:500000,
+};
+const COINS = {
+  USDT:{ sym:'₮', lbl:'USDT', color:'#10B981', nets:{ USDT_TRC20:{tag:'TRC20'}, USDT_ERC20:{tag:'ERC20'}, USDT_BEP20:{tag:'BEP20'} } },
+  USDC:{ sym:'$', lbl:'USDC', color:'#2775CA', nets:{ USDC_TRC20:{tag:'TRC20'}, USDC_ERC20:{tag:'ERC20'} } },
+  ETH: { sym:'Ξ', lbl:'ETH',  color:'#627EEA', nets:{ ETH:{tag:'ERC20'} } },
+  SOL: { sym:'◎', lbl:'SOL',  color:'#9945FF', nets:{ SOL:{tag:'SOL'} } },
+  BTC: { sym:'₿', lbl:'BTC',  color:'#F7931A', nets:{ BTC:{tag:'BTC'} } },
+  RUB: { sym:'₽', lbl:'RUB',  color:'#A78BFA', nets:{ RUB_CASH:{tag:'Нал.'} } },
+  USD: { sym:'$', lbl:'USD',  color:'#22D3EE', nets:{ USD:{tag:'Нал.'} } },
+};
+const BASE = {
+  USDT_TRC20:'USDT_TRC20',USDT_ERC20:'USDT_TRC20',USDT_BEP20:'USDT_TRC20',
+  USDC_TRC20:'USDC',USDC_ERC20:'USDC',
+  ETH:'ETH',SOL:'SOL',BTC:'BTC',
+  RUB_CASH:'RUB',RUB_SBP:'RUB',RUB_CARD:'RUB',
+  USD:'USD',
+};
+
+const $ = id => document.getElementById(id);
+const amtG = $('amt-give'), amtGt = $('amt-get');
+const giveV = $('give-val'), getV = $('get-val');
+const errTxt = $('err-txt'), subBtn = $('sub-btn');
+let giveGroup='USDT', getGroup='RUB';
+
+function base(k){ return BASE[k]||k; }
+function digits(k){ const b=base(k); return b==='BTC'?8:b==='ETH'?6:b==='SOL'?4:2; }
+function fmt(v,k){ return Number(v).toLocaleString('ru-RU',{minimumFractionDigits:digits(k),maximumFractionDigits:digits(k)}); }
+
+function getRate(from,to){
+  if(base(from)===base(to)) return 1;
+  const f=base(from),t=base(to);
+  let r=RATES[f]?.[t]; if(r&&r>0) return r;
+  r=RATES[t]?.[f]; if(r&&r>0) return 1/r;
+  return 0;
+}
+
+function calc(src='give'){
+  const from=giveV.value,to=getV.value,r=getRate(from,to);
+  if(src==='give'){
+    const v=parseFloat(amtG.value.replace(/\s/g,'').replace(',','.'))||0;
+    amtGt.value = r>0 ? fmt(v*r,to) : '';
+  } else {
+    const v=parseFloat(amtGt.value.replace(/\s/g,'').replace(',','.'))||0;
+    amtG.value = r>0 ? fmt(v/r,from) : '';
+  }
+  updateRate(); updateRes(); validate();
+}
+
+function updateRate(){
+  const from=giveV.value,to=getV.value,r=getRate(from,to);
+  const rl=$('rate-line');
+  if(!r||base(from)===base(to)){rl.textContent='—';return;}
+  const fG=findGroup(from),tG=findGroup(to);
+  const fL=COINS[fG]?.lbl||from, tL=COINS[tG]?.lbl||to;
+  const fN=COINS[fG]?.nets[from]?.tag||'', tN=COINS[tG]?.nets[to]?.tag||'';
+  const isFiat=base(from)==='RUB'||base(from)==='USD';
+  if(isFiat){
+    rl.innerHTML=`1 ${tL} · ${tN} ≈ <span class="hl">${fmt(1/r,base(from))} ${fL}</span>`;
+  } else {
+    rl.innerHTML=`1 ${fL} ≈ <span class="hl">${fmt(r,base(to))} ${tL} · ${tN}</span>`;
+  }
+}
+
+function updateRes(){
+  const to=getV.value,res=RESERVES[base(to)]||0;
+  const tG=findGroup(to);
+  $('res-txt').textContent=fmt(res,base(to))+' '+(COINS[tG]?.lbl||to);
+}
+
+function updateLim(){
+  const from=giveV.value,b=base(from);
+  const mn=LIMITS[b]?.min??0, mx=LIMITS[b]?.max??0;
+  const d=b==='BTC'?4:(b==='ETH'||b==='SOL'?2:0);
+  $('lim-txt').textContent=`${Number(mn).toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d})} – ${Number(mx).toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d})}`;
+}
+
+function validate(){
+  const from=giveV.value,to=getV.value;
+  if(base(from)===base(to)){errTxt.textContent='Выберите разные валюты';subBtn.disabled=true;return;}
+  const gv=parseFloat(amtG.value.replace(/\s/g,'').replace(',','.'))||0;
+  const tv=parseFloat(amtGt.value.replace(/\s/g,'').replace(',','.'))||0;
+  const mn=LIMITS[base(from)]?.min??0, mx=LIMITS[base(from)]?.max??Infinity;
+  const res=RESERVES[base(to)]||0;
+  if(gv<=0){errTxt.textContent='Введите сумму';subBtn.disabled=true;return;}
+  if(gv<mn){errTxt.textContent='Сумма меньше минимума';subBtn.disabled=true;return;}
+  if(gv>mx){errTxt.textContent='Сумма превышает максимум';subBtn.disabled=true;return;}
+  if(tv>res){errTxt.textContent='Превышен резерв';subBtn.disabled=true;return;}
+  errTxt.textContent='';subBtn.disabled=false;
+}
+
+function findGroup(k){
+  for(const[gk,g]of Object.entries(COINS)) if(k in g.nets) return gk;
+  return 'USDT';
+}
+
+// Currency picker
+function openDrop(side,type){
+  const d=$(side+'-'+type+'-drop');
+  document.querySelectorAll('.cur-drop').forEach(x=>{if(x!==d)x.classList.remove('open');});
+  const btn=$(side+(type==='coin'?'-coin-btn':'-net-btn'));
+  if(!d.classList.contains('open')){
+    const r=btn.getBoundingClientRect();
+    d.style.top=(r.bottom+4)+'px';
+    d.style.right=(window.innerWidth-r.right)+'px';
+    d.style.left='auto';
+  }
+  d.classList.toggle('open');
+}
+
+function selCoin(side,gk){
+  const g=COINS[gk];
+  const netKey=Object.keys(g.nets)[0];
+  $(side+'-ico').textContent=g.sym;
+  $(side+'-ico').style.cssText=`background:${g.color}1A;border:1px solid ${g.color}33;color:${g.color}`;
+  $(side+'-lbl').textContent=g.lbl;
+  $(side+'-net').textContent=g.nets[netKey].tag;
+  $(side==='give'?'give-val':'get-val').value=netKey;
+  if(side==='give') giveGroup=gk; else getGroup=gk;
+  // mark selected
+  document.querySelectorAll('#'+side+'-coin-drop .drop-opt').forEach(o=>{
+    const isSel=o.dataset.g===gk;
+    o.classList.toggle('sel',isSel);
+    const chk=o.querySelector('svg');
+    if(isSel&&!chk){ const s=document.createElementNS('http://www.w3.org/2000/svg','svg'); s.setAttribute('viewBox','0 0 24 24'); s.setAttribute('fill','none'); s.setAttribute('stroke','currentColor'); s.setAttribute('stroke-width','2.5'); const p=document.createElementNS('http://www.w3.org/2000/svg','polyline'); p.setAttribute('points','20 6 9 17 4 12'); s.appendChild(p); s.style.cssText='width:13px;height:13px;flex-shrink:0;margin-left:auto;color:var(--gold)'; o.appendChild(s); }
+    else if(!isSel&&chk) chk.remove();
+  });
+  buildNetDrop(side,gk,netKey);
+  $(side+'-coin-drop').classList.remove('open');
+  updateLim(); calc('give');
+}
+
+function selNet(side,nk){
+  const gk=findGroup(nk),g=COINS[gk];
+  $(side+'-net').textContent=g.nets[nk].tag;
+  $(side==='give'?'give-val':'get-val').value=nk;
+  buildNetDrop(side,gk,nk);
+  $(side+'-net-drop').classList.remove('open');
+  if(side==='give') updateLim(); calc('give');
+}
+
+function buildNetDrop(side,gk,curNet){
+  const drop=$(side+'-net-drop'); drop.innerHTML='';
+  for(const[nk,net]of Object.entries(COINS[gk].nets)){
+    const d=document.createElement('div');
+    d.className='drop-opt'+(nk===curNet?' sel':'');
+    d.innerHTML=`<span style="font-size:12px;font-weight:700;">${net.tag}</span>`;
+    if(nk===curNet){ const s=document.createElementNS('http://www.w3.org/2000/svg','svg'); s.setAttribute('viewBox','0 0 24 24'); s.setAttribute('fill','none'); s.setAttribute('stroke','currentColor'); s.setAttribute('stroke-width','2.5'); const p=document.createElementNS('http://www.w3.org/2000/svg','polyline'); p.setAttribute('points','20 6 9 17 4 12'); s.appendChild(p); s.style.cssText='width:13px;height:13px;flex-shrink:0;margin-left:auto;color:var(--gold)'; d.appendChild(s); }
+    d.onclick=()=>selNet(side,nk);
+    drop.appendChild(d);
+  }
+}
+
+// Swap
+$('swap-btn').addEventListener('click',()=>{
+  const gk=giveV.value,gGk=giveGroup;
+  const tk=getV.value,tGk=getGroup;
+  const tmpAmt=amtG.value;
+  amtG.value=amtGt.value; amtGt.value=tmpAmt;
+  // swap give
+  const gG=COINS[tGk];
+  $('give-ico').textContent=gG.sym;
+  $('give-ico').style.cssText=`background:${gG.color}1A;border:1px solid ${gG.color}33;color:${gG.color}`;
+  $('give-lbl').textContent=gG.lbl;
+  $('give-net').textContent=gG.nets[tk]?.tag||'';
+  giveV.value=tk; giveGroup=tGk;
+  buildNetDrop('give',tGk,tk);
+  // swap get
+  const tG=COINS[gGk];
+  $('get-ico').textContent=tG.sym;
+  $('get-ico').style.cssText=`background:${tG.color}1A;border:1px solid ${tG.color}33;color:${tG.color}`;
+  $('get-lbl').textContent=tG.lbl;
+  $('get-net').textContent=tG.nets[gk]?.tag||'';
+  getV.value=gk; getGroup=gGk;
+  buildNetDrop('get',gGk,gk);
+  updateLim(); calc('give');
+});
+
+// Inputs
+amtG.addEventListener('input',()=>calc('give'));
+amtGt.addEventListener('input',()=>calc('get'));
+
+// Close drops
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.cur-coin-btn')&&!e.target.closest('.cur-net-btn')&&!e.target.closest('.cur-drop'))
+    document.querySelectorAll('.cur-drop').forEach(d=>d.classList.remove('open'));
+});
+['give-coin-drop','give-net-drop','get-coin-drop','get-net-drop'].forEach(id=>{
+  const el=$(id); if(el) document.body.appendChild(el);
+});
+
+// Modal
+$('swap-btn'); // already handled
+const modal=$('tg-modal');
+$('tg-close').addEventListener('click',()=>modal.classList.remove('open'));
+modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('open');});
+$('exchange-form').addEventListener('submit',e=>{ e.preventDefault(); modal.classList.add('open'); });
+$('tg-form').addEventListener('submit',e=>{ e.preventDefault(); modal.classList.remove('open'); });
+
+// Countdown
+let cd=15;
+const cdEl=$('cd'),refIcon=document.querySelector('.ref-icon');
+setInterval(()=>{
+  cd--;
+  if(cd<=0){ cd=15; if(refIcon){refIcon.style.transition='transform .5s';refIcon.style.transform='rotate(360deg)';setTimeout(()=>{refIcon.style.transition='none';refIcon.style.transform='';},550);} }
+  if(cdEl) cdEl.textContent=cd+'с';
+},1000);
+
+// Scroll reveal
+const io=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{ if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target);} });
+},{threshold:.12});
+document.querySelectorAll('.reveal').forEach((el,i)=>{
+  el.style.transitionDelay=(i*.07)+'s'; io.observe(el);
+});
+
+// Init
+buildNetDrop('give','USDT','USDT_TRC20');
+buildNetDrop('get','RUB','RUB_CASH');
+updateLim(); calc('give'); updateRes();
+</script>
+</body>
+</html>
