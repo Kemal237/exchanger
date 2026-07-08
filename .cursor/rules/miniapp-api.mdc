@@ -1,0 +1,35 @@
+---
+description: Устройство Telegram Mini App (админ-панель) и правила его API-эндпоинтов.
+globs: miniapp/**
+alwaysApply: false
+---
+
+# Telegram Mini App — админ-панель
+
+SPA `miniapp/index.html` + 7 PHP-эндпоинтов в `miniapp/api/`.
+Тёмная тема под Telegram (`--tg-theme-*`), 5 вкладок: Дашборд, Заявки, Люди, Резервы, Тикеты.
+
+## Правила API-эндпоинтов (`miniapp/api/*.php`)
+- Каждый эндпоинт начинается с `require_once __DIR__.'/auth.php'; requireAuth();`
+  **до** любой выдачи данных.
+- Всегда `header('Content-Type: application/json')`.
+- Ошибки: `http_response_code(...)` + `json_encode(['error' => ...])`.
+- Всю работу с БД оборачивать в `try/catch (Throwable $e)`.
+- Метод проверять до auth, где это уместно; невалидный метод → 405.
+
+## Аутентификация (`auth.php`)
+- Верификация Telegram `initData` через HMAC-SHA256:
+  `secretKey = hash_hmac('sha256','WebAppData', TG_BOT_TOKEN, true)`, затем сверка `hash`.
+- Отклонять `initData` старше 1 часа (`auth_date`).
+- Белый список chat_id — `TG_ALLOWED_CHATS` из `config.php`.
+
+## Эндпоинты
+- `dashboard.php` — метрики `?period=today|7d|30d` + курсы из кэша.
+- `orders.php` — список/смена статуса/удаление заявок.
+- `users.php` — список, поиск, история заявок пользователя.
+- `reserves.php` — чтение, пополнение/списание, лимиты min/max.
+- `tickets.php` — список тикетов, сообщения, ответ, смена статуса.
+
+## Фронт
+- Шлёт заголовок `X-Telegram-Init-Data` в каждый запрос к API.
+- Без внешних зависимостей: только Telegram WebApp SDK + vanilla JS.

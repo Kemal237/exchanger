@@ -1,0 +1,25 @@
+---
+description: Логика курсов, маржи и кэширования (get_rates.php, config.php) + схема БД и статусы. Читать при работе с курсами, резервами, заявками, тикетами.
+globs: get_rates.php,config.php,cr873507_swap.sql
+alwaysApply: false
+---
+
+# Курсы, резервы и схема БД
+
+## Логика курсов (`get_rates.php` + `config.php`)
+- Источник реальных цен — **CoinGecko** (функция `getRealRates()` в `config.php`).
+- **Спред/маржа обменника: покупка ×0.975, продажа ×1.025** (`$b = 0.975; $s = 1.025;` —
+  маржа 2.5%). Менять маржу — здесь.
+- Курсы кэшируются в `cache_rates.json` на **10 минут** (`CACHE_TTL`), обновление по крону.
+- **Резервы и лимиты всегда из БД** (таблица `reserves`), БД приоритетнее кэша.
+  В Mini App резервы обновляются каждые ~15 сек.
+- `get_rates.php` отдаёт JSON `{rates, reserves, limits, source}`.
+
+## Таблицы БД (`cr873507_swap.sql`)
+`users`, `orders`, `reserves`, `support_tickets`, `support_messages`,
+`admin_notes`, `admin_note_files`.
+
+## Статусы
+- Заявки (`orders.status`): `new`, `in_process`, `success`, `canceled`.
+- Тикеты (`support_tickets.status`): `open`, `answered`, `closed`.
+- `support_messages.sender`: `user` | `admin`.

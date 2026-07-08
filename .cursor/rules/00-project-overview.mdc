@@ -1,0 +1,39 @@
+---
+description: Общий обзор проекта Swap — криптообменник на PHP. Стек, структура, валюты, текущее состояние.
+alwaysApply: true
+---
+
+# Проект «Swap» — криптообменник
+
+Отвечай и пиши комментарии в коде **на русском**. Совпадай по стилю с окружающим кодом.
+
+Веб-обменник криптовалют и наличных + Telegram-бот поддержки + Telegram Mini App
+(админ-панель). Прод: `https://cr873507.tw1.ru`.
+
+## Стек
+- **PHP 7.4** — без фреймворка, процедурный код + PDO. Не использовать синтаксис 8.0+.
+- **MySQL** через PDO (`ERRMODE_EXCEPTION`, `charset=utf8mb4`), объект `$pdo` из `db.php`.
+- **Vanilla JS** (ES6+), без сборщика, npm и внешних зависимостей.
+- Telegram WebApp JS SDK (в Mini App).
+- Шаред-хостинг (timeweb, `cr873507.tw1.ru`).
+
+## Валюты
+`USDT_TRC20`, `USDC`, `ETH`, `SOL`, `BTC`, `RUB`, `USD`.
+`RUB` и `USD` — **только наличка**. Остальные — крипта.
+
+## Структура репозитория
+- **Корень** — сайт: `index.php` (главная/форма обмена), `rates.php`, `order.php`/`create-order.php`/`confirm-order.php`, `profile.php`, авторизация (`register/login/logout/auth`), пароли и почта (`forgot-password`, `reset-password`, `verify-email`, `resend-verification`), `kyc.php`/`aml.php`/`rules.php`, поддержка (`support*.php`), layout (`header.php`, `footer.php`, `theme.php`), `get_rates.php`, `mailer.php`, `activity_log.php`.
+- `config.php` — константы, ключи Telegram, `MINIAPP_KEY`, кэш курсов, `sendTelegramMessage()`.
+- `db.php` — подключение PDO.
+- `cr873507_swap.sql` — дамп схемы БД.
+- `bot-cron.php`, `telegram-handler.php` — Telegram-бот поддержки (крон).
+- `admin/` — веб-админка (заявки, юзеры, резервы, поддержка, логи, заметки).
+- `miniapp/` — Telegram Mini App (SPA + `api/`).
+- `lib/phpmailer/` — письма. `uploads/` — файлы. `docs/superpowers/` — план и спека Mini App.
+
+## Текущее состояние
+Telegram Mini App реализован и в проде. Последние работы: логирование заявок/комментариев,
+уведомления о новых заявках в ТГ, авто-обновление курсов/резервов/поддержки, цвета статусов
+в Mini App, читаемый вид обмена с рублём. Ветка `master`, синхронизирована с origin.
+
+> История прошлых чатов не сохранялась — правила реконструированы из кода и git.
